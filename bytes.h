@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_BYTES_H__
-#define __NDMATH_BYTES_H__
+#ifndef __HXND_BYTES_H__
+#define __HXND_BYTES_H__
 
 /* include required standard c headers. */
 #include <stdio.h>
@@ -90,5 +90,5 @@ uint8_t *bytes_read_varian (const char *fname,
                             unsigned int offhead,
                             unsigned int *n);
 
-#endif /* __NDMATH_BYTES_H__ */
+#endif /* __HXND_BYTES_H__ */
 

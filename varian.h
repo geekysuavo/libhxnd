@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_VARIAN_H__
-#define __NDMATH_VARIAN_H__
+#ifndef __HXND_VARIAN_H__
+#define __HXND_VARIAN_H__
 
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
@@ -105,5 +105,5 @@ int varian_read_hdr_file (const char *fname, unsigned int *endianness,
 
 int varian_read (const char *fname, hx_array *x);
 
-#endif /* __NDMATH_VARIAN_H__ */
+#endif /* __HXND_VARIAN_H__ */
 

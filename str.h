@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_STR_H__
-#define __NDMATH_STR_H__
+#ifndef __HXND_STR_H__
+#define __HXND_STR_H__
 
 /* include required standard c headers. */
 #include <stdio.h>
@@ -35,5 +35,5 @@ char **strsplit (const char *s1, const char *s2, unsigned int *ntok);
 
 void strvfree (char **strv, unsigned int n);
 
-#endif /* __NDMATH_STR_H__ */
+#endif /* __HXND_STR_H__ */
 

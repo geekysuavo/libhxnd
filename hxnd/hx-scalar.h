@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_HX_SCALAR_H__
-#define __NDMATH_HX_SCALAR_H__
+#ifndef __HXND_HX_SCALAR_H__
+#define __HXND_HX_SCALAR_H__
 
 /* hx_scalar: data type for hypercomplex nD scalars.
  *
@@ -88,5 +88,5 @@ int hx_scalar_zero (hx_scalar *x);
 
 int hx_scalar_phasor (hx_scalar *x, int d, real phi);
 
-#endif /* __NDMATH_HX_SCALAR_H__ */
+#endif /* __HXND_HX_SCALAR_H__ */
 

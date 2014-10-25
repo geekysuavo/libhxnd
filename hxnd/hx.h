@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_HX_H__
-#define __NDMATH_HX_H__
+#ifndef __HXND_HX_H__
+#define __HXND_HX_H__
 
 /* include required standard c library headers. */
 #include <stdio.h>
@@ -49,5 +49,5 @@ typedef float real;
 #include "hx-arith.h"
 #include "hx-fourier.h"
 
-#endif /* __NDMATH_HX_H__ */
+#endif /* __HXND_HX_H__ */
 

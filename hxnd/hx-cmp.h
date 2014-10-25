@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_HX_CMP_H__
-#define __NDMATH_HX_CMP_H__
+#ifndef __HXND_HX_CMP_H__
+#define __HXND_HX_CMP_H__
 
 /* definitions of comparison mismatch codes.
  */
@@ -48,5 +48,5 @@ int hx_array_topo_cmp (hx_array *a, hx_array *b);
 
 int hx_array_conf_cmp (hx_array *a, hx_array *b);
 
-#endif /* __NDMATH_HX_CMP_H__ */
+#endif /* __HXND_HX_CMP_H__ */
 

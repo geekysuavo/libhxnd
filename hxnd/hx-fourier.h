@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_HX_FOURIER_H__
-#define __NDMATH_HX_FOURIER_H__
+#ifndef __HXND_HX_FOURIER_H__
+#define __HXND_HX_FOURIER_H__
 
 /* function declarations: */
 
@@ -34,5 +34,5 @@ unsigned int hx_nextpow2 (unsigned int value);
 
 int hx_array_fft (hx_array *x, int d, int k);
 
-#endif /* __NDMATH_HX_FOURIER_H__ */
+#endif /* __HXND_HX_FOURIER_H__ */
 

@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_BRUKER_H__
-#define __NDMATH_BRUKER_H__
+#ifndef __HXND_BRUKER_H__
+#define __HXND_BRUKER_H__
 
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
@@ -45,5 +45,5 @@ int bruker_read (const char *fname, unsigned int endianness,
                  unsigned int nblk, unsigned int szblk,
                  hx_array *x);
 
-#endif /* __NDMATH_BRUKER_H__ */
+#endif /* __HXND_BRUKER_H__ */
 

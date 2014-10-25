@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_HX_ARITH_H__
-#define __NDMATH_HX_ARITH_H__
+#ifndef __HXND_HX_ARITH_H__
+#define __HXND_HX_ARITH_H__
 
 /* function declarations, raw coefficient data: */
 
@@ -46,5 +46,5 @@ int hx_array_mul_scalar (hx_array *a, hx_scalar *b, hx_array *c);
 
 int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c);
 
-#endif /* __NDMATH_HX_ARITH_H__ */
+#endif /* __HXND_HX_ARITH_H__ */
 

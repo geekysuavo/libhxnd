@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_HX_INDEX_H__
-#define __NDMATH_HX_INDEX_H__
+#ifndef __HXND_HX_INDEX_H__
+#define __HXND_HX_INDEX_H__
 
 /* function declarations: */
 
@@ -42,5 +42,5 @@ int hx_array_index_diff (int k, int *a, int *b, int **pc);
 
 int hx_array_index_bounded (int k, int *arr, int *lower, int *upper);
 
-#endif /* __NDMATH_HX_INDEX_H__ */
+#endif /* __HXND_HX_INDEX_H__ */
 

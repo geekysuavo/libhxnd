@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_SER_H__
-#define __NDMATH_SER_H__
+#ifndef __HXND_SER_H__
+#define __HXND_SER_H__
 
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
@@ -35,5 +35,5 @@ int ser_toarray (uint8_t *bytes, unsigned int nbytes,
 
 int ser_deinterlace (hx_array *x);
 
-#endif /* __NDMATH_SER_H__ */
+#endif /* __HXND_SER_H__ */
 

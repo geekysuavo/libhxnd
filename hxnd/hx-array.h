@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_HX_ARRAY_H__
-#define __NDMATH_HX_ARRAY_H__
+#ifndef __HXND_HX_ARRAY_H__
+#define __HXND_HX_ARRAY_H__
 
 /* hx_array: data type for nD arrays of hypercomplex nD numbers.
  *
@@ -90,5 +90,5 @@ int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int *loc);
 
 int hx_array_store_vector (hx_array *x, hx_array *y, int k, int *loc);
 
-#endif /* __NDMATH_HX_ARRAY_H__ */
+#endif /* __HXND_HX_ARRAY_H__ */
 

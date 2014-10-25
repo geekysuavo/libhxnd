@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __NDMATH_HX_ALGEBRA_H__
-#define __NDMATH_HX_ALGEBRA_H__
+#ifndef __HXND_HX_ALGEBRA_H__
+#define __HXND_HX_ALGEBRA_H__
 
 /* hx_algebra: multiplication table for hypercomplex nD scalars.
  *
@@ -49,5 +49,5 @@ int hx_algebras_add (int d);
 
 hx_algebra hx_algebras_get (int d);
 
-#endif /* __NDMATH_HX_ALGEBRA_H__ */
+#endif /* __HXND_HX_ALGEBRA_H__ */
 
