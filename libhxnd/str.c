@@ -21,7 +21,7 @@
  */
 
 /* include the strings header. */
-#include "str.h"
+#include <hxnd/str.h>
 
 /* strsplit(): splits a string @s1 into a string array by @s2 tokens.
  * @s1: the string to split.

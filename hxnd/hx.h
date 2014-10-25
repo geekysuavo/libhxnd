@@ -32,6 +32,7 @@
 #include <string.h>
 #include <math.h>
 
+/* define 'pi' if needed. */
 #ifndef M_PI
 #define M_PI 3.1415926539
 #endif

@@ -397,6 +397,129 @@ int hx_array_is_cube (hx_array *x) {
   return (hx_array_nnzdims(x) == 3);
 }
 
+/* hx_array_deinterlace(): convert the largest dimension (the last index) of
+ * an array to the next level of algebraic dimensionality (i.e. x->d++). for
+ * example, perform:
+ *
+ *   (d=0, k=1, sz={2*n})       -> (d=1, k=1, sz={n})
+ *   (d=1, k=2, sz={n, 2*m})    -> (d=2, k=2, sz={n, m})
+ *   (d=2, k=3, sz={n, m, 2*l}) -> (d=3, k=3, sz={n, m, l})
+ *
+ * interlacing (d = 0 -> 1):
+ *   [1, u1, ...]
+ *    -> [(1, u1), ...]
+ *
+ * interlacing (d = 1 -> 2):
+ *   [(1, u1), (u2, u1u2), ...]
+ *    -> [(1, u1, u2, u1u2), ...]
+ *
+ * interlacing (d = 2 -> 3):
+ *   [(1, u1, u2, u1u2), (u3, u1u3, u2u3, u1u2u3), ...]
+ *    -> [(1, u1, u2, u1u2, u3, u1u3, u2u3, u1u2u3), ...]
+ *
+ * it is assumed that each alternating point in the topmost array dimension
+ * contains the next set of coefficients for the extra algebraic dimensions
+ * created by promotion to the next greatest dimensionality.
+ */
+int hx_array_deinterlace (hx_array *x) {
+  /* declare a few required variables:
+   * @ktop: the (topmost) array dimension to act upon.
+   * @dnew: the new algebraic dimensionality of the array.
+   * @i: a general-purpose dim/coefficient loop counter.
+   * @di: coefficient index offset during reshuffling.
+   * @arri: the input index array.
+   * @arro: the output index array.
+   * @sznew: the new size array.
+   * @idxi: the input linear index.
+   * @idxo: the output linear index.
+   */
+  int ktop, dnew, i, di, *arri, *arro, *sznew, idxi, idxo;
+
+  /* get the topmost array dimension. */
+  ktop = x->k - 1;
+
+  /* check that the topmost array dimension is valid. */
+  if (ktop < 0)
+    return 0;
+
+  /* check that the topmost array dimension size is divisible by two. */
+  if (x->sz[ktop] % 2)
+    return 0;
+
+  /* allocate a new size array. */
+  sznew = hx_array_index_alloc(x->k);
+
+  /* check that allocation was successful. */
+  if (!sznew)
+    return 0;
+
+  /* copy the current array sizes into the new size array. */
+  memcpy(sznew, x->sz, x->k * sizeof(int));
+
+  /* get the new dimensionality of the array. */
+  dnew = x->d + 1;
+
+  /* attempt to promote the array from real to complex. */
+  if (!hx_array_resize(x, dnew, x->k, sznew))
+    return 0;
+
+  /* initialize a set of multidimensional index arrays. */
+  idxi = idxo = 0;
+  arri = hx_array_index_alloc(x->k);
+  arro = hx_array_index_alloc(x->k);
+  if (!arri || !arro)
+    return 0;
+
+  /* iterate over the points of the array. */
+  do {
+    /* copy the relevant indices of the index array. */
+    for (i = 0; i < ktop; i++)
+      arro[i] = arri[i];
+
+    /* determine which set of coefficients we're on (i.e. 'odd' or 'even').
+     */
+    if (arri[ktop] % 2 == 0) {
+      /* even. this will copy the first half of the coefficients. */
+      arro[ktop] = arri[ktop] / 2;
+      di = 0;
+    }
+    else {
+      /* odd. this will copy the second half of the coefficients. */
+      arro[ktop] = (arri[ktop] - 1) / 2;
+      di = x->n / 2;
+    }
+
+    /* pack the destination index array into a linear index. */
+    hx_array_index_pack(x->k, sznew, arro, &idxo);
+
+    /* loop over the first half of the coefficients, copying their values
+     * into their final destinations.
+     */
+    for (i = 0; i < x->n / 2; i++)
+      x->x[i + di + x->n * idxo] = x->x[i + x->n * idxi];
+
+    /* increment the input linear index. */
+    idxi++;
+  } while (hx_array_index_inc(x->k, sznew, &arri));
+
+  /* free the array indices. */
+  free(arri);
+  free(arro);
+
+  /* shrink the topmost array dimension by half. */
+  sznew[ktop] /= 2;
+
+  /* shrink the geometry of the array. */
+  if (!hx_array_resize(x, dnew, x->k, sznew))
+    return 0;
+
+  /* free the new size array. */
+  free(sznew);
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_array_resize(): change the dimensionality of a hypercomplex array.
  * @x: a pointer to the array to resize.
  * @d: the new algebraic dimensionality.

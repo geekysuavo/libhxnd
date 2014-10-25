@@ -21,7 +21,7 @@
  */
 
 /* include the varian header. */
-#include "varian.h"
+#include <hxnd/varian.h>
 
 /* declare a buffer size for reading varian parameter files.
  */
@@ -278,14 +278,14 @@ int varian_read (const char *fname, hx_array *x) {
     return 0;
 
   /* build a real linear array from the byte data. */
-  if (!ser_toarray(bytes, n, end, fh.ebytes, flt, x))
+  if (!bytes_toarray(bytes, n, end, fh.ebytes, flt, x))
     return 0;
 
   /* free the read byte data. */
   free(bytes);
 
   /* deinterlace the real and imaginary points into complex points. */
-  if (!ser_deinterlace(x))
+  if (!hx_array_deinterlace(x))
     return 0;
 
   /* return success. */

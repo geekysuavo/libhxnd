@@ -1,5 +1,5 @@
 
-#include "bruker.h"
+#include <hxnd/bruker.h>
 
 int main (int argc, char **argv) {
   unsigned int end, nblk, szblk;

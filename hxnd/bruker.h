@@ -1,5 +1,5 @@
 
-/* ndmath: A framework for loading free induction decay series data.
+/* ndmath: A framework for n-dimensional hypercomplex calculations for NMR
  * Copyright (C) 2014  Bradley Worley  <geekysuavo@gmail.com>.
  *
  * This program is free software; you can redistribute it and/or
@@ -21,19 +21,28 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_SER_H__
-#define __HXND_SER_H__
+#ifndef __HXND_BRUKER_H__
+#define __HXND_BRUKER_H__
 
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
+/* include the byte-level data header. */
+#include <hxnd/bytes.h>
+
+/* define constant parameter type characters for acqus file parsing.
+ */
+#define BRUKER_PARMTYPE_INT     'i'
+#define BRUKER_PARMTYPE_FLOAT   'f'
+#define BRUKER_PARMTYPE_STRING  's'
+
 /* function declarations: */
 
-int ser_toarray (uint8_t *bytes, unsigned int nbytes,
-                 int endianness, int wordsz, int flt,
+int bruker_read_parms (const char *fname, unsigned int n, ...);
+
+int bruker_read (const char *fname, unsigned int endianness,
+                 unsigned int nblk, unsigned int szblk,
                  hx_array *x);
 
-int ser_deinterlace (hx_array *x);
-
-#endif /* __HXND_SER_H__ */
+#endif /* __HXND_BRUKER_H__ */
 

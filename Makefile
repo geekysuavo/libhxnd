@@ -4,8 +4,11 @@ CC=gcc
 CFLAGS=-g -O2 -std=c99 -Wall -Wformat -I.
 LIBS=-lm
 
-# LIBSRC: library sources and their object filenames.
+# LIBSRC: library source basenames.
 LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-cmp hx-arith hx-fourier
+LIBSRC+= str bytes bruker varian
+
+# LIBOBJ: library object filenames.
 LIBOBJ=$(addprefix libhxnd/,$(addsuffix .o,$(LIBSRC)))
 
 # BIN, BINBIN, BINOBJ: binary source, output and object filenames.
@@ -14,7 +17,7 @@ BINBIN=$(addprefix bin/,$(BIN))
 BINOBJ=$(addprefix bin/,$(addsuffix .o,$(BIN)))
 
 # OBJ: all object files that need compilation from source.
-OBJ=$(LIBOBJ) bytes.o str.o bruker.o varian.o ser.o
+OBJ=$(LIBOBJ)
 
 # registered suffixes for make rules.
 .SUFFIXES: .c .o

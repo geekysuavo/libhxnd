@@ -27,10 +27,9 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
-/* include the byte loading and serial headers. */
-#include "bytes.h"
-#include "ser.h"
-#include "str.h"
+/* include the byte-level data and string headers. */
+#include <hxnd/bytes.h>
+#include <hxnd/str.h>
 
 /* define constant parameter type characters for procpar file parsing.
  */

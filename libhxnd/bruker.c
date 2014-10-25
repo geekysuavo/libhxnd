@@ -21,7 +21,7 @@
  */
 
 /* include the bruker header. */
-#include "bruker.h"
+#include <hxnd/bruker.h>
 
 /* declare a buffer size for reading bruker parameter files.
  */
@@ -214,14 +214,14 @@ int bruker_read (const char *fname, unsigned int endianness,
     return 0;
 
   /* build a real linear array from the byte data. */
-  if (!ser_toarray(bytes, n, endianness, 4, 0, x))
+  if (!bytes_toarray(bytes, n, endianness, 4, 0, x))
     return 0;
 
   /* free the read byte data. */
   free(bytes);
 
   /* deinterlace the real and imaginary points into complex points. */
-  if (!ser_deinterlace(x))
+  if (!hx_array_deinterlace(x))
     return 0;
 
   /* return success. */

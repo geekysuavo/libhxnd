@@ -20,8 +20,8 @@
  *   Boston, MA  02110-1301, USA.
  */
 
-/* include the bytes header. */
-#include "bytes.h"
+/* include the byte-level data header. */
+#include <hxnd/bytes.h>
 
 /* bytes_swap_u16(): swaps the bytes of a two-byte word.
  * @x: pointer to the word to swap in-place.
@@ -276,5 +276,167 @@ uint8_t *bytes_read_varian (const char *fname,
 
   /* return the read byte array. */
   return bytes;
+}
+
+/* bytes_toword(): converts a single word into the correct format for
+ * inclusion into a hypercomplex array structure.
+ * @bytes: the bytes of the word.
+ * @sz: the byte count of the word.
+ * @flt: if the word is floating point.
+ */
+real bytes_toword (uint8_t *bytes, int sz, int flt) {
+  /* declare required variables to ensure proper signed integer support.
+   * if the specified word size is either that of 'int' or 'short', then
+   * each data word is down-cast to that type and then re-cast to a 'long',
+   * which is a quick and dirty way to support signed integers of all
+   * three sizes.
+   */
+  int8_t i8;
+  int16_t i16;
+  int32_t i32;
+  int64_t i64;
+
+  /* declare required variables to ensure proper float support.
+   */
+  real x;
+  float f32;
+  double f64;
+
+  /* declare required variables to ensure proper half-precision support.
+   */
+  real sign;
+  uint8_t expo;
+  uint16_t scnd;
+
+  /* initialize the converted value. */
+  x = 0.0;
+
+  /* convert based on whether we are in integer or float format. */
+  if (flt) {
+    /* check the size of the float. */
+    if (sz == 2) {
+      /* build a 16-bit word. */
+      i16 = (bytes[1] << 8) | bytes[0];
+
+      /* compute the sign, exponent and significand. */
+      sign = (i16 & 0x8000 ? -1.0 : 1.0);
+      expo = (i16 & 0x7c00) >> 10;
+      scnd = (i16 & 0x03ff);
+
+      /* determine how to interpret the value. this does not support
+       * infinity or not-a-number.
+       */
+      if (expo == 0 && scnd) {
+        /* compute a subnormal number. */
+        x = sign * pow(2.0, -14.0);
+        x *= ((real) scnd / 1024.0);
+      }
+      else {
+        /* compute a normalized number. */
+        x = sign * pow(2.0, (real) expo - 15.0);
+        x *= (1.0 + (real) scnd / 1024.0);
+      }
+    }
+    else if (sz == sizeof(float)) {
+      /* build a four-byte float word and convert to real. */
+      f32 = *(float*) bytes;
+      x = (real) f32;
+    }
+    else if (sz == sizeof(double)) {
+      /* build an eight-byte float word and convert to real. */
+      f64 = *(double*) bytes;
+      x = (real) f64;
+    }
+  }
+  else {
+    /* check the size of the integer. */
+    if (sz == sizeof(int8_t)) {
+      /* build a single-byte word and convert to float. */
+      i8 = bytes[0];
+      x = (real) i8 / 128.0;
+    }
+    if (sz == sizeof(int16_t)) {
+      /* build a two-byte word. */
+      i16 = (bytes[1] << 8) |
+             bytes[0];
+
+      /* convert to float. */
+      x = (real) i16 / 32768.0;
+    }
+    else if (sz == sizeof(int32_t)) {
+      /* build a four-byte word. */
+      i32 = (bytes[3] << 24) |
+            (bytes[2] << 16) |
+            (bytes[1] << 8) |
+             bytes[0];
+
+      /* convert to float. */
+      x = (real) i32 / 2147483648.0;
+    }
+    else if (sz == sizeof(int64_t)) {
+      /* build an eight-byte float word. */
+      i64 = ((int64_t) bytes[7] << 56) | ((int64_t) bytes[6] << 48) |
+            ((int64_t) bytes[5] << 40) | ((int64_t) bytes[4] << 32) |
+            (bytes[3] << 24) | (bytes[2] << 16) |
+            (bytes[1] << 8) |
+             bytes[0];
+
+      /* convert to the final value. */
+      x = (real) i64 / 9223372036854775808.0;
+    }
+  }
+
+  /* return the converted real value. */
+  return x;
+}
+
+/* bytes_toarray(): converts bytes loaded from a bruker/varian fid/ser
+ * serial file into a one-dimensional real array.
+ * @bytes: the byte array to convert into an array.
+ * @nbytes: the number of bytes in the array.
+ * @endianness: the endianness of the data.
+ * @wordsz: number of bytes per data word.
+ * @flt: whether each word is a float (1) or int (0).
+ * @x: the final output array.
+ */
+int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
+                   int endianness, int wordsz, int flt,
+                   hx_array *x) {
+  /* declare a few required variables. */
+  int nwords, topo[1], i, j, k;
+  uint8_t swp;
+
+  /* read the number of bytes in the input file and compute the number
+   * of words in the serial file and words in the array.
+   */
+  nwords = nbytes / wordsz;
+  topo[0] = nwords;
+
+  /* check if byte swaps are required. */
+  if (endianness == BYTES_ENDIAN_BIG && wordsz > 1) {
+    /* loop over the byte array, per-word. */
+    for (i = 0; i < nbytes; i += wordsz) {
+      /* loop over the bytes of the word. */
+      for (j = 0; j < wordsz / 2; j++) {
+        /* swap bytes. */
+        swp = bytes[i + j];
+        bytes[i + j] = bytes[i + wordsz - j - 1];
+        bytes[i + wordsz - j - 1] = swp;
+      }
+    }
+  }
+
+  /* allocate memory for a linear, real output array. */
+  if (!hx_array_alloc(x, 0, 1, topo))
+    return 0;
+
+  /* copy the read, properly ordered byte data into the output array. */
+  for (i = 0, k = 0; i < nbytes; i += wordsz, k++) {
+    /* convert the data word into floating point. */
+    x->x[k] = bytes_toword(bytes + i, wordsz, flt);
+  }
+
+  /* return success. */
+  return 1;
 }
 

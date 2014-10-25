@@ -75,6 +75,8 @@ int hx_array_is_matrix (hx_array *x);
 
 int hx_array_is_cube (hx_array *x);
 
+int hx_array_deinterlace (hx_array *x);
+
 int hx_array_resize (hx_array *x, int d, int k, int *sz);
 
 #define hx_array_real(x) \

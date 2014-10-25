@@ -24,11 +24,8 @@
 #ifndef __HXND_BYTES_H__
 #define __HXND_BYTES_H__
 
-/* include required standard c headers. */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
+/* include the n-dimensional math header. */
+#include <hxnd/hx.h>
 
 /* define macros to extract bytes from words and double-words.
  */
@@ -89,6 +86,10 @@ uint8_t *bytes_read_varian (const char *fname,
                             unsigned int offblk,
                             unsigned int offhead,
                             unsigned int *n);
+
+int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
+                   int endianness, int wordsz, int flt,
+                   hx_array *x);
 
 #endif /* __HXND_BYTES_H__ */
 
