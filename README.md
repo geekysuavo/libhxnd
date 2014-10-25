@@ -45,7 +45,9 @@ of the array. An array with _k_ topological dimensions will have _k_ sizes,
 one for each dimension, _e.g._:
 
 > _k_ = 1: (3)
+
 > _k_ = 2: (4, 5)
+
 > _k_ = 4: (2, 5, 11, 7)
 
 Of course, the size of any dimension may just as easily be **one**, making
