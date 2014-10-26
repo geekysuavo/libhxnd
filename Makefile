@@ -45,11 +45,11 @@ again: clean all
 
 fixme:
 	@echo " FIXME"
-	@grep -RHni fixme hxnd/*.h libhxnd/*.c bin/*.[ch] *.[ch]
+	@grep -RHni fixme hxnd/*.h libhxnd/*.c bin/*.[ch]
 
 linecount:
 	@echo " WC"
-	@wc -l hxnd/*.h libhxnd/*.c bin/*.[ch] *.[ch]
+	@wc -l hxnd/*.h libhxnd/*.c bin/*.[ch]
 
 dist: clean
 	@isodate=$$(date +%Y%m%d) && \
