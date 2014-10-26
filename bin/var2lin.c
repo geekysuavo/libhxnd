@@ -1,5 +1,5 @@
 
-#include <hxnd/varian.h>
+#include <hxnd/nmr-varian.h>
 
 int main (int argc, char **argv) {
   hx_array x;

@@ -21,30 +21,28 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_HX_ARITH_H__
-#define __HXND_HX_ARITH_H__
+#ifndef __HXND_BRUKER_H__
+#define __HXND_BRUKER_H__
 
-/* function declarations, raw coefficient data: */
+/* include the n-dimensional math header. */
+#include <hxnd/hx.h>
 
-int hx_data_add (real *xa, real *xb, real *xc, real s, int d, int n);
+/* include the byte-level data header. */
+#include <hxnd/bytes.h>
 
-int hx_data_mul (real *xa, real *xb, real *xc, int d, int n, hx_algebra tbl);
+/* define constant parameter type characters for acqus file parsing.
+ */
+#define BRUKER_PARMTYPE_INT     'i'
+#define BRUKER_PARMTYPE_FLOAT   'f'
+#define BRUKER_PARMTYPE_STRING  's'
 
-/* function declarations, scalars: */
+/* function declarations: */
 
-int hx_scalar_add (hx_scalar *a, hx_scalar *b, real s, hx_scalar *c);
+int bruker_read_parms (const char *fname, unsigned int n, ...);
 
-int hx_scalar_mul (hx_scalar *a, hx_scalar *b, hx_scalar *c);
+int bruker_read (const char *fname, unsigned int endianness,
+                 unsigned int nblk, unsigned int szblk,
+                 hx_array *x);
 
-/* function declarations, arrays: */
-
-int hx_array_add_scalar (hx_array *a, hx_scalar *b, real s, hx_array *c);
-
-int hx_array_add_array (hx_array *a, hx_array *b, real s, hx_array *c);
-
-int hx_array_mul_scalar (hx_array *a, hx_scalar *b, hx_array *c);
-
-int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c);
-
-#endif /* __HXND_HX_ARITH_H__ */
+#endif /* __HXND_BRUKER_H__ */
 

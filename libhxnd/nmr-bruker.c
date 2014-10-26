@@ -1,5 +1,5 @@
 
-/* ndmath: A framework for n-dimensional hypercomplex calculations for NMR
+/* hxnd: A framework for n-dimensional hypercomplex calculations for NMR.
  * Copyright (C) 2014  Bradley Worley  <geekysuavo@gmail.com>.
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@
  */
 
 /* include the bruker header. */
-#include <hxnd/bruker.h>
+#include <hxnd/nmr-bruker.h>
 
 /* declare a buffer size for reading bruker parameter files.
  */

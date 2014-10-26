@@ -1,5 +1,5 @@
 
-#include <hxnd/bruker.h>
+#include <hxnd/nmr-bruker.h>
 
 int main (int argc, char **argv) {
   unsigned int end, nblk, szblk;
