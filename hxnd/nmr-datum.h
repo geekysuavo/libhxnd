@@ -26,9 +26,16 @@
 
 /* datum: data type for acquired NMR data.
  *
- * FIXME
+ * datum structures hold n-dimensional NMR datasets, and are essentially
+ * encapsulations of hypercomplex multidimensional arrays with additional
+ * metadata that describes all relevant features of the data.
+ *
+ * FIXME: complete the 'datum' structure type.
  */
 typedef struct {
+  /* @array: raw time-domain and/or frequency-domain NMR data.
+   */
+  hx_array array;
 }
 datum;
 
