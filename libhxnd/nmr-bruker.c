@@ -198,7 +198,7 @@ int bruker_read_parms (const char *fname, unsigned int n, ...) {
  * @szblk: the size of block/fid.
  * @x: the output array.
  */
-int bruker_read (const char *fname, unsigned int endianness,
+int bruker_read (const char *fname, enum byteorder endianness,
                  unsigned int nblk, unsigned int szblk,
                  hx_array *x) {
   /* declare a few required variables.

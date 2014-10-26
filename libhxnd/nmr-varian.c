@@ -199,7 +199,7 @@ int varian_read_parms (const char *fname, unsigned int n, ...) {
  * @endianness: byte order result pointer.
  * @hdr: header result pointer.
  */
-int varian_read_hdr_file (const char *fname, unsigned int *endianness,
+int varian_read_hdr_file (const char *fname, enum byteorder *endianness,
                           struct varian_hdr_file *hdr) {
   /* declare a few required variables. */
   uint8_t *bytes;
@@ -215,8 +215,8 @@ int varian_read_hdr_file (const char *fname, unsigned int *endianness,
   memcpy(hdr, bytes, sizeof(struct varian_hdr_file));
 
   /* check if the bytes per element value is exceedingly large. if so,
-   * it's highly probable that the read bytes were big-endian and need
-   * to be swapped.
+   * it's highly probable that the read bytes were ordered in reverse of
+   * the current machine usage and need to be swapped.
    */
   if (hdr->ebytes > 4096) {
     /* byte-swap the first six 32-bit words. */
@@ -234,12 +234,18 @@ int varian_read_hdr_file (const char *fname, unsigned int *endianness,
     /* byte-swap the last 32-bit word. */
     bytes_swap_u32(&hdr->nheaders);
 
-    /* msb first. */
-    *endianness = BYTES_ENDIAN_BIG;
+    /* opposite endianness. */
+    if (bytes_native(BYTES_ENDIAN_BIG))
+      *endianness = BYTES_ENDIAN_LITTLE;
+    else
+      *endianness = BYTES_ENDIAN_BIG;
   }
   else {
-    /* lsb first. */
-    *endianness = BYTES_ENDIAN_LITTLE;
+    /* same endianness. */
+    if (bytes_native(BYTES_ENDIAN_BIG))
+      *endianness = BYTES_ENDIAN_BIG;
+    else
+      *endianness = BYTES_ENDIAN_LITTLE;
   }
 
   /* return success. */
@@ -253,12 +259,13 @@ int varian_read_hdr_file (const char *fname, unsigned int *endianness,
 int varian_read (const char *fname, hx_array *x) {
   /* declare a few required variables.
    */
-  unsigned int n, end, flt, nblk, szblk, offblk, offhead;
+  unsigned int n, flt, nblk, szblk, offblk, offhead;
   struct varian_hdr_file fh;
+  enum byteorder endianness;
   uint8_t *bytes;
 
   /* read the file header. */
-  if (!varian_read_hdr_file(fname, &end, &fh))
+  if (!varian_read_hdr_file(fname, &endianness, &fh))
     return 0;
 
   /* compute block and header sizes for data loading. */
@@ -278,7 +285,7 @@ int varian_read (const char *fname, hx_array *x) {
     return 0;
 
   /* build a real linear array from the byte data. */
-  if (!bytes_toarray(bytes, n, end, fh.ebytes, flt, x))
+  if (!bytes_toarray(bytes, n, endianness, fh.ebytes, flt, x))
     return 0;
 
   /* free the read byte data. */

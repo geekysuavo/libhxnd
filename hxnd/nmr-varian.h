@@ -99,7 +99,7 @@ struct varian_hdr_ext {
 
 int varian_read_parms (const char *fname, unsigned int n, ...);
 
-int varian_read_hdr_file (const char *fname, unsigned int *endianness,
+int varian_read_hdr_file (const char *fname, enum byteorder *endianness,
                           struct varian_hdr_file *hdr);
 
 int varian_read (const char *fname, hx_array *x);

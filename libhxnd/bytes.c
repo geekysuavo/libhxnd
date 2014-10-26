@@ -23,6 +23,47 @@
 /* include the byte-level data header. */
 #include <hxnd/bytes.h>
 
+/* bytes_native_endianness: a private variable in the bytes_* namespace that
+ * identifies the native byte ordering of words on the current machine.
+ */
+enum byteorder bytes_native_endianness = BYTES_ENDIAN_AUTO;
+
+/* bytes_init(): initializes the native endianness variable that may be used
+ * later to determine if byte swaps are required.
+ */
+void bytes_init (void) {
+  /* check if the endianness has already been determined. */
+  if (bytes_native_endianness != BYTES_ENDIAN_AUTO)
+    return;
+
+  /* declare a unioned two-byte word and set it's value. */
+  union {
+    uint16_t ival;
+    uint8_t bytes[2];
+  } u = {0x0100};
+
+  /* check if the first byte of the word is nonzero. */
+  if (u.bytes[0] == 1) {
+    /* the machine is using big-endian. */
+    bytes_native_endianness = BYTES_ENDIAN_BIG;
+  }
+  else {
+    /* the machine is using little-endian. */
+    bytes_native_endianness = BYTES_ENDIAN_LITTLE;
+  }
+}
+
+/* bytes_native(): returns whether the specified byte ordering is native
+ * to the current machine.
+ */
+int bytes_native (enum byteorder endianness) {
+  /* ensure that the native endianness has been determined. */
+  bytes_init();
+
+  /* check the value against the native value. */
+  return (endianness == bytes_native_endianness);
+}
+
 /* bytes_swap_u16(): swaps the bytes of a two-byte word.
  * @x: pointer to the word to swap in-place.
  */
@@ -400,7 +441,8 @@ real bytes_toword (uint8_t *bytes, int sz, int flt) {
  * @x: the final output array.
  */
 int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
-                   int endianness, int wordsz, int flt,
+                   enum byteorder endianness,
+                   int wordsz, int flt,
                    hx_array *x) {
   /* declare a few required variables. */
   int nwords, topo[1], i, j, k;
@@ -413,7 +455,7 @@ int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
   topo[0] = nwords;
 
   /* check if byte swaps are required. */
-  if (endianness == BYTES_ENDIAN_BIG && wordsz > 1) {
+  if (!bytes_native(endianness) && wordsz > 1) {
     /* loop over the byte array, per-word. */
     for (i = 0; i < nbytes; i += wordsz) {
       /* loop over the bytes of the word. */

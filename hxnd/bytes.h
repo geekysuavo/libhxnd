@@ -57,11 +57,17 @@
 
 /* define constants to specify the endianness of loaded serial files.
  */
-#define BYTES_ENDIAN_AUTO    0x00
-#define BYTES_ENDIAN_LITTLE  0x01
-#define BYTES_ENDIAN_BIG     0x02
+enum byteorder {
+  BYTES_ENDIAN_AUTO,
+  BYTES_ENDIAN_LITTLE,
+  BYTES_ENDIAN_BIG
+};
 
 /* function declarations: */
+
+void bytes_init (void);
+
+int bytes_native (enum byteorder endianness);
 
 void bytes_swap_u16 (uint16_t *x);
 
@@ -88,7 +94,8 @@ uint8_t *bytes_read_varian (const char *fname,
                             unsigned int *n);
 
 int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
-                   int endianness, int wordsz, int flt,
+                   enum byteorder endianness,
+                   int wordsz, int flt,
                    hx_array *x);
 
 #endif /* __HXND_BYTES_H__ */

@@ -40,7 +40,7 @@
 
 int bruker_read_parms (const char *fname, unsigned int n, ...);
 
-int bruker_read (const char *fname, unsigned int endianness,
+int bruker_read (const char *fname, enum byteorder endianness,
                  unsigned int nblk, unsigned int szblk,
                  hx_array *x);
 
