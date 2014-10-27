@@ -31,9 +31,27 @@
 #include <hxnd/nmr-datum.h>
 #include <hxnd/bytes.h>
 
+/* pipe_header: properly padded header of data contained in a pipe-format file.
+ */
+struct pipe_header {
+  /* general parameters:
+   * @magic: should be zero in valid nmrpipe data.
+   * @format: constant defining floating point format.
+   * @order: constant defining byte order in floats.
+   */
+  float magic;
+  float format;
+  float order;
+
+  /* FIXME */
+};
+
 /* function declarations: */
 
-int pipe_datum (const char *fname, datum *D);
+int pipe_read_header (const char *fname, enum byteorder *endianness,
+                      struct pipe_header *hdr);
+
+int pipe_fill_datum (const char *fname, datum *D);
 
 #endif /* __HXND_NMR_PIPE_H__ */
 

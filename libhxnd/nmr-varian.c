@@ -252,6 +252,9 @@ int varian_read_hdr_file (const char *fname, enum byteorder *endianness,
       *endianness = BYTES_ENDIAN_LITTLE;
   }
 
+  /* free the read bytes. */
+  free(bytes);
+
   /* return success. */
   return 1;
 }
