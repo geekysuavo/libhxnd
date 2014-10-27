@@ -130,7 +130,7 @@ int hx_scalar_add (hx_scalar *a, hx_scalar *b, real s, hx_scalar *c) {
   /* check if the algebraic dimensionalities match. */
   if (hx_scalar_dims_cmp(a, b) != 0 ||
       hx_scalar_dims_cmp(a, c) != 0)
-    return 0;
+    throw("scalar algebraic dimension mismatch");
 
   /* perform the raw data operation. */
   return hx_data_add(a->x, b->x, c->x, s, a->d, a->n);
@@ -153,7 +153,7 @@ int hx_scalar_mul (hx_scalar *a, hx_scalar *b, hx_scalar *c) {
   /* check if the algebraic dimensionalities match. */
   if (hx_scalar_dims_cmp(a, b) != 0 ||
       hx_scalar_dims_cmp(a, c) != 0)
-    return 0;
+    throw("scalar algebraic dimension mismatch");
 
   /* perform the raw data operation. */
   return hx_data_mul(a->x, b->x, c->x, a->d, a->n, a->tbl);
@@ -180,7 +180,7 @@ int hx_array_add_scalar (hx_array *a, hx_scalar *b, real s, hx_array *c) {
 
   /* check if the algebraic dimensionalities match. */
   if (a->d != b->d || hx_array_conf_cmp(a, c) != 0)
-    return 0;
+    throw("array-scalar configuration mismatch");
 
   /* loop over the array elements. */
   for (i = 0; i < a->len; i++) {
@@ -215,7 +215,7 @@ int hx_array_add_array (hx_array *a, hx_array *b, real s, hx_array *c) {
   /* check if the array configurations match. */
   if (hx_array_conf_cmp(a, b) != 0 ||
       hx_array_conf_cmp(a, c) != 0)
-    return 0;
+    throw("array configuration mismatch");
 
   /* loop over the array elements. */
   for (i = 0; i < a->len; i += a->n) {
@@ -247,7 +247,7 @@ int hx_array_mul_scalar (hx_array *a, hx_scalar *b, hx_array *c) {
 
   /* check if the algebraic dimensionalities match. */
   if (a->d != b->d || hx_array_conf_cmp(a, c) != 0)
-    return 0;
+    throw("array-scalar configuration mismatch");
 
   /* loop over the array elements. */
   for (i = 0; i < a->len; i++) {
@@ -280,7 +280,7 @@ int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c) {
   /* check if the array configurations match. */
   if (hx_array_conf_cmp(a, b) != 0 ||
       hx_array_conf_cmp(a, c) != 0)
-    return 0;
+    throw("array configuration mismatch");
 
   /* loop over the array elements. */
   for (i = 0; i < a->len; i += a->n) {
