@@ -63,7 +63,7 @@ int hx_algebras_add (int d) {
 
     /* check if the reallocation failed, and return failure if so. */
     if (algebras == NULL)
-      return 0;
+      throw("failed to resize algebras array");
 
     /* loop over the newly created algebras in the resized array. */
     for (i = n_algebras_prev; i < n_algebras; i++) {
@@ -83,7 +83,7 @@ int hx_algebras_add (int d) {
 
     /* check if the allocation failed, and return failure if so. */
     if (algebras[d] == NULL)
-      return 0;
+      throw("failed to allocate %d-d algebra", d);
 
     /* loop over the first dimension (rows) of the multiplication table. */
     for (i = 0; i < n; i++) {
