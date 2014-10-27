@@ -384,6 +384,15 @@ int bruker_datum (const char *dname, datum *D) {
   for (d = 1, data_nblk = 1; d < D->nd; d++)
     data_nblk *= D->dims[d].td;
 
+  /* check if the blocks are 1.0 KiB-aligned. */
+  if (data_szblk % 1024 == 0) {
+    /* yes. this means a single read may be used, because the data contains
+     * no gaps between blocks.
+     */
+    data_szblk *= data_nblk;
+    data_nblk = 1;
+  }
+
   /* load the raw data from the fid/ser file. */
   if (!bruker_read(fname_data, endianness, data_nblk, data_szblk, &D->array))
     return 0;
