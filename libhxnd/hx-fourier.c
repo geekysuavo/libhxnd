@@ -98,7 +98,7 @@ int hx_array_fft1d (hx_array *x, int d, hx_scalar *w, real *swp) {
 
   /* check that the transformation dimension is within bounds. */
   if (d < 0 || d >= x->d)
-    return 0;
+    throw("dimension %d out of bounds [0,%d)", d, x->d);
 
   /* compute the number of bytes per scalar and the number of scalars. */
   ncpy = x->n * sizeof(real);
@@ -190,8 +190,12 @@ int hx_array_fft (hx_array *x, int d, int k) {
   hx_array xv;
 
   /* check that the dimensions are in bounds. */
-  if (d < 0 || k < 0 || d >= x->d || k >= x->k)
-    return 0;
+  if (d < 0 || d >= x->d)
+    throw("algebraic dimension %d out of bounds [0,%d)", d, x->d);
+
+  /* check that the dimensions are in bounds. */
+  if (k < 0 || k >= x->k)
+    throw("topological dimension %d out of bounds [0,%d)", k, x->k);
 
   /* get the size of the transformation dimension. */
   nk = x->sz[k];
@@ -201,16 +205,16 @@ int hx_array_fft (hx_array *x, int d, int k) {
 
   /* check that the allocation was successful. */
   if (!arr)
-    return 0;
+    throw("failed to allocate %d indices", x->k);
 
   /* allocate temporary scalars for use in every transformation. */
   if (!hx_scalar_alloc(&w, x->d) ||
       !hx_scalar_alloc(&swp, x->d))
-    return 0;
+    throw("failed to allocate temporary %d-scalars", x->d)
 
   /* allocate a temporary array to store each transformed vector. */
   if (!hx_array_alloc(&xv, x->d, 1, &nk))
-    return 0;
+    throw("failed to allocate temporary (%d, %k)-array", x->d, 1);
 
   /* iterate over the elements of the array. */
   do {
@@ -220,17 +224,18 @@ int hx_array_fft (hx_array *x, int d, int k) {
       arr[k] = nk - 1;
       continue;
     }
+
     /* slice the currently indexed vector from the array. */
     if (!hx_array_slice_vector(x, &xv, k, arr))
-      return 0;
+      throw("failed to slice vector");
 
     /* compute the fast fourier transform of the sliced vector. */
     if (!hx_array_fft1d(&xv, d, &w, swp.x))
-      return 0;
+      throw("failed to execute fft1d");
 
     /* store the sliced vector back into the array. */
     if (!hx_array_store_vector(x, &xv, k, arr))
-      return 0;
+      throw("failed to store vector");
   } while (hx_array_index_inc(x->k, x->sz, &arr));
 
   /* free the temporary array. */
