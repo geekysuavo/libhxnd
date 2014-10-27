@@ -59,7 +59,7 @@ hx_array;
 
 int hx_array_alloc (hx_array *x, int d, int k, int *sz);
 
-int hx_array_free (hx_array *x);
+void hx_array_free (hx_array *x);
 
 int hx_array_set_coeff (hx_array *x, int di, real value, ...);
 

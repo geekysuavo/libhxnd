@@ -33,11 +33,11 @@ int hx_array_alloc (hx_array *x, int d, int k, int *sz) {
 
   /* check if the specified dimensionality is supported. */
   if (d < 0)
-    return 0;
+    throw("invalid algebraic dimensionality %d", d);
 
   /* check if the specified array dimensionality is supported. */
-  if (k < 0)
-    return 0;
+  if (k < 1)
+    throw("invalid topological dimensionality %d", k);
 
   /* store the dimensionalities (d, k) and number of coefficients (n). */
   x->d = d;
@@ -48,12 +48,12 @@ int hx_array_alloc (hx_array *x, int d, int k, int *sz) {
    * initialized, and return failure if not.
    */
   if (!(x->tbl = hx_algebras_get(d)))
-    return 0;
+    throw("failed to retrieve %d-algebra", d);
 
   /* allocate the array of sizes. return failure if allocation fails. */
   x->sz = (int*) calloc(x->k, sizeof(int));
   if (x->sz == NULL)
-    return 0;
+    throw("failed to allocate size array");
 
   /* store the values in the size array locally. */
   for (i = 0, len = x->n; i < x->k; i++) {
@@ -65,7 +65,7 @@ int hx_array_alloc (hx_array *x, int d, int k, int *sz) {
   /* allocate the array of coefficients. fail if allocation fails. */
   x->x = (real*) calloc(len, sizeof(real));
   if (x->x == NULL)
-    return 0;
+    throw("failed to allocate coefficient array");
 
   /* store the array total coefficient count. */
   x->len = len;
@@ -76,10 +76,10 @@ int hx_array_alloc (hx_array *x, int d, int k, int *sz) {
 /* hx_array_free(): de-allocate a previously allocated hypercomplex array
  * structure. a pointer to the array structure is required by this function.
  */
-int hx_array_free (hx_array *x) {
+void hx_array_free (hx_array *x) {
   /* do not attempt to free a null pointer. */
   if (x == NULL)
-    return 0;
+    return;
 
   /* check if the coefficient array is allocated. */
   if (x->x != NULL) {
@@ -100,9 +100,6 @@ int hx_array_free (hx_array *x) {
     free(x->sz);
     x->sz = NULL;
   }
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_array_set_coeff(): sets a single coefficient in an array.
@@ -118,14 +115,14 @@ int hx_array_set_coeff (hx_array *x, int di, real value, ...) {
 
   /* check that the coefficient index is in bounds. */
   if (di < 0 || di >= x->n)
-    return 0;
+    throw("dimension %d out of bounds [0,%d)", di, x->n);
 
   /* allocate an index array. */
   arr = hx_array_index_alloc(x->k);
 
   /* check that the array was allocated successfully. */
   if (!arr)
-    return 0;
+    throw("failed to allocate %d indices", x->k);
 
   /* initialize the variable arguments list. */
   va_start(vl, value);
@@ -171,14 +168,14 @@ int hx_array_print (hx_array *x, const char *fname) {
 
   /* check that the file was opened. */
   if (!fh)
-    return 0;
+    throw("failed to open '%s'", fname);
 
   /* allocate an index array for iteration. */
   arr = hx_array_index_alloc(x->k);
 
   /* check that allocation was successful. */
   if (!arr)
-    return 0;
+    throw("failed to allocate %d indices", x->k);
 
   /* iterate over the points of the array. */
   idx = 0;
@@ -235,7 +232,7 @@ int hx_array_save (hx_array *x, const char *fname) {
 
   /* check that the file was opened. */
   if (!fh)
-    return 0;
+    throw("failed to open '%s'", fname);
 
   /* zero the header bytes. */
   memset(wd, 0, 64 * sizeof(uint64_t));
@@ -256,11 +253,11 @@ int hx_array_save (hx_array *x, const char *fname) {
 
   /* write the header. */
   if (fwrite(wd, sizeof(uint64_t), 64, fh) != 64)
-    return 0;
+    throw("failed to write header");
 
   /* write the array data. */
   if (fwrite(x->x, sizeof(real), x->len, fh) != x->len)
-    return 0;
+    throw("failed to write %d reals", x->len);
 
   /* close the output file. */
   if (fname)
@@ -296,11 +293,11 @@ int hx_array_load (hx_array *x, const char *fname) {
 
   /* check that the file was opened. */
   if (!fh)
-    return 0;
+    throw("failed to open '%s'", fname);
 
   /* read the header from the file. */
   if (fread(wd, sizeof(uint64_t), 64, fh) != 64)
-    return 0;
+    throw("failed to read header");
 
   /* read the array parameters from the header. */
   x->d = (int) wd[i++];
@@ -311,14 +308,14 @@ int hx_array_load (hx_array *x, const char *fname) {
   /* check that the data type size matches ours. if not, fail miserably.
    */
   if (wd[i++] != sizeof(real))
-    return 0;
+    throw("word size mismatch (%u != %u)", wd[i - 1], sizeof(real));
 
   /* allocate memory for the dimension sizes array. */
   x->sz = (int*) calloc(x->k, sizeof(int));
 
   /* ensure the allocation was successful. */
   if (x->sz == NULL)
-    return 0;
+    throw("failed to allocate %d sizes", x->k);
 
   /* read the dimension sizes from the header. */
   for (k = 0; k < x->k; k++)
@@ -329,23 +326,17 @@ int hx_array_load (hx_array *x, const char *fname) {
 
   /* ensure the allocation was successful. */
   if (!x->x)
-    return 0;
+    throw("failed to allocate %d reals", x->len);
 
   /* read the array data from the file. */
   if (fread(x->x, sizeof(real), x->len, fh) != x->len)
-    return 0;
-
-  /* ensure that the d-dimensional shared multiplication table has been
-   * initialized, and return failure if not.
-   */
-  if (!hx_algebras_add(x->d))
-    return 0;
+    throw("failed to read %d reals", x->len);
 
   /* ensure that the d-dimensional shared multiplication table has been
    * initialized, and return failure if not.
    */
   if (!(x->tbl = hx_algebras_get(x->d)))
-    return 0;
+    throw("failed to retrieve %d-algebra", x->d);
 
   /* close the input file. */
   if (fname)
@@ -440,18 +431,18 @@ int hx_array_deinterlace (hx_array *x) {
 
   /* check that the topmost array dimension is valid. */
   if (ktop < 0)
-    return 0;
+    throw("topmost dimension %d is invalid", ktop);
 
   /* check that the topmost array dimension size is divisible by two. */
   if (x->sz[ktop] % 2)
-    return 0;
+    throw("topmost dimension %d has odd size %d", ktop, x->sz[ktop]);
 
   /* allocate a new size array. */
   sznew = hx_array_index_alloc(x->k);
 
   /* check that allocation was successful. */
   if (!sznew)
-    return 0;
+    throw("failed to allocate %d indices", x->k);
 
   /* copy the current array sizes into the new size array. */
   memcpy(sznew, x->sz, x->k * sizeof(int));
@@ -461,14 +452,14 @@ int hx_array_deinterlace (hx_array *x) {
 
   /* attempt to promote the array from real to complex. */
   if (!hx_array_resize(x, dnew, x->k, sznew))
-    return 0;
+    throw("failed to resize array to (%d, %d)", dnew, x->k);
 
   /* initialize a set of multidimensional index arrays. */
   idxi = idxo = 0;
   arri = hx_array_index_alloc(x->k);
   arro = hx_array_index_alloc(x->k);
   if (!arri || !arro)
-    return 0;
+    throw("failed to allocate %d indices", x->k);
 
   /* iterate over the points of the array. */
   do {
@@ -511,7 +502,7 @@ int hx_array_deinterlace (hx_array *x) {
 
   /* shrink the geometry of the array. */
   if (!hx_array_resize(x, dnew, x->k, sznew))
-    return 0;
+    throw("failed to resize array to (%d, %d)", dnew, x->k);
 
   /* free the new size array. */
   free(sznew);
@@ -533,8 +524,8 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
   real *xnew;
 
   /* check if the specified dimensionalities are supported. */
-  if (d < 0 || k < 0)
-    return 0;
+  if (d < 0 || k < 1)
+    throw("dimensions (%d, %d) are invalid", d, k);
 
   /* compute the new number of coefficients. */
   n = 1 << d;
@@ -552,7 +543,7 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
 
   /* check that the size array was successfully allocated. */
   if (!sznew || !arr)
-    return 0;
+    throw("failed to allocate %d indices", kmax);
 
   /* copy the size array. */
   memcpy(sznew, sz, k * sizeof(int));
@@ -566,7 +557,7 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
 
   /* check that the data array was successfully allocated. */
   if (!xnew)
-    return 0;
+    throw("failed to allocate %d reals", len);
 
   /* loop over the set of indices. */
   for (idx = 0; idx < len / n;) {
@@ -621,7 +612,7 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
    * initialized, and return failure if not.
    */
   if (!(x->tbl = hx_algebras_get(d)))
-    return 0;
+    throw("failed to retrieve %d-algebra", d);
 
   /* return success. */
   return 1;
@@ -646,14 +637,14 @@ int hx_array_reshape (hx_array *x, int k, int *sz) {
 
   /* check that the new length matches the old length. */
   if (newlen != x->len)
-    return 0;
+    throw("new size violates array length (%d != %d)", newlen, x->len);
 
   /* reallocate the sizes array. */
   x->sz = (int*) realloc(x->sz, k * sizeof(int));
 
   /* check that the sizes array was reallocated. */
   if (x->sz == NULL)
-    return 0;
+    throw("failed to reallocate %d sizes", k);
 
   /* store the new array dimensionality. */
   x->k = k;
@@ -682,13 +673,13 @@ int hx_array_repack (hx_array *x, int ndiv) {
 
   /* check that the source dimension is tangible. */
   if (ksrc < 0)
-    return 0;
+    throw("source dimension %d is invalid", ksrc);
 
   /* check that the source dimension size is divisible by the number of
    * destination dimension points.
    */
   if (x->sz[ksrc] % ndiv)
-    return 0;
+    throw("source dimension %d is indivisible by %d", ksrc, ndiv);
 
   /* bump the array topological dimensionality. */
   x->k++;
@@ -698,7 +689,7 @@ int hx_array_repack (hx_array *x, int ndiv) {
 
   /* check that the size array was reallocated successfully. */
   if (x->sz == NULL)
-    return 0;
+    throw("failed to reallocate %d sizes", x->k);
 
   /* set up the sizes of the source and destination array dimensions. */
   x->sz[kdest] = x->sz[ksrc] / ndiv;
@@ -732,7 +723,7 @@ int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper) {
 
   /* check that the index arrays were allocated successfully. */
   if (!arri || !arro || !sznew)
-    return 0;
+    throw("failed to allocate %d indices", x->k);
 
   /* subtract the lower bound from the upper bound. */
   hx_array_index_diff(x->k, upper, lower, &sznew);
@@ -747,7 +738,7 @@ int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper) {
    * array does not match the configuration of the input array.
    */
   if (hx_array_conf_cmp(x, y) && !hx_array_alloc(y, x->d, x->k, sznew))
-    return 0;
+    throw("failed to allocate slice destination array");
 
   /* iterate over the larger (input) array. */
   idxi = 0;
@@ -796,7 +787,7 @@ int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int *loc) {
 
   /* check that the slice dimension in within bounds. */
   if (k < 0 || k >= x->k)
-    return 0;
+    throw("slice dimension %d out of bounds [0,%d)", k, x->k);
 
   /* compute the number of bytes per scalar
    * and the size of the output array.
@@ -817,7 +808,7 @@ int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int *loc) {
    */
   if ((y->d != x->d || y->k != 1 || y->sz[0] != n) &&
       !hx_array_alloc(y, x->d, 1, &n))
-    return 0;
+    throw("failed to allocate slice destination array");
 
   /* copy the scalar values into the (vector) output array. */
   for (i = 0; i < n; i++, idx += stride)
@@ -836,7 +827,7 @@ int hx_array_store_vector (hx_array *x, hx_array *y, int k, int *loc) {
 
   /* check that the slice dimension in within bounds. */
   if (k < 0 || k >= x->k)
-    return 0;
+    throw("slice dimension %d out of bounds [0,%d)", k, x->k);
 
   /* compute the number of bytes per scalar
    * and the size of the output array.
@@ -854,7 +845,7 @@ int hx_array_store_vector (hx_array *x, hx_array *y, int k, int *loc) {
 
   /* check that the array configurations are correct. */
   if (y->d != x->d || y->k != 1 || y->sz[0] != n)
-    return 0;
+    throw("source-destination array configuration mismatch");
 
   /* copy the scalar values into the (vector) output array. */
   for (i = 0; i < n; i++, idx += stride)
