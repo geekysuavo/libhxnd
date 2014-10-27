@@ -21,37 +21,31 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_HX_H__
-#define __HXND_HX_H__
+#ifndef __HXND_TRACE_H__
+#define __HXND_TRACE_H__
 
-/* include required standard c library headers. */
+/* include required standard c headers. */
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <stdarg.h>
 #include <string.h>
-#include <math.h>
+#include <errno.h>
 
-/* define 'pi' if needed. */
-#ifndef M_PI
-#define M_PI 3.1415926539
-#endif
-
-/* real: type definition of a real scalar floating-point value.
+/* throw(): macro function to add traceback information onto a stack trace.
  */
-typedef float real;
+#define throw(...) \
+  traceback_throw(__FILE__, __LINE__, __VA_ARGS__)
 
-/* include the traceback header. */
-#include <hxnd/trace.h>
+/* function declarations: */
 
-/* include all hypercomplex math headers. */
-#include <hxnd/hx-algebra.h>
-#include <hxnd/hx-scalar.h>
-#include <hxnd/hx-index.h>
-#include <hxnd/hx-array.h>
-#include <hxnd/hx-cmp.h>
-#include <hxnd/hx-arith.h>
-#include <hxnd/hx-fourier.h>
+void traceback_init (void);
 
-#endif /* __HXND_HX_H__ */
+void traceback_print (void);
+
+void traceback_clear (void);
+
+int traceback_throw (const char *f, const unsigned int l,
+                     const char *format, ...);
+
+#endif /* __HXND_TRACE_H__ */
 
