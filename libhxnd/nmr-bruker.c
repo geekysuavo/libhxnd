@@ -210,12 +210,12 @@ int bruker_read (const char *fname, enum byteorder endianness,
   return 1;
 }
 
-/* bruker_datum(): completely loads bruker raw data into an NMR datum
+/* bruker_fill_datum(): completely loads bruker raw data into an NMR datum
  * structure.
  * @dname: the input directory name.
  * @D: pointer to the datum struct to fill.
  */
-int bruker_datum (const char *dname, datum *D) {
+int bruker_fill_datum (const char *dname, datum *D) {
   /* declare variables for filename generation:
    * @n_fname: buffer sizes of filename strings.
    * @fname_data: the 'fid' or 'ser' filename.
@@ -253,14 +253,8 @@ int bruker_datum (const char *dname, datum *D) {
   enum bruker_aqmod acqus_aqmod;
   enum bruker_fnmode acqus_fnmode;
 
-  /* declare variables for loading the raw data:
-   * @data_nblk: number of data blocks (fids).
-   * @data_szblk: size of each block (fid).
-   */
-  unsigned int data_nblk, data_szblk;
-
   /* allocate memory for the fid/ser and acqu*s filenames. */
-  n_fname = strlen(dname) + 10;
+  n_fname = strlen(dname) + 16;
   fname_data = (char*) malloc(n_fname * sizeof(char));
   fname_parm = (char*) malloc(n_fname * sizeof(char));
 
@@ -377,49 +371,13 @@ int bruker_datum (const char *dname, datum *D) {
     free(ord);
   }
 
-  /* determine the data block size. */
-  data_szblk = 4 * D->dims[0].td;
-
-  /* determine the data block count. */
-  for (d = 1, data_nblk = 1; d < D->nd; d++)
-    data_nblk *= D->dims[d].td;
-
-  /* check if the blocks are 1.0 KiB-aligned. */
-  if (data_szblk % 1024 == 0) {
-    /* yes. this means a single read may be used, because the data contains
-     * no gaps between blocks.
-     */
-    data_szblk *= data_nblk;
-    data_nblk = 1;
-  }
-
-  /* load the raw data from the fid/ser file. */
-  if (!bruker_read(fname_data, endianness, data_nblk, data_szblk, &D->array))
-    return 0;
-
-  /* loop over the acquisition dimensions to refactor the nD array. */
-  for (d = 0; d < D->nd; d++) {
-    /* repack indirect dimensions in the array. */
-    if (d > 0 && !hx_array_repack(&D->array, D->dims[d - 1].sz))
-      return 0;
-
-    /* check if the current dimension is complex. */
-    if (D->dims[d].cx) {
-      /* de-interlace this dimension. */
-      if (!hx_array_deinterlace(&D->array))
-        return 0;
-    }
-    else {
-      /* increment the dimensionality without de-interlacing. */
-      if (!hx_array_resize(&D->array,
-            D->array.d + 1, D->array.k, D->array.sz))
-        return 0;
-    }
-  }
-
   /* free the allocated filename strings. */
-  free(fname_data);
+  D->fname = fname_data;
   free(fname_parm);
+
+  /* store the datum type. */
+  D->type = DATUM_TYPE_BRUKER;
+  D->endian = endianness;
 
   /* return success. */
   return 1;

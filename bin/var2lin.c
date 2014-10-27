@@ -9,7 +9,13 @@ int main (int argc, char **argv) {
     return 1;
   }
 
-  if (!varian_datum(argv[1], &D)) {
+  datum_init(&D);
+  if (!varian_fill_datum(argv[1], &D)) {
+    printf("error: failed to read parms from '%s'\n", argv[1]);
+    return 1;
+  }
+
+  if (!datum_read_array(&D)) {
     printf("error: failed to read data from '%s'\n", argv[1]);
     return 1;
   }

@@ -23,6 +23,24 @@
 /* include the nmr data header. */
 #include <hxnd/nmr-datum.h>
 
+/* datum_init(): initializes the elements of an NMR datum structure.
+ * @D: ponter to the datum to initialize.
+ */
+void datum_init (datum *D) {
+  /* initialize the input data filename. */
+  D->fname = NULL;
+
+  /* initialize the datum type. */
+  D->type = DATUM_TYPE_UNDEFINED;
+
+  /* initialize the dimension count and dimensions array. */
+  D->dims = NULL;
+  D->nd = 0;
+
+  /* indicate that the array is not allocated. */
+  D->array_alloc = 0;
+}
+
 /* datum_print(): prints the metadata associated with an acquired NMR datum.
  * @D: the datum to print data from.
  * @fname: the output filename.
@@ -44,6 +62,35 @@ int datum_print (datum *D, const char *fname) {
   /* check that the file was opened. */
   if (!fh)
     return 0;
+
+  /* print the filename line. */
+  fprintf (fh, "File:  %s\n", D->fname ? D->fname : "Unknown");
+
+  /* print the first line. */
+  fprintf(fh, "Array: ");
+  if (D->array_alloc) {
+    /* print the initial information. */
+    fprintf(fh, "d = %d, k = %d, sz = (", D->array.d, D->array.k);
+
+    /* loop over the dimensions. */
+    for (d = 0; d < D->array.k; d++) {
+      /* print the size. */
+      fprintf(fh, "%d", D->array.sz[d]);
+
+      /* print a delimiter if required. */
+      if (d < D->array.k - 1)
+        fprintf(fh, ", ");
+
+      /* print an ending if required. */
+      if (d == D->array.k - 1)
+        fprintf(fh, ")\n");
+    }
+
+    /* print a newline. */
+    fprintf(fh, "\n");
+  }
+  else
+    fprintf(fh, "not allocated.\n");
 
   /* print the headings. */
   for (n = 0; n < 10; n++) fprintf(fh, " ");
@@ -189,6 +236,118 @@ int datum_reorder_dims (datum *D, int *order) {
 
   /* free the ordering array. */
   free(ord);
+
+  /* return success. */
+  return 1;
+}
+
+/* datum_refactor_array(): repacks, infills and deinterlaces the core array
+ * structure of an NMR datum until it's dimensionality and complexity agree
+ * with the dimension parameter values.
+ * @D: pointer to the datum to manipulate.
+ */
+int datum_refactor_array (datum *D) {
+  /* declare a few required variables:
+   * @d: dimension loop counter.
+   */
+  unsigned int d;
+
+  /* check that the array has been allocated. */
+  if (!D->array_alloc)
+    return 0;
+
+  /* loop over the acquisition dimensions to refactor the nD array. */
+  for (d = 0; d < D->nd; d++) {
+    /* repack indirect dimensions in the array. */
+    if (d > 0 && !hx_array_repack(&D->array, D->dims[d - 1].sz))
+      return 0;
+
+    /* check if the current dimension is complex. */
+    if (D->dims[d].cx) {
+      /* de-interlace this dimension. */
+      if (!hx_array_deinterlace(&D->array))
+        return 0;
+    }
+    else {
+      /* increment the dimensionality without de-interlacing. */
+      if (!hx_array_resize(&D->array,
+            D->array.d + 1, D->array.k, D->array.sz))
+        return 0;
+    }
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* datum_read_array(): reads and refactors the array data of a datum structure
+ * that has been initialized with a correct set of parameters.
+ * @D: pointer to the datum to manipulate.
+ */
+int datum_read_array (datum *D) {
+  /* declare a few required variables. */
+  unsigned int d, nblk, szblk;
+
+  /* check if the array has been allocated. */
+  if (D->array_alloc)
+    return 0;
+
+  /* check that the filename is non-null and non-empty. */
+  if (D->fname == NULL || strlen(D->fname) == 0)
+    return 0;
+
+  /* load based on the type of data. */
+  if (D->type == DATUM_TYPE_BRUKER) {
+    /* determine the data block size. */
+    szblk = 4 * D->dims[0].td;
+
+    /* determine the data block count. */
+    for (d = 1, nblk = 1; d < D->nd; d++)
+      nblk *= D->dims[d].td;
+
+    /* check if the blocks are 1.0 KiB-aligned. */
+    if (szblk % 1024 == 0) {
+      /* yes. use a (faster) single read, because no gaps exist. */
+      szblk *= nblk;
+      nblk = 1;
+    }
+
+    /* load the raw data from the fid/ser file. */
+    if (!bruker_read(D->fname, D->endian, nblk, szblk, &D->array))
+      return 0;
+  }
+  else if (D->type == DATUM_TYPE_VARIAN) {
+    /* load the raw data from the fid file. */
+    if (!varian_read(D->fname, &D->array))
+      return 0;
+  }
+  else
+    return 0;
+
+  /* indicate that the array has been allocated. */
+  D->array_alloc = 1;
+
+  /* refactor the core array. */
+  if (!datum_refactor_array(D))
+    return 0;
+
+  /* return success. */
+  return 1;
+}
+
+/* datum_free_array(): frees an allocated array structure from an NMR datum.
+ * @D: pointer to the datum to manipulate.
+ */
+int datum_free_array (datum *D) {
+  /* check if the array is allocated. */
+  if (!D->array_alloc)
+    return 1;
+
+  /* free the data array. */
+  hx_array_free(&D->array);
+
+  /* indicate that the array has been de-allocated. */
+  D->array_alloc = 0;
 
   /* return success. */
   return 1;

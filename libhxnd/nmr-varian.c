@@ -53,7 +53,7 @@ int varian_read_parms (const char *fname, unsigned int n, ...) {
    * @nid: number of parameters parsed.
    * @vl: variable argument list structure.
    */
-  unsigned int i, nid;
+  unsigned int i, j, nid;
   va_list vl;
 
   /* declare required variables for key/value pair parsing:
@@ -136,8 +136,7 @@ int varian_read_parms (const char *fname, unsigned int n, ...) {
               continue;
 
             /* trim trailing newlines from the string. */
-            while (buf[strlen(buf) - 1] == '\n')
-              buf[strlen(buf) - 1] = '\0';
+            strnltrim((char*) buf);
 
             /* split the next line by whitespace. */
             fields = strsplit(buf, " ", &nfields);
@@ -147,6 +146,12 @@ int varian_read_parms (const char *fname, unsigned int n, ...) {
               /* integer. */
               case VARIAN_PARMTYPE_INT:
                 *((int*) vals[i]) = atol(fields[1]);
+                break;
+
+              /* integer array. */
+              case VARIAN_PARMTYPE_INTS:
+                for (j = 0; j < nfields && strlen(fields[j]); j++)
+                  ((int*) vals[i])[j] = atol(fields[j]);
                 break;
 
               /* float */
@@ -344,12 +349,12 @@ unsigned int varian_count_dims (const char *fname) {
   return n;
 }
 
-/* varian_datum(): completely loads varian raw data into an NMR datum
- * structure.
+/* varian_fill_datum(): semi-intelligently parses varian acquisition
+ * parameters into an NMR datum structure.
  * @dname: the input directory name.
  * @D: pointer to the datum struct to fill.
  */
-int varian_datum (const char *dname, datum *D) {
+int varian_fill_datum (const char *dname, datum *D) {
   /* declare variables for filename generation:
    * @n_fname: buffer sizes of filename strings.
    * @fname_data: the 'fid' filename string.
@@ -370,11 +375,19 @@ int varian_datum (const char *dname, datum *D) {
    * @parmstr: parameter string.
    */
   real parm_swh, parm_sfrq, parm_rfp;
+  int parm_np, parm_phase[8];
   char parmstr[N_BUF];
-  int parm_np;
+
+  /* declare variables for parsing dimension ordering:
+   * @arry: string array of 'array' parameter.
+   * @narry: number of strings in @arry.
+   */
+  unsigned int i, narry;
+  char **arry;
+  int *ord;
 
   /* allocate memory for the fid and procpar filenames. */
-  n_fname = strlen(dname) + 12;
+  n_fname = strlen(dname) + 16;
   fname_data = (char*) malloc(n_fname * sizeof(char));
   fname_parm = (char*) malloc(n_fname * sizeof(char));
 
@@ -437,10 +450,28 @@ int varian_datum (const char *dname, datum *D) {
           VARIAN_PARMTYPE_STRING, parmstr, D->dims[d].nuc) != 1)
       return 0;
 
-    /* FIXME: correct procpar loading in varian_datum() */
-
     /* store the read parameters in the datum structure. */
     D->dims[d].td = D->dims[d].sz = parm_np;
+
+    /* determine complexity based on dimension. */
+    if (d == 0) {
+      /* direct dimension: assume complex. */
+      D->dims[d].cx = 1;
+      D->dims[d].sz /= 2;
+    }
+    else {
+      /* indirect dimension: parse the phase parameter. */
+      snprintf(parmstr, N_BUF, "phase%s", d > 1 ? dstr : "");
+      if (varian_read_parms(fname_parm, 1,
+            VARIAN_PARMTYPE_INTS, parmstr, parm_phase) != 1)
+        return 0;
+
+      /* determine the phasing. */
+      if (parm_phase[0] > 1) {
+        /* the dimension is complex. */
+        D->dims[d].cx = 1;
+      }
+    }
 
     /* store the read spectral parameters in the datum structure. */
     D->dims[d].carrier = parm_sfrq;
@@ -448,20 +479,68 @@ int varian_datum (const char *dname, datum *D) {
     D->dims[d].offset = parm_rfp;
   }
 
-  /* FIXME: implement dimension re-ordering in varian_datum() */
+  /* check the ordering of the indirect dimensions. */
+  if (D->nd >= 3) {
+    /* parse the array parameter. */
+    if (varian_read_parms(fname_parm, 1,
+          VARIAN_PARMTYPE_STRING, "array", parmstr) != 1)
+      return 0;
 
-  /* load the raw data from the fid file. */
-  if (!varian_read(fname_data, &D->array))
-    return 0;
+    /* parse the array parameter. */
+    arry = strsplit(parmstr, ",", &narry);
 
-  /* loop over the acquisition dimensions to refactor the nD array. */
-  for (d = 0; d < D->nd; d++) {
-    /* FIXME: implement array refactoring in varian_datum() */
+    /* check that the string was split. */
+    if (!arry || !narry)
+      return 0;
+
+    /* allocate an array of dimension indices. */
+    ord = (int*) calloc(D->nd, sizeof(int));
+    if (!ord)
+      return 0;
+
+    /* initialize the order array. */
+    for (d = 0; d < D->nd; d++)
+      ord[d] = -1;
+
+    /* loop through the phase array. */
+    for (i = 0; i < narry; i++) {
+      /* determine the dimension index of the current phase. */
+      for (d = 1; d < D->nd; d++) {
+        /* build the dimension string and phase string. */
+        snprintf(dstr, 8, "%u", d);
+        snprintf(parmstr, N_BUF, "phase%s", d > 1 ? dstr : "");
+
+        /* check if the current phase string matches the array value. */
+        if (strcmp(parmstr, arry[i]) == 0) {
+          /* yes. store it and break. */
+          ord[i + 1] = d;
+          break;
+        }
+      }
+    }
+
+    /* check if any values were not identified. */
+    for (d = 0, i = 1; d < D->nd; d++)
+      if (ord[d] == -1) i = 0;
+
+    /* swap the ordering of the dimension parameters, but only if all
+     * phase values were found in the array.
+     */
+    if (i && !datum_reorder_dims(D, ord))
+      return 0;
+
+    /* free the string and index arrays. */
+    strvfree(arry, narry);
+    free(ord);
   }
 
   /* free the allocated filename strings. */
-  free(fname_data);
+  D->fname = fname_data;
   free(fname_parm);
+
+  /* store the datum type. */
+  D->type = DATUM_TYPE_VARIAN;
+  D->endian = BYTES_ENDIAN_AUTO;
 
   /* return success. */
   return 1;

@@ -35,6 +35,7 @@
 /* define constant parameter type characters for procpar file parsing.
  */
 #define VARIAN_PARMTYPE_INT     'i'
+#define VARIAN_PARMTYPE_INTS    'I'
 #define VARIAN_PARMTYPE_FLOAT   'f'
 #define VARIAN_PARMTYPE_STRING  's'
 
@@ -107,7 +108,7 @@ int varian_read (const char *fname, hx_array *x);
 
 unsigned int varian_count_dims (const char *fname);
 
-int varian_datum (const char *dname, datum *D);
+int varian_fill_datum (const char *dname, datum *D);
 
 #endif /* __HXND_NMR_VARIAN_H__ */
 

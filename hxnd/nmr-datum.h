@@ -27,6 +27,18 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
+/* include the byte-level data header. */
+#include <hxnd/bytes.h>
+
+/* datum_type: enumerated type for datum raw byte data types.
+ */
+enum datum_type {
+  DATUM_TYPE_UNDEFINED,
+  DATUM_TYPE_BRUKER,
+  DATUM_TYPE_VARIAN,
+  DATUM_TYPE_PIPE
+};
+
 /* datum_dim: single dimension of parameters for acquired NMR data.
  */
 typedef struct {
@@ -57,22 +69,37 @@ datum_dim;
  * datum structures hold n-dimensional NMR datasets, and are essentially
  * encapsulations of hypercomplex multidimensional arrays with additional
  * metadata that describes all relevant features of the data.
- *
- * FIXME: complete the 'datum' structure type.
  */
 typedef struct {
+  /* @fname: raw byte data filename string. */
+  char *fname;
+
+  /* @type: raw byte data type. */
+  enum byteorder endian;
+  enum datum_type type;
+
   /* @dims: array of per-dimension parameter values.
    * @nd: number of dimensions.
    */
   datum_dim *dims;
   unsigned int nd;
 
-  /* @array: raw time-domain and/or frequency-domain NMR data. */
+  /* @array: raw time-domain and/or frequency-domain NMR data.
+   * @array_ok: whether the array has been allocated
+   */
+  int array_alloc;
   hx_array array;
 }
 datum;
 
+/* include the nmr format headers. */
+#include <hxnd/nmr-bruker.h>
+#include <hxnd/nmr-varian.h>
+#include <hxnd/nmr-pipe.h>
+
 /* function declarations: */
+
+void datum_init (datum *D);
 
 int datum_print (datum *D, const char *fname);
 
@@ -81,6 +108,12 @@ int datum_save (datum *D, const char *fname);
 int datum_load (datum *D, const char *fname);
 
 int datum_reorder_dims (datum *D, int *order);
+
+int datum_refactor_array (datum *D);
+
+int datum_read_array (datum *D);
+
+int datum_free_array (datum *D);
 
 #endif /* __HXND_NMR_DATUM_H__ */
 
