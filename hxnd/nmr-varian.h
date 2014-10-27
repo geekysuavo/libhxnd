@@ -21,13 +21,14 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_VARIAN_H__
-#define __HXND_VARIAN_H__
+#ifndef __HXND_NMR_VARIAN_H__
+#define __HXND_NMR_VARIAN_H__
 
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
-/* include the byte-level data and string headers. */
+/* include the byte-level data, nmr datum, and string headers. */
+#include <hxnd/nmr-datum.h>
 #include <hxnd/bytes.h>
 #include <hxnd/str.h>
 
@@ -104,5 +105,9 @@ int varian_read_hdr_file (const char *fname, enum byteorder *endianness,
 
 int varian_read (const char *fname, hx_array *x);
 
-#endif /* __HXND_VARIAN_H__ */
+unsigned int varian_count_dims (const char *fname);
+
+int varian_datum (const char *dname, datum *D);
+
+#endif /* __HXND_NMR_VARIAN_H__ */
 

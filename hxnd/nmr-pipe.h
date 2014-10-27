@@ -21,21 +21,19 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_STR_H__
-#define __HXND_STR_H__
+#ifndef __HXND_NMR_PIPE_H__
+#define __HXND_NMR_PIPE_H__
 
-/* include required standard c headers. */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+/* include the n-dimensional math header. */
+#include <hxnd/hx.h>
+
+/* include the byte-level data and nmr datum headers. */
+#include <hxnd/nmr-datum.h>
+#include <hxnd/bytes.h>
 
 /* function declarations: */
 
-void strnltrim (char *s);
+int pipe_datum (const char *fname, datum *D);
 
-char **strsplit (const char *s1, const char *s2, unsigned int *ntok);
-
-void strvfree (char **strv, unsigned int n);
-
-#endif /* __HXND_STR_H__ */
+#endif /* __HXND_NMR_PIPE_H__ */
 

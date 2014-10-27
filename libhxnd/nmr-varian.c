@@ -117,8 +117,7 @@ int varian_read_parms (const char *fname, unsigned int n, ...) {
     /* read a new line from the file. */
     if (fgets(buf, N_BUF, fh)) {
       /* trim trailing newlines from the string. */
-      while (buf[strlen(buf) - 1] == '\n')
-        buf[strlen(buf) - 1] = '\0';
+      strnltrim((char*) buf);
 
       /* split the line by whitespace. */
       attr = strsplit(buf, " ", &nattr);
@@ -291,9 +290,178 @@ int varian_read (const char *fname, hx_array *x) {
   /* free the read byte data. */
   free(bytes);
 
-  /* deinterlace the real and imaginary points into complex points. */
-  if (!hx_array_deinterlace(x))
+  /* return success. */
+  return 1;
+}
+
+/* varian_count_dims(): counts the number of nonzero-size dimensions in
+ * a varian procpar file.
+ * @fname: the input procpar filename.
+ */
+unsigned int varian_count_dims (const char *fname) {
+  /* declare a few required variables:
+   * @d: dimension loop counter.
+   * @n: parameter count.
+   */
+  unsigned int d, n = 0;
+  char parmstr[8];
+  int v;
+
+  /* try to find the first dimension point count. */
+  v = 0;
+  if (varian_read_parms(fname, 1,
+        VARIAN_PARMTYPE_INT, "np", &v) == 1 &&
+        v > 1)
+    n++;
+  else
     return 0;
+
+  /* try to find the second dimension point count. */
+  v = 0;
+  if (varian_read_parms(fname, 1,
+        VARIAN_PARMTYPE_INT, "ni", &v) == 1 &&
+        v > 1)
+    n++;
+  else
+    return n;
+
+  /* loop over the range of supported dimensions. */
+  for (d = 2; d < 32; d++) {
+    /* build the parameter name string. */
+    snprintf(parmstr, 8, "ni%u", d);
+
+    /* try to find the point count. */
+    v = 0;
+    if (varian_read_parms(fname, 1,
+          VARIAN_PARMTYPE_INT, parmstr, &v) == 1 &&
+          v > 1)
+      n++;
+    else
+      return n;
+  }
+
+  /* return the computed counter. */
+  return n;
+}
+
+/* varian_datum(): completely loads varian raw data into an NMR datum
+ * structure.
+ * @dname: the input directory name.
+ * @D: pointer to the datum struct to fill.
+ */
+int varian_datum (const char *dname, datum *D) {
+  /* declare variables for filename generation:
+   * @n_fname: buffer sizes of filename strings.
+   * @fname_data: the 'fid' filename string.
+   * @fname_parm: the 'procpar' filename string.
+   */
+  unsigned int n_fname;
+  char *fname_data;
+  char *fname_parm;
+
+  /* declare variables for looping over dimensions:
+   * @d: dimension loop counter (integer).
+   * @dstr: dimension loop counter (string).
+   */
+  unsigned int d;
+  char dstr[8];
+
+  /* declare variables for parsing dimension parameters:
+   * @parmstr: parameter string.
+   */
+  real parm_swh, parm_sfrq, parm_rfp;
+  char parmstr[N_BUF];
+  int parm_np;
+
+  /* allocate memory for the fid and procpar filenames. */
+  n_fname = strlen(dname) + 12;
+  fname_data = (char*) malloc(n_fname * sizeof(char));
+  fname_parm = (char*) malloc(n_fname * sizeof(char));
+
+  /* check that the filename strings were allocated. */
+  if (!fname_data || !fname_parm)
+    return 0;
+
+  /* build the procpar filename. */
+  snprintf(fname_parm, n_fname, "%s/procpar", dname);
+
+  /* build the fid filename. */
+  snprintf(fname_data, n_fname, "%s/fid", dname);
+
+  /* algorithmically guess the dimensionality of the data. */
+  D->nd = varian_count_dims(fname_parm);
+
+  /* check the dimensionality. */
+  if (D->nd < 1)
+    return 0;
+
+  /* allocate the dimension parameter array. */
+  D->dims = (datum_dim*) calloc(D->nd, sizeof(datum_dim));
+
+  /* check that the dimension parameter array was allocated. */
+  if (D->dims == NULL)
+    return 0;
+
+  /* loop over the acquisition dimensions. */
+  for (d = 0; d < D->nd; d++) {
+    /* build a string version of the dimension index. */
+    snprintf(dstr, 8, "%u", d);
+
+    /* parse the number of points. */
+    snprintf(parmstr, N_BUF, "n%c%s", d > 0 ? 'i' : 'p', d > 1 ? dstr : "");
+    if (varian_read_parms(fname_parm, 1,
+          VARIAN_PARMTYPE_INT, parmstr, &parm_np) != 1)
+      return 0;
+
+    /* parse the carrier base frequency. */
+    snprintf(parmstr, N_BUF, "%cfrq%s", d > 0 ? 'd' : 's', d > 1 ? dstr : "");
+    if (varian_read_parms(fname_parm, 1,
+          VARIAN_PARMTYPE_FLOAT, parmstr, &parm_sfrq) != 1)
+      return 0;
+
+    /* parse the spectral width. */
+    snprintf(parmstr, N_BUF, "sw%s", d > 0 ? dstr : "");
+    if (varian_read_parms(fname_parm, 1,
+          VARIAN_PARMTYPE_FLOAT, parmstr, &parm_swh) != 1)
+      return 0;
+
+    /* parse the spectral offset. */
+    snprintf(parmstr, N_BUF, "rfp%s", d > 0 ? dstr : "");
+    if (varian_read_parms(fname_parm, 1,
+          VARIAN_PARMTYPE_FLOAT, parmstr, &parm_rfp) != 1)
+      return 0;
+
+    /* parse the nucleus name string. */
+    snprintf(parmstr, N_BUF, "%cn%s", d > 0 ? 'd' : 't', d > 1 ? dstr : "");
+    if (varian_read_parms(fname_parm, 1,
+          VARIAN_PARMTYPE_STRING, parmstr, D->dims[d].nuc) != 1)
+      return 0;
+
+    /* FIXME: correct procpar loading in varian_datum() */
+
+    /* store the read parameters in the datum structure. */
+    D->dims[d].td = D->dims[d].sz = parm_np;
+
+    /* store the read spectral parameters in the datum structure. */
+    D->dims[d].carrier = parm_sfrq;
+    D->dims[d].width = parm_swh;
+    D->dims[d].offset = parm_rfp;
+  }
+
+  /* FIXME: implement dimension re-ordering in varian_datum() */
+
+  /* load the raw data from the fid file. */
+  if (!varian_read(fname_data, &D->array))
+    return 0;
+
+  /* loop over the acquisition dimensions to refactor the nD array. */
+  for (d = 0; d < D->nd; d++) {
+    /* FIXME: implement array refactoring in varian_datum() */
+  }
+
+  /* free the allocated filename strings. */
+  free(fname_data);
+  free(fname_parm);
 
   /* return success. */
   return 1;

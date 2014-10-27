@@ -21,20 +21,50 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_BRUKER_H__
-#define __HXND_BRUKER_H__
+#ifndef __HXND_NMR_BRUKER_H__
+#define __HXND_NMR_BRUKER_H__
 
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
-/* include the byte-level data header. */
+/* include the byte-level data, string, and nmr datum headers. */
+#include <hxnd/nmr-datum.h>
 #include <hxnd/bytes.h>
+#include <hxnd/str.h>
 
 /* define constant parameter type characters for acqus file parsing.
  */
 #define BRUKER_PARMTYPE_INT     'i'
 #define BRUKER_PARMTYPE_FLOAT   'f'
 #define BRUKER_PARMTYPE_STRING  's'
+
+/* bruker_aqmod: enumerated type for direct acquisition modes.
+ */
+enum bruker_aqmod {
+  BRUKER_AQMOD_QF,    /* single-channel (real) detection. */
+  BRUKER_AQMOD_QSIM,  /* simultaneous quadrature detection. */
+  BRUKER_AQMOD_QSEQ,  /* sequential quadrature detection. */
+  BRUKER_AQMOD_DQD    /* digital quadrature detection. */
+};
+
+/* bruker_fnmode: enumerated type for indirect acquisition modes.
+ */
+enum bruker_fnmode {
+  BRUKER_FNMODE_UNDEFINED,
+  BRUKER_FNMODE_QF,
+  BRUKER_FNMODE_QSEQ,
+  BRUKER_FNMODE_TPPI,
+  BRUKER_FNMODE_STATES,
+  BRUKER_FNMODE_STATESTPPI,
+  BRUKER_FNMODE_GRADIENT
+};
+
+/* bruker_aqseq: (3+)-dimensional acquisition ordering scheme.
+ */
+enum bruker_aqseq {
+  BRUKER_AQSEQ_321,
+  BRUKER_AQSEQ_312
+};
 
 /* function declarations: */
 
@@ -44,5 +74,7 @@ int bruker_read (const char *fname, enum byteorder endianness,
                  unsigned int nblk, unsigned int szblk,
                  hx_array *x);
 
-#endif /* __HXND_BRUKER_H__ */
+int bruker_datum (const char *dname, datum *D);
+
+#endif /* __HXND_NMR_BRUKER_H__ */
 

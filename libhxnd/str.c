@@ -23,6 +23,25 @@
 /* include the strings header. */
 #include <hxnd/str.h>
 
+/* strnltrim(): trim newlines and carriage returns from the end of a string.
+ * @s: the string to trim.
+ */
+void strnltrim (char *s) {
+  /* declare a variable to hold the current string length. */
+  int n;
+
+  /* check that the string is non-null. */
+  if (!s)
+    return;
+
+  /* loop until the end of the string contains no undesireables.
+   */
+  while ((n = strlen(s)) &&
+         (s[n - 1] == '\n' ||
+          s[n - 1] == '\r'))
+    s[n - 1] = '\0';
+}
+
 /* strsplit(): splits a string @s1 into a string array by @s2 tokens.
  * @s1: the string to split.
  * @s2: the token string.
