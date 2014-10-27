@@ -73,7 +73,7 @@ int varian_read_parms (const char *fname, unsigned int n, ...) {
 
   /* check that the file was opened. */
   if (!fh)
-    return 0;
+    throw("failed to open '%s'", fname);
 
   /* initialize the variable arguments list. */
   va_start(vl, n);
@@ -85,7 +85,7 @@ int varian_read_parms (const char *fname, unsigned int n, ...) {
 
   /* check that the memory was allocated successfully. */
   if (!keys || !vals || !typs)
-    return 0;
+    throw("failed to allocate option arrays");
 
   /* loop through the expected number of parameters. */
   for (i = 0; i < n; i++) {
@@ -99,7 +99,7 @@ int varian_read_parms (const char *fname, unsigned int n, ...) {
 
     /* check that key string memory was allocated. */
     if (!keys[i])
-      return 0;
+      throw("failed to allocate key string %d", i);
 
     /* copy the key string and pointer into their arrays. */
     strcpy(keys[i], key);
@@ -213,7 +213,7 @@ int varian_read_hdr_file (const char *fname, enum byteorder *endianness,
 
   /* check that the bytes were read successfully. */
   if (!bytes)
-    return 0;
+    throw("failed to read file header from '%s'", fname);
 
   /* copy the header bytes onto the header structure. */
   memcpy(hdr, bytes, sizeof(struct varian_hdr_file));
@@ -270,7 +270,7 @@ int varian_read (const char *fname, hx_array *x) {
 
   /* read the file header. */
   if (!varian_read_hdr_file(fname, &endianness, &fh))
-    return 0;
+    throw("failed to read header from '%s'", fname);
 
   /* compute block and header sizes for data loading. */
   nblk = fh.nblocks;
@@ -286,11 +286,11 @@ int varian_read (const char *fname, hx_array *x) {
 
   /* check that the bytes were read successfully. */
   if (!bytes)
-    return 0;
+    throw("failed to read %u %u-byte blocks from '%s'", nblk, szblk, fname);
 
   /* build a real linear array from the byte data. */
   if (!bytes_toarray(bytes, n, endianness, fh.ebytes, flt, x))
-    return 0;
+    throw("failed to convert bytes to array");
 
   /* free the read byte data. */
   free(bytes);
@@ -393,7 +393,7 @@ int varian_fill_datum (const char *dname, datum *D) {
 
   /* check that the filename strings were allocated. */
   if (!fname_data || !fname_parm)
-    return 0;
+    throw("failed to allocate filename strings");
 
   /* build the procpar filename. */
   snprintf(fname_parm, n_fname, "%s/procpar", dname);
@@ -406,14 +406,14 @@ int varian_fill_datum (const char *dname, datum *D) {
 
   /* check the dimensionality. */
   if (D->nd < 1)
-    return 0;
+    throw("invalid dimensionality %u", D->nd);
 
   /* allocate the dimension parameter array. */
   D->dims = (datum_dim*) calloc(D->nd, sizeof(datum_dim));
 
   /* check that the dimension parameter array was allocated. */
   if (D->dims == NULL)
-    return 0;
+    throw("failed to allocate %u datum dimensions", D->nd);
 
   /* loop over the acquisition dimensions. */
   for (d = 0; d < D->nd; d++) {
@@ -424,31 +424,31 @@ int varian_fill_datum (const char *dname, datum *D) {
     snprintf(parmstr, N_BUF, "n%c%s", d > 0 ? 'i' : 'p', d > 1 ? dstr : "");
     if (varian_read_parms(fname_parm, 1,
           VARIAN_PARMTYPE_INT, parmstr, &parm_np) != 1)
-      return 0;
+      throw("failed to get %s from '%s'", parmstr, fname_parm);
 
     /* parse the carrier base frequency. */
     snprintf(parmstr, N_BUF, "%cfrq%s", d > 0 ? 'd' : 's', d > 1 ? dstr : "");
     if (varian_read_parms(fname_parm, 1,
           VARIAN_PARMTYPE_FLOAT, parmstr, &parm_sfrq) != 1)
-      return 0;
+      throw("failed to get %s from '%s'", parmstr, fname_parm);
 
     /* parse the spectral width. */
     snprintf(parmstr, N_BUF, "sw%s", d > 0 ? dstr : "");
     if (varian_read_parms(fname_parm, 1,
           VARIAN_PARMTYPE_FLOAT, parmstr, &parm_swh) != 1)
-      return 0;
+      throw("failed to get %s from '%s'", parmstr, fname_parm);
 
     /* parse the spectral offset. */
     snprintf(parmstr, N_BUF, "rfp%s", d > 0 ? dstr : "");
     if (varian_read_parms(fname_parm, 1,
           VARIAN_PARMTYPE_FLOAT, parmstr, &parm_rfp) != 1)
-      return 0;
+      throw("failed to get %s from '%s'", parmstr, fname_parm);
 
     /* parse the nucleus name string. */
     snprintf(parmstr, N_BUF, "%cn%s", d > 0 ? 'd' : 't', d > 1 ? dstr : "");
     if (varian_read_parms(fname_parm, 1,
           VARIAN_PARMTYPE_STRING, parmstr, D->dims[d].nuc) != 1)
-      return 0;
+      throw("failed to get %s from '%s'", parmstr, fname_parm);
 
     /* store the read parameters in the datum structure. */
     D->dims[d].td = D->dims[d].sz = parm_np;
@@ -464,7 +464,7 @@ int varian_fill_datum (const char *dname, datum *D) {
       snprintf(parmstr, N_BUF, "phase%s", d > 1 ? dstr : "");
       if (varian_read_parms(fname_parm, 1,
             VARIAN_PARMTYPE_INTS, parmstr, parm_phase) != 1)
-        return 0;
+        throw("failed to get %s from '%s'", parmstr, fname_parm);
 
       /* determine the phasing. */
       if (parm_phase[0] > 1) {
@@ -484,19 +484,19 @@ int varian_fill_datum (const char *dname, datum *D) {
     /* parse the array parameter. */
     if (varian_read_parms(fname_parm, 1,
           VARIAN_PARMTYPE_STRING, "array", parmstr) != 1)
-      return 0;
+      throw("failed to parse array from '%s'", fname_parm);
 
     /* parse the array parameter. */
     arry = strsplit(parmstr, ",", &narry);
 
     /* check that the string was split. */
     if (!arry || !narry)
-      return 0;
+      throw("failed to split array string");
 
     /* allocate an array of dimension indices. */
     ord = (int*) calloc(D->nd, sizeof(int));
     if (!ord)
-      return 0;
+      throw("failed to allocate %u indices", D->nd);
 
     /* initialize the order array. */
     for (d = 0; d < D->nd; d++)
@@ -527,7 +527,7 @@ int varian_fill_datum (const char *dname, datum *D) {
      * phase values were found in the array.
      */
     if (i && !datum_reorder_dims(D, ord))
-      return 0;
+      throw("failed to reorder dimensions");
 
     /* free the string and index arrays. */
     strvfree(arry, narry);

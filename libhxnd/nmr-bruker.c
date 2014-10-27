@@ -71,7 +71,7 @@ int bruker_read_parms (const char *fname, unsigned int n, ...) {
 
   /* check that the file was opened. */
   if (!fh)
-    return 0;
+    throw("failed to open '%s'", fname);
 
   /* initialize the variable arguments list. */
   va_start(vl, n);
@@ -83,7 +83,7 @@ int bruker_read_parms (const char *fname, unsigned int n, ...) {
 
   /* check that the memory was allocated successfully. */
   if (!keys || !vals || !typs)
-    return 0;
+    throw("failed to allocate option arrays");
 
   /* loop through the expected number of parameters. */
   for (i = 0; i < n; i++) {
@@ -97,7 +97,7 @@ int bruker_read_parms (const char *fname, unsigned int n, ...) {
 
     /* check that key string memory was allocated. */
     if (!keys[i])
-      return 0;
+      throw("failed to allocate key string %d", i);
 
     /* copy the key string and pointer into their arrays. */
     strcpy(keys[i], key);
@@ -197,11 +197,11 @@ int bruker_read (const char *fname, enum byteorder endianness,
 
   /* check that the bytes were read successfully. */
   if (!bytes)
-    return 0;
+    throw("failed to read %u %u-byte blocks from '%s'", nblk, szblk, fname);
 
   /* build a real linear array from the byte data. */
   if (!bytes_toarray(bytes, n, endianness, 4, 0, x))
-    return 0;
+    throw("failed to convert bytes to array");
 
   /* free the read byte data. */
   free(bytes);
@@ -260,7 +260,7 @@ int bruker_fill_datum (const char *dname, datum *D) {
 
   /* check that the filename strings were allocated. */
   if (!fname_data || !fname_parm)
-    return 0;
+    throw("failed to allocate filename strings");
 
   /* build the first parameter filename. */
   snprintf(fname_parm, n_fname, "%s/acqus", dname);
@@ -269,7 +269,7 @@ int bruker_fill_datum (const char *dname, datum *D) {
   if (bruker_read_parms(fname_parm, 2,
         BRUKER_PARMTYPE_INT, "PARMODE", &acqus_parmode,
         BRUKER_PARMTYPE_INT, "BYTORDA", &acqus_bytorda) != 2)
-    return 0;
+    throw("failed to get PARMODE/BYTORDA from '%s'", fname_parm);
 
   /* parse the acquisition sequence parameter, which will only succeed for
    * three-dimensional or higher data.
@@ -283,7 +283,7 @@ int bruker_fill_datum (const char *dname, datum *D) {
 
   /* check the dimensionality. */
   if (D->nd < 1)
-    return 0;
+    throw("invalid dimensionality %u", D->nd);
 
   /* determine the byte ordering of the data. */
   if (acqus_bytorda == 0)
@@ -302,7 +302,7 @@ int bruker_fill_datum (const char *dname, datum *D) {
 
   /* check that the dimension parameter array was allocated. */
   if (D->dims == NULL)
-    return 0;
+    throw("failed to allocate %u datum dimensions", D->nd);
 
   /* loop over the acquisition dimensions. */
   for (d = 0; d < D->nd; d++) {
@@ -318,7 +318,7 @@ int bruker_fill_datum (const char *dname, datum *D) {
     /* parse the important values from the parameter file. */
     if (bruker_read_parms(fname_parm, 1,
           BRUKER_PARMTYPE_INT, "TD", &acqus_td) != 1)
-      return 0;
+      throw("failed to get TD from '%s'", fname_parm);
 
     /* read any other (quasi-optional) parameters from the file. */
     bruker_read_parms(fname_parm, 7,
@@ -357,7 +357,7 @@ int bruker_fill_datum (const char *dname, datum *D) {
     /* allocate an array of dimension indices. */
     ord = (int*) calloc(D->nd, sizeof(int));
     if (!ord)
-      return 0;
+      throw("failed to allocate %u indices", D->nd);
 
     /* store the reversed dimension order implied by BRUKER_AQSEQ_312 */
     for (d = 1, ord[0] = 0; d < D->nd; d++)
@@ -365,7 +365,7 @@ int bruker_fill_datum (const char *dname, datum *D) {
 
     /* swap the ordering of the dimension parameters. */
     if (!datum_reorder_dims(D, ord))
-      return 0;
+      throw("failed to reorder dimensions");
 
     /* free the dimension index array. */
     free(ord);

@@ -61,7 +61,7 @@ int datum_print (datum *D, const char *fname) {
 
   /* check that the file was opened. */
   if (!fh)
-    return 0;
+    throw("failed to open '%s'", fname);
 
   /* print the filename line. */
   fprintf (fh, "File:  %s\n", D->fname ? D->fname : "Unknown");
@@ -207,7 +207,7 @@ int datum_reorder_dims (datum *D, int *order) {
   /* allocate a temporary array of indices. */
   ord = (int*) malloc(D->nd * sizeof(int));
   if (!ord)
-    return 0;
+    throw("failed to allocate %u indices", D->nd);
 
   /* copy the ordering into the temporary array. */
   memcpy(ord, order, D->nd * sizeof(int));
@@ -254,25 +254,25 @@ int datum_refactor_array (datum *D) {
 
   /* check that the array has been allocated. */
   if (!D->array_alloc)
-    return 0;
+    throw("array is unallocated");
 
   /* loop over the acquisition dimensions to refactor the nD array. */
   for (d = 0; d < D->nd; d++) {
     /* repack indirect dimensions in the array. */
     if (d > 0 && !hx_array_repack(&D->array, D->dims[d - 1].sz))
-      return 0;
+      throw("failed to repack array dimension %d", d);
 
     /* check if the current dimension is complex. */
     if (D->dims[d].cx) {
       /* de-interlace this dimension. */
       if (!hx_array_deinterlace(&D->array))
-        return 0;
+        throw("failed to deinterlace complex dimension %d", d);
     }
     else {
       /* increment the dimensionality without de-interlacing. */
       if (!hx_array_resize(&D->array,
             D->array.d + 1, D->array.k, D->array.sz))
-        return 0;
+        throw("failed to complex-promote dimension %d", d);
     }
   }
 
@@ -290,11 +290,11 @@ int datum_read_array (datum *D) {
 
   /* check if the array has been allocated. */
   if (D->array_alloc)
-    return 0;
+    throw("array is already allocated");
 
   /* check that the filename is non-null and non-empty. */
   if (D->fname == NULL || strlen(D->fname) == 0)
-    return 0;
+    throw("filename is invalid");
 
   /* load based on the type of data. */
   if (D->type == DATUM_TYPE_BRUKER) {
@@ -314,22 +314,22 @@ int datum_read_array (datum *D) {
 
     /* load the raw data from the fid/ser file. */
     if (!bruker_read(D->fname, D->endian, nblk, szblk, &D->array))
-      return 0;
+      throw("failed to read bruker data");
   }
   else if (D->type == DATUM_TYPE_VARIAN) {
     /* load the raw data from the fid file. */
     if (!varian_read(D->fname, &D->array))
-      return 0;
+      throw("failed to read varian data");
   }
   else
-    return 0;
+    throw("unsupported data type %d", D->type);
 
   /* indicate that the array has been allocated. */
   D->array_alloc = 1;
 
   /* refactor the core array. */
   if (!datum_refactor_array(D))
-    return 0;
+    throw("failed to refactor array");
 
   /* return success. */
   return 1;
