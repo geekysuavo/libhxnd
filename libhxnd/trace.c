@@ -56,7 +56,8 @@ void traceback_init (void) {
   n_tb = 0;
 }
 
-/* traceback_print(): prints the contents of the stack trace to standard out.
+/* traceback_print(): prints the contents of the stack trace to the
+ * standard error file handle.
  */
 void traceback_print (void) {
   /* declare a loop index. */
@@ -67,16 +68,24 @@ void traceback_print (void) {
 
   /* loop over the traceback elements. */
   for (i = 0; i < n_tb; i++) {
-    /* print the traceback line. */
-    fprintf(stderr, "%s:%u: (%s) %s\n",
-      tb[i].file, tb[i].line,
-      strerror(tb[i].num),
-      tb[i].msg);
+    /* print the traceback line header. */
+    fprintf(stderr, "[%d] %s:%u:", i, tb[i].file, tb[i].line);
+
+    /* check if a custom message was set at the time of the error. */
+    if (tb[i].msg)
+      fprintf(stderr, " %s", tb[i].msg);
+
+    /* check if an error was set at the time of the error. */
+    if (tb[i].num)
+      fprintf(stderr, " (%s)", strerror(tb[i].num));
+
+    /* print a newline. */
+    fprintf(stderr, "\n");
   }
 }
 
 /* traceback_clear(): clears the current stack trace in preparation for the
- * next error, ugh...
+ * next error, if any.
  */
 void traceback_clear (void) {
   /* declare a loop index. */
@@ -111,8 +120,8 @@ int traceback_throw (const char *f, const unsigned int l,
                      const char *format, ...) {
   /* declare a few required variables. */
   unsigned int n_msg;
+  int i, n_print;
   va_list vl;
-  int i;
 
   /* ensure the traceback array is initialized. */
   traceback_init();
@@ -138,16 +147,25 @@ int traceback_throw (const char *f, const unsigned int l,
 
   /* build the custom message string. */
   if (format) {
-    /* allocate memory for the message. */
-    n_msg = 2 * strlen(format);
-    tb[i].msg = (char*) malloc(n_msg * sizeof(char));
-    if (!tb[i].msg)
-      return 0;
+    /* begin with a guess of the output string length. */
+    n_msg = strlen(format);
+    tb[i].msg = NULL;
 
-    /* write the formatted message string. */
-    va_start(vl, format);
-    vsnprintf(tb[i].msg, n_msg, format, vl);
-    va_end(vl);
+    /* loop until the whole string was printed. */
+    do {
+      /* allocate memory for the message. */
+      n_msg *= 2;
+      tb[i].msg = (char*) realloc(tb[i].msg, n_msg * sizeof(char));
+
+      /* check that the array was allocated successfully. */
+      if (!tb[i].msg)
+        return 0;
+
+      /* write the formatted message string. */
+      va_start(vl, format);
+      n_print = vsnprintf(tb[i].msg, n_msg, format, vl);
+      va_end(vl);
+    } while (n_print >= n_msg);
   }
 
   /* always return failure. this allows the throw() macro to be used

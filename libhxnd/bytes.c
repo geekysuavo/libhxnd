@@ -124,18 +124,18 @@ unsigned int bytes_size (const char *fname) {
 
   /* check that the file was opened successfully. */
   if (!fh)
-    return 0;
+    throw("failed to open '%s'", fname);
 
   /* move to the end of the file. */
   if (fseek(fh, 0, SEEK_END))
-    return 0;
+    throw("failed to seek '%s'", fname);
 
   /* read the file size. */
   n = (unsigned int) ftell(fh);
 
   /* move back to the beginning of the file. */
   if (fseek(fh, 0, SEEK_SET))
-    return 0;
+    throw("failed to seek '%s'", fname);
 
   /* close the input file and return the byte count. */
   fclose(fh);
@@ -159,19 +159,26 @@ uint8_t *bytes_read_block (const char *fname,
   fh = fopen(fname, "rb");
 
   /* check that the file was opened successfully. */
-  if (!fh)
+  if (!fh) {
+    /* raise an error and return nothing. */
+    raise("failed to open '%s'", fname);
     return NULL;
+  }
 
   /* allocate memory for the read bytes. */
   bytes = (uint8_t*) malloc(n * sizeof(uint8_t));
 
   /* check that the memory was allocated. */
-  if (!bytes)
+  if (!bytes) {
+    /* raise an error and return nothing. */
+    raise("failed to allocate %u bytes", n);
     return NULL;
+  }
 
   /* move back to the beginning of the file. */
   if (fseek(fh, offset, SEEK_SET)) {
     /* free the byte array and return nothing. */
+    raise("failed to seek '%s'", fname);
     free(bytes);
     return NULL;
   }
@@ -179,6 +186,7 @@ uint8_t *bytes_read_block (const char *fname,
   /* read the bytes in from the input file. */
   if (!fread(bytes, sizeof(uint8_t), n, fh)) {
     /* free the byte array and return nothing. */
+    raise("failed to read %u bytes from '%s'", n, fname);
     free(bytes);
     return NULL;
   }
@@ -217,8 +225,11 @@ uint8_t *bytes_read_bruker (const char *fname,
   bytes = (uint8_t*) malloc(ndata * sizeof(uint8_t));
 
   /* check that the byte array was successfully allocated. */
-  if (!bytes)
+  if (!bytes) {
+    /* raise an error and return nothing. */
+    raise("failed to allocate %u bytes", ndata);
     return NULL;
+  }
 
   /* initialize the byte and block offsets. */
   offset = 0;
@@ -232,6 +243,7 @@ uint8_t *bytes_read_bruker (const char *fname,
     /* check that the read was successful. */
     if (!blk) {
       /* nope. free the byte array and return failure. */
+      raise("failed to read block %u", i);
       free(bytes);
       return NULL;
     }
@@ -285,8 +297,11 @@ uint8_t *bytes_read_varian (const char *fname,
   bytes = (uint8_t*) malloc(ndata * sizeof(uint8_t));
 
   /* check that the byte array was successfully allocated. */
-  if (!bytes)
-    return 0;
+  if (!bytes) {
+    /* raise an error and return nothing. */
+    raise("failed to allocate %d bytes", ndata);
+    return NULL;
+  }
 
   /* initialize the byte offset. */
   offset = offhead;
@@ -302,6 +317,7 @@ uint8_t *bytes_read_varian (const char *fname,
     /* check that the read was successful. */
     if (!blk) {
       /* nope. free the byte array and return failure. */
+      raise("failed to read block %d", i);
       free(bytes);
       return NULL;
     }
@@ -470,7 +486,7 @@ int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
 
   /* allocate memory for a linear, real output array. */
   if (!hx_array_alloc(x, 0, 1, topo))
-    return 0;
+    throw("failed to allocate array");
 
   /* copy the read, properly ordered byte data into the output array. */
   for (i = 0, k = 0; i < nbytes; i += wordsz, k++) {

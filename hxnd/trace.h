@@ -31,10 +31,16 @@
 #include <string.h>
 #include <errno.h>
 
-/* throw(): macro function to add traceback information onto a stack trace.
+/* raise(): macro function to add traceback information onto a stack trace.
+ */
+#define raise(...) \
+  traceback_throw(__FILE__, __LINE__, __VA_ARGS__)
+
+/* throw(): just like raise(), but this macro returns the result of
+ * traceback_throw(), which will be zero.
  */
 #define throw(...) \
-  traceback_throw(__FILE__, __LINE__, __VA_ARGS__)
+  return traceback_throw(__FILE__, __LINE__, __VA_ARGS__)
 
 /* function declarations: */
 
