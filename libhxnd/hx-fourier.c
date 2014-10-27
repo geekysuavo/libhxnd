@@ -210,7 +210,7 @@ int hx_array_fft (hx_array *x, int d, int k) {
   /* allocate temporary scalars for use in every transformation. */
   if (!hx_scalar_alloc(&w, x->d) ||
       !hx_scalar_alloc(&swp, x->d))
-    throw("failed to allocate temporary %d-scalars", x->d)
+    throw("failed to allocate temporary %d-scalars", x->d);
 
   /* allocate a temporary array to store each transformed vector. */
   if (!hx_array_alloc(&xv, x->d, 1, &nk))
