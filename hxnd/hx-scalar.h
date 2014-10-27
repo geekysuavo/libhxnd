@@ -80,11 +80,11 @@ hx_scalar;
 
 int hx_scalar_alloc (hx_scalar *x, int d);
 
-int hx_scalar_free (hx_scalar *x);
+void hx_scalar_free (hx_scalar *x);
 
 int hx_scalar_resize (hx_scalar *x, int d);
 
-int hx_scalar_zero (hx_scalar *x);
+void hx_scalar_zero (hx_scalar *x);
 
 int hx_scalar_phasor (hx_scalar *x, int d, real phi);
 

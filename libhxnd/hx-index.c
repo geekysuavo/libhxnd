@@ -43,8 +43,11 @@ int *hx_array_index_build (int k, ...) {
   arr = hx_array_index_alloc(k);
 
   /* check that the allocation was successful. */
-  if (!arr)
+  if (!arr) {
+    /* raise an error and return nothing. */
+    raise("failed to allocate %d indices", k);
     return NULL;
+  }
 
   /* initialize the variable arguments list. */
   va_start(vl, k);

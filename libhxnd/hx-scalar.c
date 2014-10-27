@@ -30,7 +30,7 @@
 int hx_scalar_alloc (hx_scalar *x, int d) {
   /* check if the specified dimensionality is supported. */
   if (d < 0)
-    return 0;
+    throw("invalid algebraic dimensionality %d", d);
 
   /* store the dimensionality (d) and number of coefficients (n). */
   x->d = d;
@@ -40,12 +40,12 @@ int hx_scalar_alloc (hx_scalar *x, int d) {
    * initialized, and return failure if not.
    */
   if (!(x->tbl = hx_algebras_get(d)))
-    return 0;
+    throw("failed to retrieve %d-algebra", d);
 
   /* allocate the array of coefficients. return failure if allocation fails. */
   x->x = (real*) calloc(x->n, sizeof(real));
   if (x->x == NULL)
-    return 0;
+    throw("failed to allocate coefficient array");
 
   /* return success. */
   return 1;
@@ -54,10 +54,10 @@ int hx_scalar_alloc (hx_scalar *x, int d) {
 /* hx_scalar_free(): de-allocate a previously allocated hypercomplex scalar
  * structure. a pointer to the scalar structure is required by this function.
  */
-int hx_scalar_free (hx_scalar *x) {
+void hx_scalar_free (hx_scalar *x) {
   /* do not attempt to free a null pointer. */
   if (x == NULL)
-    return 0;
+    return;
 
   /* check if the coefficient array is allocated. */
   if (x->x != NULL) {
@@ -69,9 +69,6 @@ int hx_scalar_free (hx_scalar *x) {
   /* de-initialize the dimensionality and coefficient count. */
   x->d = 0;
   x->n = 0;
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_scalar_resize(): change the dimensionality of a hypercomplex scalar.
@@ -84,7 +81,7 @@ int hx_scalar_resize (hx_scalar *x, int d) {
 
   /* check if the specified dimensionality is supported. */
   if (d < 0)
-    return 0;
+    throw("invalid algebraic dimensionality %d", d);
 
   /* check that the new size is different. */
   if (d == x->d)
@@ -98,7 +95,7 @@ int hx_scalar_resize (hx_scalar *x, int d) {
 
   /* check that the array was successfully reallocated. */
   if (!x->x)
-    return 0;
+    throw("failed to reallocate %d reals", n);
 
   /* initialize the new coefficients, if a grow was performed. */
   if (n > x->n)
@@ -112,7 +109,7 @@ int hx_scalar_resize (hx_scalar *x, int d) {
    * initialized, and return failure if not.
    */
   if (!(x->tbl = hx_algebras_get(d)))
-    return 0;
+    throw("failed to retrieve %d-algebra", d);
 
   /* return success. */
   return 1;
@@ -121,12 +118,12 @@ int hx_scalar_resize (hx_scalar *x, int d) {
 /* hx_scalar_zero(): sets all coefficients in a scalar to zero.
  * @x: a pointer to the scalar to modify.
  */
-int hx_scalar_zero (hx_scalar *x) {
+void hx_scalar_zero (hx_scalar *x) {
+  /* don't manipulate null pointers. */
+  if (!x) return;
+
   /* zero the scalar coefficient data as quickly as possible. */
   memset(x->x, 0, x->n * sizeof(real));
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_scalar_phasor(): stores the values of a phasor in a hypercomplex scalar.
@@ -140,7 +137,7 @@ int hx_scalar_phasor (hx_scalar *x, int d, real phi) {
 
   /* check that the dimension index is valid. */
   if (d < 0 || d >= x->d)
-    return 0;
+    throw("algebraic dimension %d out of bounds [0,%d)", d, x->d);
 
   /* compute the coefficient index for phasing. */
   n = 1 << d;
