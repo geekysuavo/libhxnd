@@ -34,14 +34,20 @@
 /* pipe_header: properly padded header of data contained in a pipe-format file.
  */
 struct pipe_header {
-  /* general parameters:
-   * @magic: should be zero in valid nmrpipe data.
-   * @format: constant defining floating point format.
-   * @order: constant defining byte order in floats.
+  /* (0) @magic: should be zero in valid nmrpipe data.
+   * (1) @format: constant defining floating point format.
+   * (2) @order: constant defining byte order in floats.
    */
   float magic;
   float format;
   float order;
+
+  /* (3..8) @pad0 */
+  float pad0[6];
+
+  /* (9) @ndims: number of dimensions.
+   */
+  float ndims;
 
   /* FIXME */
 };

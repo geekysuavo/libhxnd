@@ -321,6 +321,10 @@ int datum_read_array (datum *D) {
     if (!varian_read(D->fname, &D->array))
       throw("failed to read varian data");
   }
+  else if (D->type == DATUM_TYPE_PIPE) {
+    /* FIXME: hook into pipe_read() once implemented. */
+    throw("feature not yet implemented");
+  }
   else
     throw("unsupported data type %d", D->type);
 

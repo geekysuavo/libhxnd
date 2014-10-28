@@ -12,7 +12,7 @@ LIBSRC+= trace str bytes nmr-datum nmr-bruker nmr-varian nmr-pipe
 LIBOBJ=$(addprefix libhxnd/,$(addsuffix .o,$(LIBSRC)))
 
 # BIN, BINBIN, BINOBJ: binary source, output and object filenames.
-BIN=bruk2lin var2lin
+BIN=bruk2hx var2hx pipe2hx
 BINBIN=$(addprefix bin/,$(BIN))
 BINOBJ=$(addprefix bin/,$(addsuffix .o,$(BIN)))
 
@@ -25,11 +25,15 @@ OBJ=$(LIBOBJ)
 # all: global, default compilation rule.
 all: $(OBJ) $(BINBIN)
 
-bin/bruk2lin: $(OBJ) bin/bruk2lin.o
+bin/bruk2hx: $(OBJ) bin/bruk2hx.o
 	@echo " LD $@"
 	@$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
 
-bin/var2lin: $(OBJ) bin/var2lin.o
+bin/var2hx: $(OBJ) bin/var2hx.o
+	@echo " LD $@"
+	@$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
+
+bin/pipe2hx: $(OBJ) bin/pipe2hx.o
 	@echo " LD $@"
 	@$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
 

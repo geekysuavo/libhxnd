@@ -46,7 +46,29 @@ int pipe_read_header (const char *fname, enum byteorder *endianness,
   /* copy the header bytes onto the header structure. */
   memcpy(hdr, bytes, n_bytes);
 
-  /* FIXME: implement pipe_read_header() */
+  /* check if the floating point order value is correct. if not, the bytes
+   * likely need to be swapped.
+   */
+  if (hdr->order != 0.0 && hdr->order != (float) 2.345) {
+    /* swap the bytes of each word. */
+    bytes_swap_general(bytes, n_bytes, sizeof(float));
+
+    /* re-copy the bytes onto the structure. */
+    memcpy(hdr, bytes, n_bytes);
+
+    /* opposite endianness. */
+    if (bytes_native(BYTES_ENDIAN_BIG))
+      *endianness = BYTES_ENDIAN_LITTLE;
+    else
+      *endianness = BYTES_ENDIAN_BIG;
+  }
+  else {
+    /* same endianness. */
+    if (bytes_native(BYTES_ENDIAN_BIG))
+      *endianness = BYTES_ENDIAN_BIG;
+    else
+      *endianness = BYTES_ENDIAN_LITTLE;
+  }
 
   /* free the read bytes. */
   free(bytes);
@@ -70,6 +92,11 @@ int pipe_fill_datum (const char *fname, datum *D) {
     throw("failed to read header of '%s'", fname);
 
   /* FIXME: implement pipe_fill_datum() */
+
+  /* store the filename string. */
+  D->fname = (char*) malloc((strlen(fname) + 1) * sizeof(char));
+  if (D->fname)
+    strcpy(D->fname, fname);
 
   /* store the datum type. */
   D->type = DATUM_TYPE_PIPE;

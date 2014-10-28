@@ -75,6 +75,8 @@ void bytes_swap_u32 (uint32_t *x);
 
 void bytes_swap_u64 (uint64_t *x);
 
+void bytes_swap_general (uint8_t *bytes, unsigned int n, unsigned int sz);
+
 unsigned int bytes_size (const char *fname);
 
 uint8_t *bytes_read_block (const char *fname,

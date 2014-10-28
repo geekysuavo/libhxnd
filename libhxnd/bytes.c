@@ -111,6 +111,39 @@ void bytes_swap_u64 (uint64_t *x) {
   *x = BYTES_U64(b7, b6, b5, b4, b3, b2, b1, b0);
 }
 
+/* bytes_swap_general(): swaps the bytes of an arbitrarily-sized array of
+ * words.
+ * @bytes: array of bytes to reorder.
+ * @n: number of bytes in the array.
+ * @sz: size of each word, in bytes.
+ */
+void bytes_swap_general (uint8_t *bytes, unsigned int n, unsigned int sz) {
+  /* declare a few required variables:
+   * @i, @j: loop counters.
+   * @jmax: the @j-loop boundary.
+   * @swp: the swapped byte value.
+   */
+  unsigned int i, j, jmax;
+  uint8_t swp;
+
+  /* compute the inner loop boundary. this is just a really slick way of
+   * determining how many byte pairs need to be exchanged, given a word
+   * size.
+   */
+  jmax = ((sz + 1) & ~0x01) / 2;
+
+  /* loop over the words, in byte units. */
+  for (i = 0; i < n; i += sz) {
+    /* loop over the bytes of the word. */
+    for (j = 0; j < jmax; j++) {
+      /* swap bytes. */
+      swp = bytes[i + j];
+      bytes[i + j] = bytes[i + sz - j - 1];
+      bytes[i + sz - j - 1] = swp;
+    }
+  }
+}
+
 /* bytes_size(): read the number of bytes in a specified file.
  * @fname: the input filename.
  */
@@ -461,8 +494,7 @@ int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
                    int wordsz, int flt,
                    hx_array *x) {
   /* declare a few required variables. */
-  int nwords, topo[1], i, j, k;
-  uint8_t swp;
+  int nwords, topo[1], i, k;
 
   /* read the number of bytes in the input file and compute the number
    * of words in the serial file and words in the array.
@@ -472,16 +504,8 @@ int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
 
   /* check if byte swaps are required. */
   if (!bytes_native(endianness) && wordsz > 1) {
-    /* loop over the byte array, per-word. */
-    for (i = 0; i < nbytes; i += wordsz) {
-      /* loop over the bytes of the word. */
-      for (j = 0; j < wordsz / 2; j++) {
-        /* swap bytes. */
-        swp = bytes[i + j];
-        bytes[i + j] = bytes[i + wordsz - j - 1];
-        bytes[i + wordsz - j - 1] = swp;
-      }
-    }
+    /* swap the bytes of each word. */
+    bytes_swap_general(bytes, nbytes, wordsz);
   }
 
   /* allocate memory for a linear, real output array. */
