@@ -24,6 +24,11 @@
 #ifndef __HXND_HX_ARRAY_H__
 #define __HXND_HX_ARRAY_H__
 
+/* define a magic number to use when determining byte order of binary-format
+ * hypercomplex multidimensional array files.
+ */
+#define HX_ARRAY_MAGIC  0x59525241444e5848
+
 /* hx_array: data type for nD arrays of hypercomplex nD numbers.
  *
  * all the above information still applies to arrays, but an extra layer of
@@ -64,6 +69,10 @@ void hx_array_free (hx_array *x);
 int hx_array_set_coeff (hx_array *x, int di, real value, ...);
 
 int hx_array_print (hx_array *x, const char *fname);
+
+int hx_array_fread (hx_array *x, FILE *fh);
+
+int hx_array_fwrite (hx_array *x, FILE *fh);
 
 int hx_array_save (hx_array *x, const char *fname);
 

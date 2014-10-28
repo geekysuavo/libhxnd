@@ -23,6 +23,9 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
+/* include the byte-level data header. */
+#include <hxnd/bytes.h>
+
 /* hx_array_alloc(): allocate a hypercomplex array structure for a given
  * dimensionality. a pointer to the array structure is required by this
  * function.
@@ -206,39 +209,35 @@ int hx_array_print (hx_array *x, const char *fname) {
   return 1;
 }
 
-/* hx_array_save(): saves a hypercomplex multidimensional array to a file.
- * @x: the array to save data from.
- * @fname: the output filename.
+/* hx_array_fwrite(): writes a hypercomplex multidimensional array to an
+ * opened file stream.
+ * @x: pointer to the source array.
+ * @fh: the output file stream.
  */
-int hx_array_save (hx_array *x, const char *fname) {
+int hx_array_fwrite (hx_array *x, FILE *fh) {
   /* declare a few required variables:
    * @wd: header that contains all array properties.
-   * @fh: file handle used for writing.
+   * @n_wd: number of words in the header.
    * @i: word index in the header.
    * @k: dimension index.
    */
-  uint64_t wd[64];
-  FILE *fh;
+  unsigned int n_wd;
+  uint64_t *wd;
   int i, k;
+
+  /* allocate memory for the header bytes. */
+  n_wd = x->k + 6;
+  wd = (uint64_t*) calloc(n_wd, sizeof(uint64_t));
+
+  /* check that the array was allocated. */
+  if (!wd)
+    throw("failed to allocate %d-word header", n_wd);
 
   /* initialize the word index. */
   i = 0;
 
-  /* open the output file. */
-  if (fname)
-    fh = fopen(fname, "wb");
-  else
-    fh = stdout;
-
-  /* check that the file was opened. */
-  if (!fh)
-    throw("failed to open '%s'", fname);
-
-  /* zero the header bytes. */
-  memset(wd, 0, 64 * sizeof(uint64_t));
-
   /* store a magic number into the header: 'HXNDARRY' */
-  wd[i++] = (uint64_t) 0x59525241444e5848;
+  wd[i++] = (uint64_t) HX_ARRAY_MAGIC;
 
   /* store the array properties into the header. */
   wd[i++] = (uint64_t) x->d;
@@ -252,63 +251,90 @@ int hx_array_save (hx_array *x, const char *fname) {
     wd[i++] = (uint64_t) x->sz[k];
 
   /* write the header. */
-  if (fwrite(wd, sizeof(uint64_t), 64, fh) != 64)
-    throw("failed to write header");
+  if (fwrite(wd, sizeof(uint64_t), n_wd, fh) != n_wd)
+    throw("failed to write %d header words", n_wd);
 
   /* write the array data. */
   if (fwrite(x->x, sizeof(real), x->len, fh) != x->len)
     throw("failed to write %d reals", x->len);
 
-  /* close the output file. */
-  if (fname)
-    fclose(fh);
+  /* free the header array. */
+  free(wd);
 
   /* return success. */
   return 1;
 }
 
-/* hx_array_load(): loads a hypercomplex multidimensional array from a file.
- * @x: the array to load data into.
- * @fname: the input filename.
+/* hx_array_fread(): reads a hypercomplex multidimensional array from an
+ * opened file stream.
+ * @x: pointer to the destination array.
+ * @fh: the input file stream.
  */
-int hx_array_load (hx_array *x, const char *fname) {
+int hx_array_fread (hx_array *x, FILE *fh) {
   /* declare a few required variables:
    * @wd: header that contains all array properties.
-   * @fh: file handle used for writing.
    * @i: word index in the header.
    * @k: dimension index.
    */
-  uint64_t wd[64];
-  FILE *fh;
+  unsigned int swapping;
+  uint64_t *wd1, wd0[6];
   int i, k;
+
+  /* read the first six words from the file. */
+  if (fread(wd0, sizeof(uint64_t), 6, fh) != 6)
+    throw("failed to read initial header words");
+
+  /* check the first word in the header. if it does not match, then
+   * byte-swap the data.
+   */
+  if (wd0[0] != HX_ARRAY_MAGIC) {
+    /* no match. swap the bytes of each word. */
+    bytes_swap_general((uint8_t*) wd0,
+                       6 * sizeof(uint64_t),
+                       sizeof(uint64_t));
+
+    /* now check the magic word. */
+    if (wd0[0] != HX_ARRAY_MAGIC)
+      throw("invalid magic number 0x%08x", wd0[0]);
+
+    /* set the swapping flag. */
+    swapping = 1;
+  }
+  else {
+    /* match. no swaps needed. */
+    swapping = 0;
+  }
 
   /* initialize the word index. */
   i = 1;
 
-  /* open the input file. */
-  if (fname)
-    fh = fopen(fname, "rb");
-  else
-    fh = stdin;
-
-  /* check that the file was opened. */
-  if (!fh)
-    throw("failed to open '%s'", fname);
-
-  /* read the header from the file. */
-  if (fread(wd, sizeof(uint64_t), 64, fh) != 64)
-    throw("failed to read header");
-
   /* read the array parameters from the header. */
-  x->d = (int) wd[i++];
-  x->n = (int) wd[i++];
-  x->k = (int) wd[i++];
-  x->len = (int) wd[i++];
+  x->d = (int) wd0[i++];
+  x->n = (int) wd0[i++];
+  x->k = (int) wd0[i++];
+  x->len = (int) wd0[i++];
 
   /* check that the data type size matches ours. if not, fail miserably.
    */
-  if (wd[i++] != sizeof(real))
-    throw("word size mismatch (%u != %u)", wd[i - 1], sizeof(real));
+  if (wd0[i++] != sizeof(real))
+    throw("word size mismatch (%u != %u)", wd0[i - 1], sizeof(real));
+
+  /* allocate memory for the rest of the header. */
+  wd1 = (uint64_t*) calloc(x->k, sizeof(uint64_t));
+
+  /* check that the array memory was allocated. */
+  if (!wd1)
+    throw("failed to allocate %d-word header", x->k);
+
+  /* read the entire header from the file. */
+  if (fread(wd1, sizeof(uint64_t), x->k, fh) != x->k)
+    throw("failed to read %d header words", x->k);
+
+  /* byte-swap, if required. */
+  if (swapping)
+    bytes_swap_general((uint8_t*) wd1,
+                       x->k * sizeof(uint64_t),
+                       sizeof(uint64_t));
 
   /* allocate memory for the dimension sizes array. */
   x->sz = (int*) calloc(x->k, sizeof(int));
@@ -318,8 +344,8 @@ int hx_array_load (hx_array *x, const char *fname) {
     throw("failed to allocate %d sizes", x->k);
 
   /* read the dimension sizes from the header. */
-  for (k = 0; k < x->k; k++)
-    x->sz[k] = wd[i++];
+  for (k = 0, i = 0; k < x->k; k++)
+    x->sz[k] = wd1[i++];
 
   /* allocate memory for the array data. */
   x->x = (real*) calloc(x->len, sizeof(real));
@@ -338,11 +364,75 @@ int hx_array_load (hx_array *x, const char *fname) {
   if (!(x->tbl = hx_algebras_get(x->d)))
     throw("failed to retrieve %d-algebra", x->d);
 
+  /* free the header array. */
+  free(wd1);
+
+  /* and return success. */
+  return 1;
+}
+
+/* hx_array_save(): saves a hypercomplex multidimensional array to a file,
+ * or standard output if a NULL filename was passed.
+ * @x: the array to save data from.
+ * @fname: the output filename.
+ */
+int hx_array_save (hx_array *x, const char *fname) {
+  /* declare a required variable:
+   * @fh: file handle used for writing.
+   */
+  FILE *fh;
+
+  /* open the output file. */
+  if (fname)
+    fh = fopen(fname, "wb");
+  else
+    fh = stdout;
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
+  /* write the data to the file. */
+  if (!hx_array_fwrite(x, fh))
+    throw("failed to write '%s'", fname);
+
+  /* close the output file. */
+  fclose(fh);
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_load(): loads a hypercomplex multidimensional array from a file,
+ * or standard input if a NULL filename is passed.
+ * @x: the array to load data into.
+ * @fname: the input filename.
+ */
+int hx_array_load (hx_array *x, const char *fname) {
+  /* declare a required variable:
+   * @fh: file handle used for writing.
+   */
+  FILE *fh;
+
+  /* open the input file. */
+  if (fname)
+    fh = fopen(fname, "rb");
+  else
+    fh = stdin;
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
+  /* read the contents of the file. */
+  if (!hx_array_fread(x, fh))
+    throw("failed to read '%s'", fname);
+
   /* close the input file. */
   if (fname)
     fclose(fh);
 
-  /* and return success. */
+  /* return success. */
   return 1;
 }
 
