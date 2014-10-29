@@ -104,6 +104,10 @@ void datum_init (datum *D);
 
 int datum_print (datum *D, const char *fname);
 
+int datum_fwrite (datum *D, FILE *fh);
+
+int datum_fread (datum *D, FILE *fh);
+
 int datum_save (datum *D, const char *fname);
 
 int datum_load (datum *D, const char *fname);

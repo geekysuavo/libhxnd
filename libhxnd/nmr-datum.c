@@ -172,12 +172,54 @@ int datum_print (datum *D, const char *fname) {
   return 1;
 }
 
-/* datum_save(): saves the contents of an acquired NMR datum to a file.
+/* datum_fwrite(): writes an NMR datum structure to an opened file stream.
+ * @D: pointer to the source structure.
+ * @fh: the output file stream.
+ */
+int datum_fwrite (datum *D, FILE *fh) {
+  /* FIXME: implement datum_fwrite() */
+
+  /* return success. */
+  return 1;
+}
+
+/* datum_fread(): reads an NMR datum structure from an opened file stream.
+ * @D: pointer to the destination structure.
+ * @fh: the input file stream.
+ */
+int datum_fread (datum *D, FILE *fh) {
+  /* FIXME: implement datum_fread() */
+
+  /* return success. */
+  return 1;
+}
+
+/* datum_save(): saves the contents of an acquired NMR datum to a file,
+ * or standard output if a NULL filename was passed.
  * @D: the datum to save data from.
  * @fname: the output filename.
  */
 int datum_save (datum *D, const char *fname) {
-  /* FIXME: implement datum_save() */
+  /* declare a required variable. */
+  FILE *fh;
+
+  /* open the output file. */
+  if (fname)
+    fh = fopen(fname, "wb");
+  else
+    fh = stdout;
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
+  /* write the datum to the file. */
+  if (!datum_fwrite(D, fh))
+    throw("failed to write '%s'", fname);
+
+  /* close the output file. */
+  if (fname)
+    fclose(fh);
 
   /* return success. */
   return 1;
@@ -188,7 +230,26 @@ int datum_save (datum *D, const char *fname) {
  * @fname: the input filename.
  */
 int datum_load (datum *D, const char *fname) {
-  /* FIXME: implement datum_load() */
+  /* declare a required variable. */
+  FILE *fh;
+
+  /* open the input file. */
+  if (fname)
+    fh = fopen(fname, "wb");
+  else
+    fh = stdin;
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
+  /* read the datum from the file. */
+  if (!datum_fread(D, fh))
+    throw("failed to read '%s'", fname);
+
+  /* close the input file. */
+  if (fname)
+    fclose(fh);
 
   /* return success. */
   return 1;

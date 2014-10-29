@@ -397,7 +397,8 @@ int hx_array_save (hx_array *x, const char *fname) {
     throw("failed to write '%s'", fname);
 
   /* close the output file. */
-  fclose(fh);
+  if (fname)
+    fclose(fh);
 
   /* return success. */
   return 1;

@@ -70,9 +70,9 @@ int hx_array_set_coeff (hx_array *x, int di, real value, ...);
 
 int hx_array_print (hx_array *x, const char *fname);
 
-int hx_array_fread (hx_array *x, FILE *fh);
-
 int hx_array_fwrite (hx_array *x, FILE *fh);
+
+int hx_array_fread (hx_array *x, FILE *fh);
 
 int hx_array_save (hx_array *x, const char *fname);
 
