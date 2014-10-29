@@ -397,6 +397,90 @@ struct pipe_header {
   /* (366..385) @pad24 */
   float pad24[20];
 
+  /* (386) @tdsz_f2: second-dimension time-domain point count.
+   * (387) @tdsz_f1: first-dimension time-domain point count.
+   * (388) @tdsz_f3: third-dimension time-domain point count.
+   * (389) @tdsz_f4: fourth-dimension time-domain point count.
+   */
+  float tdsz_f2;
+  float tdsz_f1;
+  float tdsz_f3;
+  float tdsz_f4;
+
+  /* (390..398) @pad25 */
+  float pad25[9];
+
+  /* (399) @virgin2d: FIXME
+   * (400) @apodcode_f3: FIXME
+   * (401) @apodq1_f3: FIXME
+   * (402) @apodq2_f3: FIXME
+   * (403) @apodq3_f3: FIXME
+   * (404) @c1_f3: FIXME
+   * (405) @apodcode_f4: FIXME
+   * (406) @apodq1_f4: FIXME
+   * (407) @apodq2_f4: FIXME
+   * (408) @apodq3_f4: FIXME
+   * (409) @c1_f4: FIXME
+   */
+  float virgin2d;
+  float apodcode_f3;
+  float apodq1_f3;
+  float apodq2_f3;
+  float apodq3_f3;
+  float c1_f3;
+  float apodcode_f4;
+  float apodq1_f4;
+  float apodq2_f4;
+  float apodq3_f4;
+  float c1_f4;
+
+  /* (410..412) @pad26 */
+  float pad26[3];
+
+  /* (413) @apodcode_f2: FIXME
+   * (414) @apodcode_f1: FIXME
+   * (415) @apodq1_f2: FIXME
+   * (416) @apodq2_f2: FIXME
+   * (417) @apodq3_f2: FIXME
+   * (418) @c1_f2: FIXME
+   * (419) @pad27
+   * (420) @apodq1_f1: FIXME
+   * (421) @apodq2_f1: FIXME
+   * (422) @apodq3_f1: FIXME
+   * (423) @c1_f1: FIXME
+   */
+  float apodcode_f2;
+  float apodcode_f1;
+  float apodq1_f2;
+  float apodq2_f2;
+  float apodq3_f2;
+  float c1_f2;
+  float pad27;
+  float apodq1_f1;
+  float apodq2_f1;
+  float apodq3_f1;
+  float c1_f1;
+
+  /* (424..427) @pad28 */
+  float pad28[4];
+
+  /* (428) @apod_f1: first-dimension apodization flag. */
+  float apod_f1;
+
+  /* (429..436) @pad29 */
+  float pad29[8];
+
+  /* (437) @zf_f1: first-dimension zero-fill value.
+   * (438) @zf_f3: third-dimension zero-fill value.
+   * (439) @zf_f4: fourth-dimension zero-fill value.
+   */
+  float zf_f1;
+  float zf_f3;
+  float zf_f4;
+
+  /* (440..441) @pad30 */
+  float pad30[2];
+
   /* FIXME */
 
   /* (484..511) @pad_end */
