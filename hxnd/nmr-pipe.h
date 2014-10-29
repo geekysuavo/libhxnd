@@ -506,6 +506,8 @@ int pipe_read_header (const char *fname, enum byteorder *endianness,
 
 int pipe_read (const char *fname, unsigned int n, hx_array *x);
 
+int pipe_interlace (hx_array *x, unsigned int n);
+
 int pipe_fill_datum (const char *fname, datum *D);
 
 #endif /* __HXND_NMR_PIPE_H__ */

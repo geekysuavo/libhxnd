@@ -322,12 +322,12 @@ int datum_read_array (datum *D) {
 
     /* load the raw data from the fid/ser file. */
     if (!bruker_read(D->fname, D->endian, nblk, szblk, &D->array))
-      throw("failed to read bruker data");
+      throw("failed to read bruker data from '%s'", D->fname);
   }
   else if (D->type == DATUM_TYPE_VARIAN) {
     /* load the raw data from the fid file. */
     if (!varian_read(D->fname, &D->array))
-      throw("failed to read varian data");
+      throw("failed to read varian data from '%s'", D->fname);
   }
   else if (D->type == DATUM_TYPE_PIPE) {
     /* determine the data byte count. */
@@ -336,7 +336,11 @@ int datum_read_array (datum *D) {
 
     /* load the raw data from the pipe file. */
     if (!pipe_read(D->fname, szblk, &D->array))
-      throw("failed to read pipe data");
+      throw("failed to read pipe data from '%s'", D->fname);
+
+    /* interlace the complex points, if required. */
+    if (D->dims[0].cx && !pipe_interlace(&D->array, D->dims[0].sz))
+      throw("failed to interlace complex traces");
   }
   else
     throw("unsupported data type %d", D->type);

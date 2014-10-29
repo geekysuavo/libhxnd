@@ -213,6 +213,61 @@ int pipe_read (const char *fname, unsigned int n, hx_array *x) {
   return 1;
 }
 
+/* pipe_interlace(): pipe-format files do not store their individual traces
+ * as interlaced R,I,R,I..., but instead interlaces entire real traces and
+ * imaginary traces. this fixes pipe's mistake so hx_array_deinterlace()
+ * can operate on pipe data just like any other data type.
+ * @x: pointer to the array to interlace.
+ * @n: number of *complex* points per trace.
+ */
+int pipe_interlace (hx_array *x, unsigned int n) {
+  /* declare a few required variables:
+   * @i: trace loop counter.
+   * @j: point loop counter.
+   * @ntraces: number of complex traces.
+   * @kre: real trace start index.
+   * @kim: imag trace start index.
+   * @xtmp: temporary duplicate coefficient array.
+   */
+  unsigned int i, j, ntraces, kre, kim;
+  real *xtmp;
+
+  /* check that the trace size evenly divides the array elements. */
+  if (x->sz[0] % (2 * n))
+    throw("trace size %u does not evenly divide array (%d)", n, x->sz[0]);
+
+  /* compute the number of traces in the array. */
+  ntraces = x->sz[0] / (2 * n);
+
+  /* allocate a temporary duplicate array of the array elements. */
+  xtmp = (real*) malloc(x->len * sizeof(real));
+  if (!xtmp)
+    throw("failed to allocate temporary array of %d reals", x->len);
+
+  /* copy the data over into the duplicate array. */
+  memcpy(xtmp, x->x, x->len * sizeof(real));
+
+  /* loop over each trace in the linear real array. */
+  for (i = 0; i < ntraces; i++) {
+    /* compute the real and imaginary trace starting indices. */
+    kre = (2 * i) * n;
+    kim = (2 * i + 1) * n;
+
+    /* loop over the points of the trace. */
+    for (j = 0; j < n; j++) {
+      /* shuffle the points around. */
+      x->x[i * n + 2 * j] = xtmp[kre + j];
+      x->x[i * n + 2 * j + 1] = xtmp[kim + j];
+    }
+  }
+
+  /* free the duplicate array. */
+  free(xtmp);
+
+  /* return success. */
+  return 1;
+}
+
 /* pipe_fill_datum(): intelligently parses pipe parameters into an
  * NMR datum structure.
  * @fname: the input filename.
