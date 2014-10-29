@@ -90,7 +90,7 @@ int datum_print (datum *D, const char *fname) {
     fprintf(fh, "\n");
   }
   else
-    fprintf(fh, "not allocated.\n");
+    fprintf(fh, "Unallocated.\n\n");
 
   /* print the headings. */
   for (n = 0; n < 10; n++) fprintf(fh, " ");
@@ -104,6 +104,14 @@ int datum_print (datum *D, const char *fname) {
   fprintf(fh, "Points:   ");
   for (d = 0; d < D->nd; d++)
     fprintf(fh, "%15u", D->dims[d].sz);
+
+  /* print a newline. */
+  fprintf(fh, "\n");
+
+  /* print the points count. */
+  fprintf(fh, "Total:    ");
+  for (d = 0; d < D->nd; d++)
+    fprintf(fh, "%15u", D->dims[d].td);
 
   /* print a newline. */
   fprintf(fh, "\n");
@@ -322,8 +330,13 @@ int datum_read_array (datum *D) {
       throw("failed to read varian data");
   }
   else if (D->type == DATUM_TYPE_PIPE) {
-    /* FIXME: hook into pipe_read() once implemented. */
-    throw("feature not yet implemented");
+    /* determine the data byte count. */
+    for (d = 0, szblk = sizeof(float); d < D->nd; d++)
+      szblk *= (D->dims[d].cx ? 2 : 1) * D->dims[d].sz;
+
+    /* load the raw data from the pipe file. */
+    if (!pipe_read(D->fname, szblk, &D->array))
+      throw("failed to read pipe data");
   }
   else
     throw("unsupported data type %d", D->type);

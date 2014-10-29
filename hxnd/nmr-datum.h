@@ -49,15 +49,16 @@ typedef struct {
    */
   unsigned int sz, td, tdunif;
 
-  /* frequency-domain parameters:
+  /* spectral parameters:
    */
   real carrier, width, offset;
 
   /* status flags:
    * @cx: complex (1) or real (0).
    * @nus: nonuniform (1) or uniform (0).
+   * @ft: frequency (1) or time (0) domain.
    */
-  unsigned int cx, nus;
+  unsigned int cx, nus, ft;
 
   /* @nuc: nucleus string. */
   char nuc[8];

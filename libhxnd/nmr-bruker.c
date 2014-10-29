@@ -178,7 +178,7 @@ int bruker_read_parms (const char *fname, unsigned int n, ...) {
   return nid;
 }
 
-/* bruker_read(): reads a bruker data file into a complex linear array.
+/* bruker_read(): reads a bruker data file into a real linear array.
  * @fname: the input data filename.
  * @endianness: the data byte ordering.
  * @nblk: the number of blocks/fids.

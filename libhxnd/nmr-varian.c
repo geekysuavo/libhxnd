@@ -259,7 +259,7 @@ int varian_read_hdr_file (const char *fname, enum byteorder *endianness,
   return 1;
 }
 
-/* varian_read(): reads a varian data file into a complex linear array.
+/* varian_read(): reads a varian data file into a real linear array.
  * @fname: the input data filename.
  * @x: the output array.
  */
