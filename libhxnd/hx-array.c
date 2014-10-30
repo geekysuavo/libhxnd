@@ -397,6 +397,12 @@ int hx_array_fread (hx_array *x, FILE *fh) {
   if (fread(x->x, sizeof(real), x->len, fh) != x->len)
     throw("failed to read %d reals", x->len);
 
+  /* byte-swap, if required. */
+  if (swapping)
+    bytes_swap_general((uint8_t*) x->x,
+                       x->len * sizeof(real),
+                       sizeof(real));
+
   /* ensure that the d-dimensional shared multiplication table has been
    * initialized, and return failure if not.
    */

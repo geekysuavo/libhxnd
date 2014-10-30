@@ -244,15 +244,98 @@ int datum_check_magic (const char *fname) {
   return 0;
 }
 
+/* define the number of (u64) members in the header and dimension sections of
+ * binary datum files.
+ */
+#define NMR_DATUM_FWRITE_SZ_HDR  4
+#define NMR_DATUM_FWRITE_SZ_DIM  8
+
+/* define bit field positions to store status flags in binary datum files.
+ */
+#define NMR_DATUM_S_COMPLEX  0x0000000000000001
+#define NMR_DATUM_S_NUS      0x0000000000000002
+#define NMR_DATUM_S_FFT      0x0000000000000004
+
 /* datum_fwrite(): writes an NMR datum structure to an opened file stream.
  * @D: pointer to the source structure.
  * @fh: the output file stream.
  */
 int datum_fwrite (datum *D, FILE *fh) {
-  /* FIXME: implement datum_fwrite() */
+  /* declare a few required variables:
+   * @i: buffer index.
+   * @d: dimension loop counter.
+   * @n_buf: current buffer word size.
+   * @buf: output header/dimension buffer.
+   * @status: status word value.
+   */
+  unsigned int i, d, n_buf;
+  uint64_t *buf, status;
+
+  /* allocate the header buffer. */
+  n_buf = NMR_DATUM_FWRITE_SZ_HDR;
+  buf = (uint64_t*) calloc(n_buf, sizeof(uint64_t));
+
+  /* check that allocation succeeded. */
+  if (!buf)
+    throw("failed to allocate header buffer");
+
+  /* build the file header. */
+  i = 0;
+  buf[i++] = (uint64_t) NMR_DATUM_MAGIC;
+  buf[i++] = (uint64_t) D->endian;
+  buf[i++] = (uint64_t) DATUM_TYPE_HXND;
+  buf[i++] = (uint64_t) D->nd;
+
+  /* write the file header. */
+  if (fwrite(buf, sizeof(uint64_t), n_buf, fh) != n_buf)
+    throw("failed to write header");
+
+  /* reallocate the buffer to hold dimension information. */
+  n_buf = NMR_DATUM_FWRITE_SZ_DIM;
+  buf = (uint64_t*) realloc(buf, n_buf * sizeof(uint64_t));
+
+  /* check that reallocation succeeded. */
+  if (!buf)
+    throw("failed to allocate dimension buffer");
+
+  /* loop over the dimensions in the datum structure. */
+  for (d = 0; d < D->nd; d++) {
+    /* zero the buffer memory. */
+    memset(buf, 0, n_buf * sizeof(uint64_t));
+
+    /* store the size parameters. */
+    i = 0;
+    buf[i++] = (uint64_t) D->dims[d].sz;
+    buf[i++] = (uint64_t) D->dims[d].td;
+    buf[i++] = (uint64_t) D->dims[d].tdunif;
+
+    /* build the status word. */
+    status = 0;
+    status |= (D->dims[d].cx ?  NMR_DATUM_S_COMPLEX : 0);
+    status |= (D->dims[d].nus ? NMR_DATUM_S_NUS : 0);
+    status |= (D->dims[d].ft ?  NMR_DATUM_S_FFT : 0);
+
+    /* store the status word. */
+    buf[i++] = status;
+
+    /* store the spectral parameters. */
+    buf[i++] = bytes_real_to_u64(D->dims[d].carrier);
+    buf[i++] = bytes_real_to_u64(D->dims[d].width);
+    buf[i++] = bytes_real_to_u64(D->dims[d].offset);
+
+    /* store the nucleus string. */
+    memcpy(buf + (i++), D->dims[d].nuc, sizeof(uint64_t));
+
+    /* write the dimension buffer. */
+    if (fwrite(buf, sizeof(uint64_t), n_buf, fh) != n_buf)
+      throw("failed to write dimension %u", d);
+  }
+
+  /* free the allocated buffer. */
+  free(buf);
 
   /* write the core array content to the end of the file stream. */
-  if (!hx_array_fwrite(&D->array, fh))
+  if (D->array_alloc && !hx_array_fwrite(&D->array, fh))
     throw("failed to write core array");
 
   /* return success. */
@@ -262,12 +345,111 @@ int datum_fwrite (datum *D, FILE *fh) {
 /* datum_fread(): reads an NMR datum structure from an opened file stream.
  * @D: pointer to the destination structure.
  * @fh: the input file stream.
+ * @read_array: whether to read the array data.
  */
-int datum_fread (datum *D, FILE *fh) {
-  /* FIXME: implement datum_fread() */
+int datum_fread (datum *D, FILE *fh, int read_array) {
+  /* declare a few required variables:
+   * @i: buffer index.
+   * @d: dimension loop counter.
+   * @n_buf: current buffer word size.
+   * @buf: output header/dimension buffer.
+   * @status: status word value.
+   */
+  unsigned int i, d, n_buf, swapping;
+  uint64_t *buf, status;
+
+  /* allocate the header buffer. */
+  n_buf = NMR_DATUM_FWRITE_SZ_HDR;
+  buf = (uint64_t*) calloc(n_buf, sizeof(uint64_t));
+
+  /* check that allocation succeeded. */
+  if (!buf)
+    throw("failed to allocate header buffer");
+
+  /* read the file header. */
+  if (fread(buf, sizeof(uint64_t), n_buf, fh) != n_buf)
+    throw("failed to read header");
+
+  /* check the first word in the header. if it does not match, then
+   * byte-swap the data.
+   */
+  if (buf[0] != NMR_DATUM_MAGIC) {
+    /* no match. swap the bytes of each word. */
+    bytes_swap_general((uint8_t*) buf,
+                       n_buf * sizeof(uint64_t),
+                       sizeof(uint64_t));
+
+    /* now check the magic word. */
+    if (buf[0] != NMR_DATUM_MAGIC)
+      throw("invalid magic word 0x%08x", buf[0]);
+
+    /* set the swapping flag. */
+    swapping = 1;
+  }
+  else {
+    /* match. no swaps needed. */
+    swapping = 0;
+  }
+
+  /* unpack the file header. */
+  i = 1;
+  D->endian = (enum byteorder) buf[i++];
+  D->type = (enum datum_type) buf[i++];
+  D->nd = (unsigned int) buf[i++];
+
+  /* allocate the dimension array. */
+  D->dims = (datum_dim*) calloc(D->nd, sizeof(datum_dim));
+
+  /* check that allocation succeeded. */
+  if (D->dims == NULL)
+    throw("failed to allocate %u dimensions", D->nd);
+
+  /* reallocate the buffer to hold dimension information. */
+  n_buf = NMR_DATUM_FWRITE_SZ_DIM;
+  buf = (uint64_t*) realloc(buf, n_buf * sizeof(uint64_t));
+
+  /* check that reallocation succeeded. */
+  if (!buf)
+    throw("failed to allocate dimension buffer");
+
+  /* loop over the dimensions to be read in. */
+  for (d = 0; d < D->nd; d++) {
+    /* read the dimension data. */
+    if (fread(buf, sizeof(uint64_t), n_buf, fh) != n_buf)
+      throw("failed to read dimension %u", d);
+
+    /* swap the bytes, if required. */
+    if (swapping)
+      bytes_swap_general((uint8_t*) buf,
+                         n_buf * sizeof(uint64_t),
+                         sizeof(uint64_t));
+
+    /* unpack the dimension size parameters. */
+    i = 0;
+    D->dims[d].sz = (unsigned int) buf[i++];
+    D->dims[d].td = (unsigned int) buf[i++];
+    D->dims[d].tdunif = (unsigned int) buf[i++];
+
+    /* unpack the status word. */
+    status = buf[i++];
+    D->dims[d].cx = (status & NMR_DATUM_S_COMPLEX ? 1 : 0);
+    D->dims[d].nus = (status & NMR_DATUM_S_NUS ? 1 : 0);
+    D->dims[d].ft = (status & NMR_DATUM_S_FFT ? 1 : 0);
+
+    /* unpack the spectral parameters. */
+    D->dims[d].carrier = bytes_u64_to_real(buf[i++]);
+    D->dims[d].width = bytes_u64_to_real(buf[i++]);
+    D->dims[d].offset = bytes_u64_to_real(buf[i++]);
+
+    /* unpack the nucleus string. */
+    memcpy(D->dims[d].nuc, buf + (i++), sizeof(uint64_t));
+  }
+
+  /* free the allocated buffer. */
+  free(buf);
 
   /* read the core array content from the end of the file stream. */
-  if (!hx_array_fread(&D->array, fh))
+  if (read_array && !hx_array_fread(&D->array, fh))
     throw("failed to read core array");
 
   /* return success. */
@@ -308,14 +490,15 @@ int datum_save (datum *D, const char *fname) {
 /* datum_load(): loads the contents of an acquired NMR datum from a file.
  * @D: the datum to load data from.
  * @fname: the input filename.
+ * @load_array: whether to load the array data.
  */
-int datum_load (datum *D, const char *fname) {
+int datum_load (datum *D, const char *fname, int load_array) {
   /* declare a required variable. */
   FILE *fh;
 
   /* open the input file. */
   if (fname)
-    fh = fopen(fname, "wb");
+    fh = fopen(fname, "rb");
   else
     fh = stdin;
 
@@ -324,12 +507,21 @@ int datum_load (datum *D, const char *fname) {
     throw("failed to open '%s'", fname);
 
   /* read the datum from the file. */
-  if (!datum_fread(D, fh))
+  if (!datum_fread(D, fh, load_array))
     throw("failed to read '%s'", fname);
 
-  /* close the input file. */
-  if (fname)
+  /* because we're here, we know the read succeeded, so check if the data
+   * was loaded from a named file.
+   */
+  if (fname) {
+    /* store the input filename. */
+    D->fname = (char*) malloc((strlen(fname) + 1) * sizeof(char));
+    if (D->fname)
+      strcpy(D->fname, fname);
+
+    /* close the input file. */
     fclose(fh);
+  }
 
   /* return success. */
   return 1;
@@ -435,7 +627,8 @@ int datum_refactor_array (datum *D) {
  */
 int datum_read_array (datum *D) {
   /* declare a few required variables. */
-  unsigned int d, nblk, szblk;
+  unsigned int d, nblk, szblk, offset;
+  FILE *fh;
 
   /* check if the array has been allocated. */
   if (D->array_alloc)
@@ -483,14 +676,40 @@ int datum_read_array (datum *D) {
     if (D->dims[0].cx && !pipe_interlace(&D->array, D->dims[0].sz))
       throw("failed to interlace complex traces");
   }
+  else if (D->type == DATUM_TYPE_HXND) {
+    /* compute the offset where the array begins. */
+    offset = NMR_DATUM_FWRITE_SZ_HDR;
+    offset += D->nd * NMR_DATUM_FWRITE_SZ_DIM;
+    offset *= sizeof(uint64_t);
+
+    /* open the input file. */
+    fh = fopen(D->fname, "rb");
+
+    /* check that the file was opened. */
+    if (!fh)
+      throw("failed to open '%s'", D->fname);
+
+    /* seek past the file header information. */
+    if (fseek(fh, offset, SEEK_SET))
+      throw("failed to seek to array in '%s'", D->fname);
+
+    /* read the array data from the hx-format file. */
+    if (!hx_array_fread(&D->array, fh))
+      throw("failed to read hx-format data from '%s'", D->fname);
+
+    /* close the input file. */
+    fclose(fh);
+  }
   else
     throw("unsupported data type %d", D->type);
 
   /* indicate that the array has been allocated. */
   D->array_alloc = 1;
 
-  /* refactor the core array. */
-  if (!datum_refactor_array(D))
+  /* refactor the core array, but only if it's *not* already in
+   * the native hxnd format.
+   */
+  if (D->type != DATUM_TYPE_HXND && !datum_refactor_array(D))
     throw("failed to refactor array");
 
   /* return success. */
@@ -510,6 +729,65 @@ int datum_free_array (datum *D) {
 
   /* indicate that the array has been de-allocated. */
   D->array_alloc = 0;
+
+  /* return success. */
+  return 1;
+}
+
+/* datum_fill(): parses acquisition parameters into an NMR datum structure.
+ * the 'type' member of the datum structure must be initialized to the type
+ * of parms/data to parse in.
+ * @D: pointer to the datum struct to fill.
+ * @fname: input file or directory name.
+ */
+int datum_fill (datum *D, const char *fname) {
+  /* act based on the datum type. */
+  switch (D->type) {
+    /* undefined. */
+    case DATUM_TYPE_UNDEFINED:
+      /* throw an error for unknown data types. */
+      throw("undefined data type");
+
+    /* bruker. */
+    case DATUM_TYPE_BRUKER:
+      /* attempt to fill from bruker-format files. */
+      if (!bruker_fill_datum(fname, D))
+        throw("failed to parse bruker parameters");
+
+      /* break out. */
+      break;
+
+    /* varian. */
+    case DATUM_TYPE_VARIAN:
+      /* attempt to fill from varian-format files. */
+      if (!varian_fill_datum(fname, D))
+        throw("failed to parse varian parameters");
+
+      /* break out. */
+      break;
+
+    /* pipe. */
+    case DATUM_TYPE_PIPE:
+      /* attempt to fill from a pipe-format file. */
+      if (!pipe_fill_datum(fname, D))
+        throw("failed to parse pipe parameters");
+
+      /* break out. */
+      break;
+
+    /* hxnd (native). */
+    case DATUM_TYPE_HXND:
+      /* just load the datum file. */
+      if (!datum_load(D, fname, 0))
+        throw("failed to parse hx parameters");
+
+      /* break out. */
+      break;
+
+    /* other. */
+    default:
+      throw("unknown data type %d", D->type);
+  }
 
   /* return success. */
   return 1;

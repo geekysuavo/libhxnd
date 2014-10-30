@@ -50,12 +50,12 @@ int pipe_check_magic (const char *fname) {
   fclose(fh);
 
   /* check the magic word, without swapping. */
-  if (wd[2] == PIPE_MAGIC)
+  if (wd[2] == (float) PIPE_MAGIC)
     return 1;
 
   /* swap the word and check again. */
   bytes_swap_u32((uint32_t*) &wd[2]);
-  if (wd[2] == PIPE_MAGIC)
+  if (wd[2] == (float) PIPE_MAGIC)
     return 1;
 
   /* no match. */

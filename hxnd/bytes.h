@@ -100,5 +100,9 @@ int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
                    int wordsz, int flt,
                    hx_array *x);
 
+uint64_t bytes_real_to_u64 (const real x);
+
+real bytes_u64_to_real (const uint64_t x);
+
 #endif /* __HXND_BYTES_H__ */
 

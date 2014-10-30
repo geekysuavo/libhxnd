@@ -522,3 +522,38 @@ int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
   return 1;
 }
 
+/* bytes_conv_real_u64_t: union definition for converting between a real
+ * floating point value and its binary representation.
+ */
+typedef union {
+  real fval;
+  uint64_t ival;
+}
+bytes_conv_real_u64_t;
+
+/* bytes_real_to_u64(): convert a real floating point value to a u64.
+ */
+uint64_t bytes_real_to_u64 (const real x) {
+  /* declare a conversion union. */
+  bytes_conv_real_u64_t conv;
+
+  /* store the input value into the union. */
+  conv.fval = x;
+
+  /* return the output value. */
+  return conv.ival;
+}
+
+/* bytes_u64_to_real(): convert a u64 to a real floating point value.
+ */
+real bytes_u64_to_real (const uint64_t x) {
+  /* declare a conversion union. */
+  bytes_conv_real_u64_t conv;
+
+  /* store the input value into the union. */
+  conv.ival = x;
+
+  /* return the output value. */
+  return conv.fval;
+}
+

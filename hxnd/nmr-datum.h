@@ -55,16 +55,16 @@ typedef struct {
    */
   unsigned int sz, td, tdunif;
 
-  /* spectral parameters:
-   */
-  real carrier, width, offset;
-
   /* status flags:
    * @cx: complex (1) or real (0).
    * @nus: nonuniform (1) or uniform (0).
    * @ft: frequency (1) or time (0) domain.
    */
   unsigned int cx, nus, ft;
+
+  /* spectral parameters:
+   */
+  real carrier, width, offset;
 
   /* @nuc: nucleus string. */
   char nuc[8];
@@ -116,11 +116,11 @@ int datum_check_magic (const char *fname);
 
 int datum_fwrite (datum *D, FILE *fh);
 
-int datum_fread (datum *D, FILE *fh);
+int datum_fread (datum *D, FILE *fh, int read_array);
 
 int datum_save (datum *D, const char *fname);
 
-int datum_load (datum *D, const char *fname);
+int datum_load (datum *D, const char *fname, int load_array);
 
 int datum_reorder_dims (datum *D, int *order);
 
@@ -129,6 +129,8 @@ int datum_refactor_array (datum *D);
 int datum_read_array (datum *D);
 
 int datum_free_array (datum *D);
+
+int datum_fill (datum *D, const char *fname);
 
 #endif /* __HXND_NMR_DATUM_H__ */
 

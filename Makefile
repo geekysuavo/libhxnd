@@ -6,13 +6,13 @@ LIBS=-lm
 
 # LIBSRC: library source basenames.
 LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-cmp hx-arith hx-fourier
-LIBSRC+= trace str bytes nmr-datum nmr-bruker nmr-varian nmr-pipe
+LIBSRC+= trace opts str bytes nmr-datum nmr-bruker nmr-varian nmr-pipe
 
 # LIBOBJ: library object filenames.
 LIBOBJ=$(addprefix libhxnd/,$(addsuffix .o,$(LIBSRC)))
 
 # BIN, BINBIN, BINOBJ: binary source, output and object filenames.
-BIN=bruk2hx var2hx pipe2hx
+BIN=hx
 BINBIN=$(addprefix bin/,$(BIN))
 BINOBJ=$(addprefix bin/,$(addsuffix .o,$(BIN)))
 
@@ -25,15 +25,7 @@ OBJ=$(LIBOBJ)
 # all: global, default compilation rule.
 all: $(OBJ) $(BINBIN)
 
-bin/bruk2hx: $(OBJ) bin/bruk2hx.o
-	@echo " LD $@"
-	@$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
-
-bin/var2hx: $(OBJ) bin/var2hx.o
-	@echo " LD $@"
-	@$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
-
-bin/pipe2hx: $(OBJ) bin/pipe2hx.o
+bin/hx: $(OBJ) bin/hx.o
 	@echo " LD $@"
 	@$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
 
