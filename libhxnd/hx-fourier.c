@@ -80,10 +80,12 @@ unsigned int hx_nextpow2 (unsigned int value) {
  * of a hypercomplex one-dimensional array.
  * @x: a pointer to the array structure.
  * @d: dimension to transform.
+ * @dir: direction of transformation.
  * @w: preallocated hypercomplex scalar.
  * @swp: reallocated coefficient array of a hypercomplex scalar.
  */
-int hx_array_fft1d (hx_array *x, int d, hx_scalar *w, real *swp) {
+int hx_array_fft1d (hx_array *x, int d, real dir,
+                    hx_scalar *w, real *swp) {
   /* declare a few required variables:
    * @i, @j, @k, @m: loop counters.
    * @n: array (scalar) element count.
@@ -139,7 +141,7 @@ int hx_array_fft1d (hx_array *x, int d, hx_scalar *w, real *swp) {
     /* loop through the current segment of the array. */
     for (m = 0; m < k; m++) {
       /* compute the twiddle factor. */
-      phi = M_PI * (real) m / (real) k;
+      phi = M_PI * dir * (real) m / (real) k;
       hx_scalar_phasor(w, d, phi);
 
       /* loop through the other segment of the array. */
@@ -176,8 +178,9 @@ int hx_array_fft1d (hx_array *x, int d, hx_scalar *w, real *swp) {
  * @x: pointer to the array structure.
  * @d: dimension to transform.
  * @k: direction to apply transform.
+ * @dir: direction of transformation.
  */
-int hx_array_fft (hx_array *x, int d, int k) {
+int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
   /* declare a few required variables:
    * @w: temporary array of twiddle factors.
    * @swp: temporary array of intermediate results, swapped values.
@@ -230,7 +233,7 @@ int hx_array_fft (hx_array *x, int d, int k) {
       throw("failed to slice vector");
 
     /* compute the fast fourier transform of the sliced vector. */
-    if (!hx_array_fft1d(&xv, d, &w, swp.x))
+    if (!hx_array_fft1d(&xv, d, dir, &w, swp.x))
       throw("failed to execute fft1d");
 
     /* store the sliced vector back into the array. */

@@ -24,6 +24,11 @@
 #ifndef __HXND_HX_FOURIER_H__
 #define __HXND_HX_FOURIER_H__
 
+/* define constants for forward and reverse fft operations.
+ */
+#define HX_FFT_FORWARD   1.0
+#define HX_FFT_REVERSE  -1.0
+
 /* function declarations: */
 
 int hx_ispow2 (unsigned int value);
@@ -32,7 +37,13 @@ unsigned int hx_prevpow2 (unsigned int value);
 
 unsigned int hx_nextpow2 (unsigned int value);
 
-int hx_array_fft (hx_array *x, int d, int k);
+int hx_array_fftfn (hx_array *x, int d, int k, float dir);
+
+#define hx_array_fft(x, d, k) \
+  hx_array_fftfn(x, d, k, HX_FFT_FORWARD)
+
+#define hx_array_ifft(x, d, k) \
+  hx_array_fftfn(x, d, k, HX_FFT_REVERSE)
 
 #endif /* __HXND_HX_FOURIER_H__ */
 
