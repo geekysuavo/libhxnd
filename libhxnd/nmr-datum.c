@@ -41,6 +41,39 @@ void datum_init (datum *D) {
   D->array_alloc = 0;
 }
 
+/* datum_guess_type(): attempts to reliably determine the type of file format
+ * contained in a current file or directory.
+ * @fname: the file or directory name to check.
+ */
+enum datum_type datum_guess_type (const char *fname) {
+  /* check if the file is an hx-format file. */
+  if (datum_check_magic(fname))
+    return DATUM_TYPE_HXND;
+  else
+    traceback_clear();
+
+  /* check if the file is a pipe-format file. */
+  if (pipe_check_magic(fname))
+    return DATUM_TYPE_PIPE;
+  else
+    traceback_clear();
+
+  /* check if the file is a varian-format directory. */
+  if (varian_check_dir(fname))
+    return DATUM_TYPE_VARIAN;
+  else
+    traceback_clear();
+
+  /* check if the file is a bruker-format directory. */
+  if (bruker_check_dir(fname))
+    return DATUM_TYPE_BRUKER;
+  else
+    traceback_clear();
+
+  /* return no match. */
+  return DATUM_TYPE_UNDEFINED;
+}
+
 /* datum_print(): prints the metadata associated with an acquired NMR datum.
  * @D: the datum to print data from.
  * @fname: the output filename.
@@ -172,12 +205,55 @@ int datum_print (datum *D, const char *fname) {
   return 1;
 }
 
+/* datum_check_magic(): checks the first "magic" bytes of a file and
+ * returns whether they match the NMR datum magic number.
+ * @fname: the input filename.
+ */
+int datum_check_magic (const char *fname) {
+  /* declare a few required variables:
+   * @fh: input file handle.
+   * @wd: first word of input file.
+   */
+  uint64_t wd;
+  FILE *fh;
+
+  /* open the input file. */
+  fh = fopen(fname, "rb");
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
+  /* read the first word. */
+  if (!fread(&wd, sizeof(uint64_t), 1, fh))
+    throw("failed to read magic number");
+
+  /* close the input file. */
+  fclose(fh);
+
+  /* check the magic word, without swapping. */
+  if (wd == NMR_DATUM_MAGIC)
+    return 1;
+
+  /* swap the word and check again. */
+  bytes_swap_u64(&wd);
+  if (wd == NMR_DATUM_MAGIC)
+    return 1;
+
+  /* no match. */
+  return 0;
+}
+
 /* datum_fwrite(): writes an NMR datum structure to an opened file stream.
  * @D: pointer to the source structure.
  * @fh: the output file stream.
  */
 int datum_fwrite (datum *D, FILE *fh) {
   /* FIXME: implement datum_fwrite() */
+
+  /* write the core array content to the end of the file stream. */
+  if (!hx_array_fwrite(&D->array, fh))
+    throw("failed to write core array");
 
   /* return success. */
   return 1;
@@ -189,6 +265,10 @@ int datum_fwrite (datum *D, FILE *fh) {
  */
 int datum_fread (datum *D, FILE *fh) {
   /* FIXME: implement datum_fread() */
+
+  /* read the core array content from the end of the file stream. */
+  if (!hx_array_fread(&D->array, fh))
+    throw("failed to read core array");
 
   /* return success. */
   return 1;

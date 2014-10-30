@@ -68,6 +68,8 @@ enum bruker_aqseq {
 
 /* function declarations: */
 
+int bruker_check_dir (const char *dname);
+
 int bruker_read_parms (const char *fname, unsigned int n, ...);
 
 int bruker_read (const char *fname, enum byteorder endianness,

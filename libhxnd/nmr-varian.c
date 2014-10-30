@@ -27,6 +27,55 @@
  */
 #define N_BUF  256
 
+/* varian_check_dir(): checks a directory for the requisite files for
+ * loading varian-formatted raw data.
+ * @dname: the input directory name.
+ */
+int varian_check_dir (const char *dname) {
+  /* declare a few required variables. */
+  int have_procpar, have_fid;
+  unsigned int n_fname;
+  char *fname;
+  FILE *fh;
+
+  /* allocate a string for checking file existence. */
+  n_fname = strlen(dname) + 16;
+  fname = (char*) malloc(n_fname * sizeof(char));
+
+  /* check that the string was allocated. */
+  if (!fname)
+    throw("failed to allocate %d-char buffer", n_fname);
+
+  /* try to open the procpar file. */
+  have_procpar = 0;
+  snprintf(fname, n_fname, "%s/procpar", dname);
+  fh = fopen(fname, "rb");
+
+  /* check if the procpar file was opened. */
+  if (fh) {
+    /* yep. it exists. */
+    have_procpar = 1;
+    fclose(fh);
+  }
+
+  /* try to open the fid file. */
+  have_fid = 0;
+  snprintf(fname, n_fname, "%s/fid", dname);
+  fh = fopen(fname, "rb");
+
+  /* check if the fid file was opened. */
+  if (fh) {
+    /* yep. it exists. */
+    have_fid = 1;
+    fclose(fh);
+  }
+
+  /* free the filename string. */
+  free(fname);
+
+  /* return success. */
+  return (have_procpar && have_fid);
+}
 /* varian_read_parms(): read any number of parameters from a varian
  * 'procpar' file. each parameter requested must be provided as a
  * type char, a key string, and a result pointer.

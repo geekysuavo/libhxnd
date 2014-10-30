@@ -27,6 +27,68 @@
  */
 #define N_BUF  256
 
+/* bruker_check_dir(): checks a directory for the requisite files for
+ * loading bruker-formatted raw data.
+ * @dname: the input directory name.
+ */
+int bruker_check_dir (const char *dname) {
+  /* declare a few required variables. */
+  int have_acqus, have_fid, have_ser;
+  unsigned int n_fname;
+  char *fname;
+  FILE *fh;
+
+  /* allocate a string for checking file existence. */
+  n_fname = strlen(dname) + 16;
+  fname = (char*) malloc(n_fname * sizeof(char));
+
+  /* check that the string was allocated. */
+  if (!fname)
+    throw("failed to allocate %d-char buffer", n_fname);
+
+  /* try to open the acqus file. */
+  have_acqus = 0;
+  snprintf(fname, n_fname, "%s/acqus", dname);
+  fh = fopen(fname, "rb");
+
+  /* check if the acqus file was opened. */
+  if (fh) {
+    /* yep. it exists. */
+    have_acqus = 1;
+    fclose(fh);
+  }
+
+  /* try to open the fid file. */
+  have_fid = 0;
+  snprintf(fname, n_fname, "%s/fid", dname);
+  fh = fopen(fname, "rb");
+
+  /* check if the fid file was opened. */
+  if (fh) {
+    /* yep. it exists. */
+    have_fid = 1;
+    fclose(fh);
+  }
+
+  /* try to open the ser file. */
+  have_ser = 0;
+  snprintf(fname, n_fname, "%s/ser", dname);
+  fh = fopen(fname, "rb");
+
+  /* check if the ser file was opened. */
+  if (fh) {
+    /* yep. it exists. */
+    have_ser = 1;
+    fclose(fh);
+  }
+
+  /* free the filename string. */
+  free(fname);
+
+  /* return success. */
+  return (have_acqus && (have_fid || have_ser));
+}
+
 /* bruker_read_parms(): read any number of parameters from a bruker
  * 'acqu', 'acqus', 'proc' or 'procs' file. each parameter requested
  * must be provided as a type char, a key string, and a result pointer.

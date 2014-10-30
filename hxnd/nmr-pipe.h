@@ -501,6 +501,8 @@ struct pipe_header {
 
 /* function declarations: */
 
+int pipe_check_magic (const char *fname);
+
 int pipe_read_header (const char *fname, enum byteorder *endianness,
                       struct pipe_header *hdr);
 

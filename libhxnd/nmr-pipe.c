@@ -23,6 +23,45 @@
 /* include the pipe header. */
 #include <hxnd/nmr-pipe.h>
 
+/* pipe_check_magic(): checks the first "magic" bytes of a file and
+ * returns whether they match the pipe-format file magic number.
+ * @fname: the input filename.
+ */
+int pipe_check_magic (const char *fname) {
+  /* declare a few required variables:
+   * @fh: input file handle.
+   * @wd: first words of input file.
+   */
+  float wd[3];
+  FILE *fh;
+
+  /* open the input file. */
+  fh = fopen(fname, "rb");
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
+  /* read the first three words. */
+  if (!fread(&wd, sizeof(float), 3, fh))
+    throw("failed to read magic numbers");
+
+  /* close the input file. */
+  fclose(fh);
+
+  /* check the magic word, without swapping. */
+  if (wd[2] == PIPE_MAGIC)
+    return 1;
+
+  /* swap the word and check again. */
+  bytes_swap_u32((uint32_t*) &wd[2]);
+  if (wd[2] == PIPE_MAGIC)
+    return 1;
+
+  /* no match. */
+  return 0;
+}
+
 /* pipe_read_header(): read the contents of a header from a pipe-format file.
  * @fname: the input filename.
  * @endianness: byte order result pointer.

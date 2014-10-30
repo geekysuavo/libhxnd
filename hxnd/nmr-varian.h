@@ -99,6 +99,8 @@ struct varian_hdr_ext {
 
 /* function declarations: */
 
+int varian_check_dir (const char *dname);
+
 int varian_read_parms (const char *fname, unsigned int n, ...);
 
 int varian_read_hdr_file (const char *fname, enum byteorder *endianness,

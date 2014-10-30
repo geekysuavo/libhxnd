@@ -209,6 +209,45 @@ int hx_array_print (hx_array *x, const char *fname) {
   return 1;
 }
 
+/* hx_array_check_magic(): checks the first "magic" bytes of a file and
+ * returns whether they match the hypercomplex array magic number.
+ * @fname: the input filename.
+ */
+int hx_array_check_magic (const char *fname) {
+  /* declare a few required variables:
+   * @fh: input file handle.
+   * @wd: first word of input file.
+   */
+  uint64_t wd;
+  FILE *fh;
+
+  /* open the input file. */
+  fh = fopen(fname, "rb");
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
+  /* read the first word. */
+  if (!fread(&wd, sizeof(uint64_t), 1, fh))
+    throw("failed to read magic number");
+
+  /* close the input file. */
+  fclose(fh);
+
+  /* check the magic word, without swapping. */
+  if (wd == HX_ARRAY_MAGIC)
+    return 1;
+
+  /* swap the word and check again. */
+  bytes_swap_u64(&wd);
+  if (wd == HX_ARRAY_MAGIC)
+    return 1;
+
+  /* no match. */
+  return 0;
+}
+
 /* hx_array_fwrite(): writes a hypercomplex multidimensional array to an
  * opened file stream.
  * @x: pointer to the source array.

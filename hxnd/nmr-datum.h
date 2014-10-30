@@ -30,13 +30,19 @@
 /* include the byte-level data header. */
 #include <hxnd/bytes.h>
 
+/* define a magic number to use when determining byte order of binary-format
+ * NMR datum files. (in L.E. = 'HXNDDATA')
+ */
+#define NMR_DATUM_MAGIC  0x41544144444e5848
+
 /* datum_type: enumerated type for datum raw byte data types.
  */
 enum datum_type {
   DATUM_TYPE_UNDEFINED,
   DATUM_TYPE_BRUKER,
   DATUM_TYPE_VARIAN,
-  DATUM_TYPE_PIPE
+  DATUM_TYPE_PIPE,
+  DATUM_TYPE_HXND
 };
 
 /* datum_dim: single dimension of parameters for acquired NMR data.
@@ -102,7 +108,11 @@ datum;
 
 void datum_init (datum *D);
 
+enum datum_type datum_guess_type (const char *fname);
+
 int datum_print (datum *D, const char *fname);
+
+int datum_check_magic (const char *fname);
 
 int datum_fwrite (datum *D, FILE *fh);
 
