@@ -36,7 +36,7 @@ static const datum_dim_desc datum_dim_parms[] = {
   { "carrier", 'f', offsetof(datum_dim, carrier) },
   { "width",   'f', offsetof(datum_dim, width) },
   { "offset",  'f', offsetof(datum_dim, offset) },
-  { "nuc",     's', offsetof(datum_dim, nuc) },
+  { "name",    's', offsetof(datum_dim, nuc) },
   { NULL, 'c', 0 }
 };
 
