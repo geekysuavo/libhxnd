@@ -23,6 +23,15 @@
 /* include the byte-level data header. */
 #include <hxnd/bytes.h>
 
+/* bytes_conv_real_u64_t: union definition for converting between a real
+ * floating point value and its binary representation.
+ */
+typedef union {
+  real fval;
+  uint64_t ival;
+}
+bytes_conv_real_u64_t;
+
 /* bytes_native_endianness: a private variable in the bytes_* namespace that
  * identifies the native byte ordering of words on the current machine.
  */
@@ -521,15 +530,6 @@ int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
   /* return success. */
   return 1;
 }
-
-/* bytes_conv_real_u64_t: union definition for converting between a real
- * floating point value and its binary representation.
- */
-typedef union {
-  real fval;
-  uint64_t ival;
-}
-bytes_conv_real_u64_t;
 
 /* bytes_real_to_u64(): convert a real floating point value to a u64.
  */

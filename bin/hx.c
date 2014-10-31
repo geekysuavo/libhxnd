@@ -172,7 +172,17 @@ int main (int argc, char **argv) {
 
   /* apply parameter corrections at this point. */
   for (i = 0; i < n_corrs; i++) {
-    /* FIXME: apply the currently indexed correction. */
+    /* apply the currently indexed correction. */
+    if (!datum_set_dim_parameter(&D, corrs[i].key, corrs[i].d - 1,
+                                 corrs[i].val)) {
+      /* raise an exception. */
+      raise("failed to correct %s[%u] to '%s'",
+            corrs[i].key, corrs[i].d, corrs[i].val);
+
+      /* end execution. */
+      traceback_print();
+      return 1;
+    }
   }
 
   /* check if we're only pretending to read the data. */

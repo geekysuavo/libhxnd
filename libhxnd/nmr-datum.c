@@ -23,6 +23,23 @@
 /* include the nmr data header. */
 #include <hxnd/nmr-datum.h>
 
+/* datum_dim_parms: array of dimension description structures that indicate
+ * the names, types and offets of each datum dimension structure member .
+ */
+static const datum_dim_desc datum_dim_parms[] = {
+  { "sz",      'u', offsetof(datum_dim, sz) },
+  { "td",      'u', offsetof(datum_dim, td) },
+  { "tdunif",  'u', offsetof(datum_dim, tdunif) },
+  { "complex", 'u', offsetof(datum_dim, cx) },
+  { "nus",     'u', offsetof(datum_dim, nus) },
+  { "ft",      'u', offsetof(datum_dim, ft) },
+  { "carrier", 'f', offsetof(datum_dim, carrier) },
+  { "width",   'f', offsetof(datum_dim, width) },
+  { "offset",  'f', offsetof(datum_dim, offset) },
+  { "nuc",     's', offsetof(datum_dim, nuc) },
+  { NULL, 'c', 0 }
+};
+
 /* datum_init(): initializes the elements of an NMR datum structure.
  * @D: ponter to the datum to initialize.
  */
@@ -525,6 +542,140 @@ int datum_load (datum *D, const char *fname, int load_array) {
 
   /* return success. */
   return 1;
+}
+
+/* datum_get_dim_parameter(): retrieves a dimension parameter from a datum
+ * structure, by name and dimension index.
+ * @D: pointer to the datum struct.
+ * @name: parameter name to get.
+ * @d: dimension of parameter.
+ * @parm: pointer to the result.
+ */
+int datum_get_dim_parameter (datum *D, const char *name, unsigned int d,
+                             void *parm) {
+  /* declare pointer locations for each data type. */
+  unsigned int *uptr;
+  char *sptr;
+  real *fptr;
+  int *dptr;
+
+  /* declare required variables. */
+  unsigned int i;
+  uint8_t *base;
+
+  /* check that the dimension index is within bounds. */
+  if (d >= D->nd)
+    throw("dimension index %u out of bound %u", d, D->nd);
+
+  /* compute the base address of the dimension structure of interest. */
+  base = (uint8_t*) &D->dims[d];
+
+  /* loop over the dimension descriptors. */
+  for (i = 0; datum_dim_parms[i].name; i++) {
+    /* check if the current descriptor matches the requested name. */
+    if (strcmp(datum_dim_parms[i].name, name) == 0) {
+      /* act based on the parameter type. */
+      switch (datum_dim_parms[i].type) {
+        /* signed int */
+        case 'd':
+          dptr = (int*) (base + datum_dim_parms[i].off);
+          *((int*) parm) = *dptr;
+          return 1;
+
+        /* unsigned int */
+        case 'u':
+          uptr = (unsigned int*) (base + datum_dim_parms[i].off);
+          *((unsigned int*) parm) = *uptr;
+          return 1;
+
+        /* real */
+        case 'f':
+          fptr = (real*) (base + datum_dim_parms[i].off);
+          *((real*) parm) = *fptr;
+          return 1;
+
+        /* string */
+        case 's':
+          sptr = (char*) (base + datum_dim_parms[i].off);
+          memcpy(parm, sptr, 8);
+          return 1;
+
+        /* unknown */
+        default:
+          throw("invalid parameter type '%c'", datum_dim_parms[i].type);
+      }
+    }
+  }
+
+  /* no match was found. throw an exception. */
+  throw("invalid dimension parameter name '%s'", name);
+}
+
+/* datum_set_dim_parameter(): stores a dimension parameter into a datum
+ * structure, by name and dimension index.
+ * @D: pointer to the datum struct.
+ * @name: parameter name to set.
+ * @d: dimension of parameter.
+ * @parm: the new value, as a string.
+ */
+int datum_set_dim_parameter (datum *D, const char *name, unsigned int d,
+                             const char *parm) {
+  /* declare pointer locations for each data type. */
+  unsigned int *uptr;
+  char *sptr;
+  real *fptr;
+  int *dptr;
+
+  /* declare required variables. */
+  unsigned int i;
+  uint8_t *base;
+
+  /* check that the dimension index is within bounds. */
+  if (d >= D->nd)
+    throw("dimension index %u out of bound %u", d, D->nd);
+
+  /* compute the base address of the dimension structure of interest. */
+  base = (uint8_t*) &D->dims[d];
+
+  /* loop over the dimension descriptors. */
+  for (i = 0; datum_dim_parms[i].name; i++) {
+    /* check if the current descriptor matches the requested name. */
+    if (strcmp(datum_dim_parms[i].name, name) == 0) {
+      /* act based on the parameter type. */
+      switch (datum_dim_parms[i].type) {
+        /* signed int */
+        case 'd':
+          dptr = (int*) (base + datum_dim_parms[i].off);
+          *dptr = atol(parm);
+          return 1;
+
+        /* unsigned int */
+        case 'u':
+          uptr = (unsigned int*) (base + datum_dim_parms[i].off);
+          *uptr = (unsigned int) atol(parm);
+          return 1;
+
+        /* real */
+        case 'f':
+          fptr = (real*) (base + datum_dim_parms[i].off);
+          *fptr = (real) atof(parm);
+          return 1;
+
+        /* string */
+        case 's':
+          sptr = (char*) (base + datum_dim_parms[i].off);
+          memcpy(sptr, parm, 8);
+          return 1;
+
+        /* unknown */
+        default:
+          throw("invalid parameter type '%c'", datum_dim_parms[i].type);
+      }
+    }
+  }
+
+  /* no match was found. throw an exception. */
+  throw("invalid dimension parameter name '%s'", name);
 }
 
 /* datum_reorder_dims(): reorders the dimensions inside a datum structure

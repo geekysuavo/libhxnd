@@ -45,6 +45,21 @@ enum datum_type {
   DATUM_TYPE_HXND
 };
 
+/* datum_dim_desc: structure that defines a mapping between dimension
+ * parameter names, their locations within the datum_dim structure,
+ * and their types in the structure.
+ */
+typedef struct {
+  /* @name: parameter name string.
+   * @type: parameter type character.
+   * @off: struct member offset.
+   */
+  const char *name;
+  char type;
+  size_t off;
+}
+datum_dim_desc;
+
 /* datum_dim: single dimension of parameters for acquired NMR data.
  */
 typedef struct {
@@ -121,6 +136,12 @@ int datum_fread (datum *D, FILE *fh, int read_array);
 int datum_save (datum *D, const char *fname);
 
 int datum_load (datum *D, const char *fname, int load_array);
+
+int datum_get_dim_parameter (datum *D, const char *name, unsigned int d,
+                             void *parm);
+
+int datum_set_dim_parameter (datum *D, const char *name, unsigned int d,
+                             const char *parm);
 
 int datum_reorder_dims (datum *D, int *order);
 
