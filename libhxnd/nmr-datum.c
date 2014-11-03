@@ -465,9 +465,15 @@ int datum_fread (datum *D, FILE *fh, int read_array) {
   /* free the allocated buffer. */
   free(buf);
 
-  /* read the core array content from the end of the file stream. */
-  if (read_array && !hx_array_fread(&D->array, fh))
-    throw("failed to read core array");
+  /* check if the core array content should be loaded. */
+  if (read_array) {
+    /* read the core array content from the end of the file stream. */
+    if (!hx_array_fread(&D->array, fh))
+      throw("failed to read core array");
+
+    /* read succeeded. set the array allocation status flag. */
+    D->array_alloc = 1;
+  }
 
   /* return success. */
   return 1;
