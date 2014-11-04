@@ -31,9 +31,17 @@
 
 /* function declarations: */
 
+void strtrim (char *s);
+
+void strltrim (char *s);
+
+void strrtrim (char *s);
+
 void strnltrim (char *s);
 
 char **strsplit (const char *s1, const char *s2, unsigned int *ntok);
+
+void strvtrim (char **strv, unsigned int n);
 
 void strvfree (char **strv, unsigned int n);
 

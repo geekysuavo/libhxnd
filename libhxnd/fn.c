@@ -126,6 +126,9 @@ int fn_scan_args (const char *argstr, const fn_args *argdef, ...) {
   if (!argv || !argc)
     throw("failed to split argument string");
 
+  /* trim the string array elements. */
+  strvtrim(argv, argc);
+
   /* initialize the variable arguments list. */
   va_start(vl, argdef);
   valv = NULL;
@@ -151,6 +154,9 @@ int fn_scan_args (const char *argstr, const fn_args *argdef, ...) {
       /* check that the split was successful. */
       if (!valv || valc < 1)
         throw("failed to split argument '%s'", argv[argi]);
+
+      /* trim the string array elements. */
+      strvtrim(valv, valc);
 
       /* compare the l-value against the current argument name. */
       if (strcmp(valv[0], argdef[defi].name) == 0 ||

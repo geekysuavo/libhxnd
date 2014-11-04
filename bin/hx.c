@@ -66,8 +66,9 @@ int main (int argc, char **argv) {
    * @n_procs: array length.
    */
   struct processor *procs = NULL;
-  unsigned int n, n_procs = 0;
+  unsigned int n, fnc, n_procs = 0;
   char *fnname, *fnargs;
+  char **fnv;
   int dbuf;
 
   /* declare variables for parameter correction:
@@ -125,17 +126,32 @@ int main (int argc, char **argv) {
           return 1;
         }
 
-        /* attempt to parse the function and arguments. */
-        if (sscanf(argv[argi - 1], " %[^[] [ %d ] : %s ",
-                   fnname, &dbuf, fnargs) != 3 &&
-            sscanf(argv[argi - 1], " %[^[] [ %d ] ",
-                   fnname, &dbuf) != 2 &&
-            sscanf(argv[argi - 1], " %s ", fnname) != 1) {
+        /* try to split the function and arguments. */
+        fnv = strsplit(argv[argi - 1], ":", &fnc);
+
+        /* check that the split succeeded. */
+        if (!fnv || fnc < 1) {
           /* raise an error and end execution. */
-          raise("failed to parse function '%s'", argv[argi - 1]);
+          raise("failed to split function string");
           traceback_print();
           return 1;
         }
+
+        /* attempt to parse the function name and dimension. */
+        if (sscanf(fnv[0], " %[^ [] [ %d ] ", fnname, &dbuf) != 2 &&
+            sscanf(fnv[0], " %s ", fnname) != 1) {
+          /* raise an error and end execution. */
+          raise("failed to parse function '%s'", fnv[0]);
+          traceback_print();
+          return 1;
+        }
+
+        /* attempt to parse the function arguments. */
+        if (fnc >= 2)
+          strcpy(fnargs, fnv[1]);
+
+        /* free the function string array. */
+        strvfree(fnv, fnc);
 
         /* reallocate the array of functions. */
         procs = (struct processor*)
@@ -158,7 +174,7 @@ int main (int argc, char **argv) {
       /* v: dimension parameter correction. */
       case 'v':
         /* attempt to parse the parameter values. */
-        if (sscanf(argv[argi - 1], " %31[^[] [ %u ] = %31s ",
+        if (sscanf(argv[argi - 1], " %31[^ [] [ %u ] = %31s ",
                    kbuf, &ibuf, vbuf) != 3) {
           /* raise an error and end execution. */
           raise("failed to parse correction '%s'", argv[argi - 1]);

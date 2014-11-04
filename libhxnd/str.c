@@ -23,6 +23,98 @@
 /* include the strings header. */
 #include <hxnd/str.h>
 
+/* strtrim(): trim spaces from the beginning and end of a string.
+ * @s: the strig to trim.
+ */
+void strtrim (char *s) {
+  /* declare required variables. */
+  int i, j, n;
+  char *stmp;
+
+  /* check that the string is non-null. */
+  if (!s)
+    return;
+
+  /* get the string length. */
+  n = strlen(s);
+
+  /* loop from the beginning until non-whitespace is found. */
+  for (i = 0; i < n && s[i] == ' '; i++) {}
+
+  /* loop from the end until non-whitespace is found. */
+  for (j = n - 1; j >= 0 && s[j] == ' '; j--) {}
+
+  /* if the whole string is whitespace, null it out. */
+  if (i >= j)
+    strcpy(s, "");
+
+  /* allocate a temporary string. */
+  stmp = (char*) malloc((j - i + 2) * sizeof(char));
+  if (!stmp)
+    return;
+
+  /* build the trimmed substring. */
+  strncpy(stmp, s + i, j - i + 1);
+  stmp[j - i + 1] = '\0';
+
+  /* copy the trimmed substring and free the temporary string. */
+  strcpy(s, stmp);
+  free(stmp);
+}
+
+/* strltrim(): trim spaces from the beginning of a string.
+ * @s: the string to trim.
+ */
+void strltrim (char *s) {
+  /* declare required variables. */
+  int i, n;
+  char *stmp;
+
+  /* check that the string is non-null. */
+  if (!s)
+    return;
+
+  /* get the string length. */
+  n = strlen(s);
+
+  /* loop from the beginning until non-whitespace is found. */
+  for (i = 0; i < n && s[i] == ' '; i++) {}
+
+  /* if the whole string is whitespace, null it out. */
+  if (i >= n)
+    strcpy(s, "");
+
+  /* allocate a temporary string. */
+  stmp = (char*) malloc((n - i + 1) * sizeof(char));
+  if (!stmp)
+    return;
+
+  /* build the trimmed substring. */
+  strncpy(stmp, s + i, n - i);
+  stmp[n - i] = '\0';
+
+  /* copy the trimmed substring and free the temporary string. */
+  strcpy(s, stmp);
+  free(stmp);
+}
+
+/* strrtrim(): trim spaces from the end of a string.
+ * @s: the string to trim.
+ */
+void strrtrim (char *s) {
+  /* declare a variable to hold the current string length. */
+  int n;
+
+  /* check that the string is non-null. */
+  if (!s)
+    return;
+
+  /* loop until the end of the string contains no undesireables.
+   */
+  while ((n = strlen(s)) && s[n - 1] == ' ')
+    s[n - 1] = '\0';
+}
+
 /* strnltrim(): trim newlines and carriage returns from the end of a string.
  * @s: the string to trim.
  */
@@ -123,6 +215,19 @@ char **strsplit (const char *s1, const char *s2, unsigned int *ntok) {
   /* set the number of read tokens and return the string array. */
   *ntok = count;
   return strv;
+}
+
+/* strvtrim(): trim leading and trailing spaces from each string in an array.
+ * @strv: the string array to trim.
+ * @n: the number of strings in the array.
+ */
+void strvtrim (char **strv, unsigned int n) {
+  /* declare a loop counter. */
+  unsigned int i;
+
+  /* trim the individual strings in the array. */
+  for (i = 0; i < n; i++)
+    strtrim(strv[i]);
 }
 
 /* strvfree(): free a string array.
