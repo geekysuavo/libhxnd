@@ -105,6 +105,7 @@ void traceback_clear (void) {
   free(tb);
 
   /* prepare for the next error. */
+  errno = 0;
   tb = NULL;
   n_tb = 0;
 }
