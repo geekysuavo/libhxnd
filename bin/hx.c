@@ -1,9 +1,23 @@
 
-/* include the datum header. */
+/* include the datum and function headers. */
 #include <hxnd/nmr-datum.h>
+#include <hxnd/fn.h>
 
 /* include the portable option parsing header. */
 #include <hxnd/opts.h>
+
+/* processor: structure that defines functions that need to be applied to
+ * datum content.
+ */
+struct processor {
+  /* @d: dimension index.
+   * @name: function name string.
+   * @args: function arguments string.
+   */
+  int d;
+  char *name;
+  char *args;
+};
 
 /* correction: structure that defines parameter corrections that need to
  * be made to datum metadata fields.
@@ -45,6 +59,17 @@ int main (int argc, char **argv) {
   /* declare variables for behavior determination. */
   int pretend = 0;
 
+  /* declare variables for function execution:
+   * @fnname: function name temporary string.
+   * @fnargs: function args temporary string.
+   * @procs: array of processing functions.
+   * @n_procs: array length.
+   */
+  struct processor *procs = NULL;
+  unsigned int n, n_procs = 0;
+  char *fnname, *fnargs;
+  int dbuf;
+
   /* declare variables for parameter correction:
    * @kbuf, vbuf, ibuf: temporary parsing locations.
    * @corrs: array of correction values.
@@ -76,16 +101,62 @@ int main (int argc, char **argv) {
 
       /* f: processing function. */
       case 'f':
-        /* FIXME: add processing functions. */
+        /* allocate the buffer strings for storing function name/args. */
+        n = strlen(argv[argi - 1]);
+        fnname = (char*) malloc(n * sizeof(char));
+        fnargs = (char*) malloc(n * sizeof(char));
+
+        /* initialize the buffer strings. */
+        strcpy(fnname, "");
+        strcpy(fnargs, "");
+
+        /* initialize the dimension index. this value will result in
+         * an 'invalid dimension' error for any function that requires
+         * a valid dimension index, because the call to fn_execute()
+         * will subtract 1.
+         */
+        dbuf = 0;
+
+        /* check that allocation succeeded. */
+        if (!fnname || !fnargs) {
+          /* raise an error and end execution. */
+          raise("failed to allocate temporary buffers");
+          traceback_print();
+          return 1;
+        }
+
+        /* attempt to parse the function and arguments. */
+        if (sscanf(argv[argi - 1], " %[^[] [ %d ] : %s ",
+                   fnname, &dbuf, fnargs) != 3 &&
+            sscanf(argv[argi - 1], " %[^[] [ %d ] ",
+                   fnname, &dbuf) != 2 &&
+            sscanf(argv[argi - 1], " %s ", fnname) != 1) {
+          /* raise an error and end execution. */
+          raise("failed to parse function '%s'", argv[argi - 1]);
+          traceback_print();
+          return 1;
+        }
+
+        /* reallocate the array of functions. */
+        procs = (struct processor*)
+          realloc(procs, ++n_procs * sizeof(struct processor));
+
+        /* check that the reallocation succeeded. */
+        if (!procs) {
+          /* raise an error and end execution. */
+          raise("failed to reallocate processing function array");
+          traceback_print();
+          return 1;
+        }
+
+        /* store the processing information. */
+        procs[n_procs - 1].name = fnname;
+        procs[n_procs - 1].args = fnargs;
+        procs[n_procs - 1].d = dbuf;
         break;
 
       /* v: dimension parameter correction. */
       case 'v':
-        /* initialize the parsing locations. */
-        strncpy(kbuf, "", 32);
-        strncpy(vbuf, "", 32);
-        ibuf = 0;
-
         /* attempt to parse the parameter values. */
         if (sscanf(argv[argi - 1], " %31[^[] [ %u ] = %31s ",
                    kbuf, &ibuf, vbuf) != 3) {
@@ -207,7 +278,18 @@ int main (int argc, char **argv) {
     return 0;
   }
 
-  /* FIXME: apply processing functions at this point. */
+  /* apply processing functions at this point. */
+  for (i = 0; i < n_procs; i++) {
+    /* apply the currently indexed processing function. */
+    if (!fn_execute(&D, procs[i].name, procs[i].d - 1, procs[i].args)) {
+      /* raise an exception. */
+      raise("failed to apply function '%s' (#%u)", procs[i].name, i);
+
+      /* end execution. */
+      traceback_print();
+      return 1;
+    }
+  }
 
   /* determine how to write data out. */
   if (fname_out)
