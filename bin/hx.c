@@ -6,6 +6,32 @@
 /* include the portable option parsing header. */
 #include <hxnd/opts.h>
 
+/* define a short help message string to display if the help flag is thrown.
+ */
+#define HX_HELPSTRING "\
+ hx: A command-line multi-tool for handling NMR data\n\
+ Copyright (C) 2014 Bradley Worley. Released under the GNU GPL 2.0.\n\
+\n\
+ Usage:\n\
+   hx [OPTIONS]\n\
+\n\
+ Options:\n\
+   -h, --help             Display this help message\n\
+   -i, --input FIN        Specify an input filename [stdin]\n\
+   -o, --output FOUT      Specify an output filename [stdout]\n\
+   -p, --pretend          Perform no actual processing\n\
+   -f, --function FNDEF   Apply a processing function (optional)\n\
+   -v, --value VALDEF     Change a parameter value (optional)\n\
+\n\
+ The hx tool performs all functions required to convert and process NMR\n\
+ time-domain and spectral data, based on the libhxnd framework for using\n\
+ multidimensional arrays of hypercomplex numbers.\n\
+\n\
+ For more information on available processing functions and their syntax,\n\
+ see the manual page for hx(1).\n\
+\n\
+"
+
 /* processor: structure that defines functions that need to be applied to
  * datum content.
  */
@@ -43,6 +69,7 @@ int main (int argc, char **argv) {
   /* declare the option definition array used by opts_get() for parsing.
    */
   const opts_def long_options[] = {
+    { "help",     0, 'h' },
     { "input",    1, 'i' },
     { "output",   1, 'o' },
     { "pretend",  0, 'p' },
@@ -96,6 +123,11 @@ int main (int argc, char **argv) {
   while ((c = opts_get(argc, argv, long_options, &argi)) != -1) {
     /* determine which option was specified. */
     switch ((char) c) {
+      /* h: help mode. */
+      case 'h':
+        fprintf(stdout, HX_HELPSTRING);
+        return 0;
+
       /* i: input filename. */
       case 'i':
         fname_in = argv[argi - 1];

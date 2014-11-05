@@ -59,7 +59,6 @@ int fn_execute_add (datum *D, const int dim, const char *argstr) {
   /* check if a subtraction was specified. */
   if (sub)
     fscale *= -1.0;
-printf("scaling = %.2f\n", fscale);
 
   /* check if a file argument was provided. */
   if (fadd) {
@@ -72,8 +71,9 @@ printf("scaling = %.2f\n", fscale);
     if (!hx_array_add_array(&D->array, &Dadd.array, fscale, &D->array))
       throw("failed to add file '%s'", fadd);
 
-    /* free the new datum. */
+    /* free the temporary datum and the filename string. */
     datum_free(&Dadd);
+    free(fadd);
   }
 
   /* check that the constant value is nonzero. */
