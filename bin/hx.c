@@ -272,6 +272,13 @@ int main (int argc, char **argv) {
     }
   }
 
+  /* free the parameter corrections array. */
+  if (n_corrs) {
+    /* only if corrections have been allocated. */
+    free(corrs);
+    n_corrs = 0;
+  }
+
   /* check if we're only pretending to read the data. */
   if (pretend) {
     /* make sure the array has been dropped from the structure. */
@@ -305,6 +312,17 @@ int main (int argc, char **argv) {
       traceback_print();
       return 1;
     }
+
+    /* free the allocated processing function strings. */
+    free(procs[i].name);
+    free(procs[i].args);
+  }
+
+  /* free the processing functions array. */
+  if (n_procs) {
+    /* but only if it's been allocated. */
+    free(procs);
+    n_procs = 0;
   }
 
   /* determine how to write data out. */
