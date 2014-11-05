@@ -87,6 +87,36 @@ real fn_parse_arg_float (char **v, int c) {
   return atof(v[1]);
 }
 
+/* fn_parse_arg_str(): parses a string argument from a key-value string array.
+ * this allocates a new string in memory, which needs to be freed by the
+ * calling function of fn_scan_args().
+ * @v: the string array.
+ * @c: the string array length.
+ */
+char *fn_parse_arg_str (char **v, int c) {
+  /* declare a few required variables. */
+  unsigned int n;
+  char *str;
+
+  /* check the array length. */
+  if (c != 2) {
+    /* raise an error and return nothing. */
+    raise("r-value required for string parsing");
+    return NULL;
+  }
+
+  /* get the length of the input string. */
+  n = strlen(v[1]) + 2;
+
+  /* allocate memory for the string output. */
+  str = (char*) malloc(n * sizeof(char));
+  if (str)
+    strcpy(str, v[1]);
+
+  /* return the newly allocated, copied string. */
+  return str;
+}
+
 /* fn_scan_args(): scans a processing function string and extracts all known
  * function arguments. throws an error when unknown arguments or invalid
  * argument values are supplied.
@@ -196,6 +226,11 @@ int fn_scan_args (const char *argstr, const fn_args *argdef, ...) {
                                   atof(argdef[defi].def));
         break;
 
+      /* string. */
+      case FN_ARGTYPE_STRING:
+        *((char**) ptr) = (found ? fn_parse_arg_str(valv, valc) : NULL);
+        break;
+
       /* other... */
       default:
         throw("unsupported argument type '%c'", argdef[defi].type);
@@ -227,11 +262,15 @@ int fn_execute (datum *D,
                 const int dim,
                 const char *argstr) {
   /* act based on the function name. */
-  if (strcmp(name, FN_NAME_FFT) == 0) {
+  if (strcmp(name, FN_NAME_ADD) == 0) {
+    /* execute the 'add' function. */
+    return fn_execute_add(D, dim, argstr);
+  }
+  else if (strcmp(name, FN_NAME_FFT) == 0) {
     /* execute the 'fft' function. */
     return fn_execute_fft(D, dim, argstr);
   }
-  if (strcmp(name, FN_NAME_HT) == 0) {
+  else if (strcmp(name, FN_NAME_HT) == 0) {
     /* execute the 'ht' function. */
     return fn_execute_ht(D, dim, argstr);
   }

@@ -123,6 +123,8 @@ datum;
 
 void datum_init (datum *D);
 
+void datum_free (datum *D);
+
 enum datum_type datum_guess_type (const char *fname);
 
 int datum_print (datum *D, const char *fname);

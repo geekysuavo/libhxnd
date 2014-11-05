@@ -41,7 +41,7 @@ static const datum_dim_desc datum_dim_parms[] = {
 };
 
 /* datum_init(): initializes the elements of an NMR datum structure.
- * @D: ponter to the datum to initialize.
+ * @D: pointer to the datum to initialize.
  */
 void datum_init (datum *D) {
   /* initialize the input data filename. */
@@ -56,6 +56,25 @@ void datum_init (datum *D) {
 
   /* indicate that the array is not allocated. */
   D->array_alloc = 0;
+}
+
+/* datum_free(): frees all allocated innards of an NMR datum structure.
+ * @D: pointer to the datum to free.
+ */
+void datum_free (datum *D) {
+  /* free the input filename. */
+  if (D->fname)
+    free(D->fname);
+
+  /* free the dimensions array. */
+  if (D->dims)
+    free(D->dims);
+
+  /* free the array data. */
+  datum_free_array(D);
+
+  /* re-initialize the datum. */
+  datum_init(D);
 }
 
 /* datum_guess_type(): attempts to reliably determine the type of file format

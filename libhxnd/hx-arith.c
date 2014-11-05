@@ -220,7 +220,7 @@ int hx_array_add_array (hx_array *a, hx_array *b, real s, hx_array *c) {
   /* loop over the array elements. */
   for (i = 0; i < a->len; i += a->n) {
     /* perform the raw scalar data operation. */
-    if (!hx_data_add(a->x + i, b->x + i, c->x +i, s, a->d, a->n))
+    if (!hx_data_add(a->x + i, b->x + i, c->x + i, s, a->d, a->n))
       return 0;
   }
 
@@ -285,7 +285,7 @@ int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c) {
   /* loop over the array elements. */
   for (i = 0; i < a->len; i += a->n) {
     /* perform the raw scalar data operation. */
-    if (!hx_data_mul(a->x + i, b->x + i, c->x +i, a->d, a->n, a->tbl))
+    if (!hx_data_mul(a->x + i, b->x + i, c->x + i, a->d, a->n, a->tbl))
       return 0;
   }
 

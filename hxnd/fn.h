@@ -30,12 +30,14 @@
 /* define argument type characters used when parsing processing function
  * strings.
  */
-#define FN_ARGTYPE_INT    'i'
-#define FN_ARGTYPE_BOOL   'b'
-#define FN_ARGTYPE_FLOAT  'f'
+#define FN_ARGTYPE_INT     'i'
+#define FN_ARGTYPE_BOOL    'b'
+#define FN_ARGTYPE_FLOAT   'f'
+#define FN_ARGTYPE_STRING  's'
 
 /* define string names for all available processing functions.
  */
+#define FN_NAME_ADD  "add"
 #define FN_NAME_FFT  "fft"
 #define FN_NAME_HT   "ht"
 
@@ -59,9 +61,11 @@ fn_args;
 
 int fn_scan_args (const char *argstr, const fn_args *argdef, ...);
 
+int fn_execute (datum *D, const char *name, const int dim, const char *argstr);
+
 /* function declarations, processing: */
 
-int fn_execute (datum *D, const char *name, const int dim, const char *argstr);
+int fn_execute_add (datum *D, const int dim, const char *argstr);
 
 int fn_execute_fft (datum *D, const int dim, const char *argstr);
 
