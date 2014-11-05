@@ -27,13 +27,14 @@
 /* opts_get(): returns the next parsed option in an argument array.
  * this function does not implement any kind of compliant option parsing,
  * but instead just allows for single-character options to be parsed,
- * without the ability to group options into one argument.
+ * without the ability to group options into one argument. Long options
+ * are also supported.
  * @argc: argument count.
  * @argv: argument array.
- * @opstr: short option string.
+ * @opts: long option definition struct array.
  * @argi: pointer to current argument index.
  */
-int opts_get (int argc, char **argv, const char *opstr, int *argi) {
+int opts_get (int argc, char **argv, const opts_def *opts, int *argi) {
   /* declare a few required variables. */
   char *arg;
   int i;
@@ -51,21 +52,17 @@ int opts_get (int argc, char **argv, const char *opstr, int *argi) {
 
   /* check the currently indexed option. */
   if (strlen(arg) == 2 && arg[0] == '-') {
-    /* option char identified. search the option string. */
-    for (i = 0; i < strlen(opstr); i++) {
-      /* skip non-option characters. */
-      if (opstr[i] == ':')
-        continue;
-
+    /* option char identified. search the option definition array. */
+    for (i = 0; opts[i].lname; i++) {
       /* check if the current option is a match. */
-      if (opstr[i] == arg[1])
+      if (opts[i].sname == arg[1])
         break;
     }
 
     /* check if an option was identified. */
-    if (i < strlen(opstr)) {
+    if (opts[i].lname) {
       /* yes. check if an option argument is required. */
-      if (i < strlen(opstr) - 1 && opstr[i + 1] == ':') {
+      if (opts[i].has_arg) {
         /* ensure an extra argument exists. */
         if (*argi >= argc - 1)
           throw("option '-%c' requires an argument", arg[1]);
@@ -80,7 +77,36 @@ int opts_get (int argc, char **argv, const char *opstr, int *argi) {
     }
     else {
       /* throw an exception. */
-      throw("invalid option '-%c'", arg[1]);
+      throw("invalid short option '-%c'", arg[1]);
+    }
+  }
+  else if (strlen(arg) >= 3 && arg[0] == '-' && arg[1] == '-') {
+    /* option string identified. search the option definition array. */
+    for (i = 0; opts[i].lname; i++) {
+      /* check if the current option is a match. */
+      if (strcmp(opts[i].lname, arg + 2) == 0)
+        break;
+    }
+
+    /* check if an option was identified. */
+    if (opts[i].lname) {
+      /* yes. check if an option argument is required. */
+      if (opts[i].has_arg) {
+        /* ensure an extra argument exists. */
+        if (*argi >= argc - 1)
+          throw("option '--%s' requires an argument", arg + 2);
+
+        /* increment the argument index to skip the option argument. */
+        (*argi)++;
+      }
+
+      /* everything checks out. increment the argument index and return. */
+      (*argi)++;
+      return (int) opts[i].sname;
+    }
+    else {
+      /* throw an exception. */
+      throw("invalid long option '--%s'", arg + 2);
     }
   }
   else {

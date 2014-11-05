@@ -40,6 +40,17 @@ int main (int argc, char **argv) {
   /* declare a datum structure for loading data into. */
   datum D;
 
+  /* declare the option definition array used by opts_get() for parsing.
+   */
+  const opts_def long_options[] = {
+    { "input",    1, 'i' },
+    { "output",   1, 'o' },
+    { "pretend",  0, 'p' },
+    { "function", 1, 'f' },
+    { "value",    1, 'v' },
+    { NULL, 0, '\0' }
+  };
+
   /* declare variables used for argument parsing:
    * @argi: current argument array index in opts_get()
    * @c: returned option character from opts_get()
@@ -82,7 +93,7 @@ int main (int argc, char **argv) {
   unsigned int i, ibuf;
 
   /* loop until the arguments are exhausted. */
-  while ((c = opts_get(argc, argv, "i:o:pf:v:", &argi)) != -1) {
+  while ((c = opts_get(argc, argv, long_options, &argi)) != -1) {
     /* determine which option was specified. */
     switch ((char) c) {
       /* i: input filename. */

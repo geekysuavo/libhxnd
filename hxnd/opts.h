@@ -29,9 +29,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* opts_def: options definition structure for informing opts_get() about
+ * all possible command-line options that are accepted by a program.
+ */
+typedef struct {
+  /* @lname: long option name string.
+   * @sname: short option name char.
+   * @has_arg: whether this option requires an argument.
+   */
+  const char *lname;
+  int has_arg;
+  char sname;
+}
+opts_def;
+
 /* function declarations: */
 
-int opts_get (int argc, char **argv, const char *opstr, int *argi);
+int opts_get (int argc, char **argv, const opts_def *opts, int *argi);
 
 #endif /* __HXND_OPTS_H__ */
 
