@@ -231,6 +231,10 @@ int fn_execute (datum *D,
     /* execute the 'fft' function. */
     return fn_execute_fft(D, dim, argstr);
   }
+  if (strcmp(name, FN_NAME_HT) == 0) {
+    /* execute the 'ht' function. */
+    return fn_execute_ht(D, dim, argstr);
+  }
   else
     throw("invalid function name '%s'", name);
 

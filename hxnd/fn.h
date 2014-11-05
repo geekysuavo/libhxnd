@@ -37,6 +37,7 @@
 /* define string names for all available processing functions.
  */
 #define FN_NAME_FFT  "fft"
+#define FN_NAME_HT   "ht"
 
 /* fn_args: structure for holding information on arguments accepted by any
  * given processing function.
@@ -63,6 +64,8 @@ int fn_scan_args (const char *argstr, const fn_args *argdef, ...);
 int fn_execute (datum *D, const char *name, const int dim, const char *argstr);
 
 int fn_execute_fft (datum *D, const int dim, const char *argstr);
+
+int fn_execute_ht (datum *D, const int dim, const char *argstr);
 
 #endif /* __HXND_FN_H__ */
 
