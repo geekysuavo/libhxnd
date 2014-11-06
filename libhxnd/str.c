@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to:
  *
@@ -45,7 +45,7 @@ void strtrim (char *s) {
   for (j = n - 1; j >= 0 && s[j] == ' '; j--) {}
 
   /* if the whole string is whitespace, null it out. */
-  if (i >= j)
+  if (i > j)
     strcpy(s, "");
 
   /* allocate a temporary string. */
@@ -90,8 +90,8 @@ void strltrim (char *s) {
     return;
 
   /* build the trimmed substring. */
-  strncpy(stmp, s + i, n - i);
-  stmp[n - i] = '\0';
+  strncpy(stmp, s + i, n - i + 1);
+  stmp[n - i + 1] = '\0';
 
   /* copy the trimmed substring and free the temporary string. */
   strcpy(s, stmp);

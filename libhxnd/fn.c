@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to:
  *
@@ -83,7 +83,8 @@ real fn_parse_arg_float (char **v, int c) {
   if (c != 2)
     throw("r-value required for float parsing");
 
-  /* parse the value from the string array. */
+  /* parse the value from the string array.
+   */
   return atof(v[1]);
 }
 
@@ -273,6 +274,10 @@ int fn_execute (datum *D,
   else if (strcmp(name, FN_NAME_HT) == 0) {
     /* execute the 'ht' function. */
     return fn_execute_ht(D, dim, argstr);
+  }
+  else if (strcmp(name, FN_NAME_SCALE) == 0) {
+    /* execute the 'scale' function. */
+    return fn_execute_scale(D, dim, argstr);
   }
   else
     throw("invalid function name '%s'", name);

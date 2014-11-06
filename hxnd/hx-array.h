@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to:
  *
@@ -63,6 +63,8 @@ hx_array;
 /* function declarations: */
 
 int hx_array_alloc (hx_array *x, int d, int k, int *sz);
+
+int hx_array_copy (hx_array *dst, hx_array *src);
 
 void hx_array_free (hx_array *x);
 

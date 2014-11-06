@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to:
  *
@@ -73,6 +73,23 @@ int hx_array_alloc (hx_array *x, int d, int k, int *sz) {
   /* store the array total coefficient count. */
   x->len = len;
 
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_copy(): duplicates the contents of a hypercomplex array structure
+ * into another structure.
+ */
+int hx_array_copy (hx_array *dst, hx_array *src) {
+  /* allocate the destination array. */
+  if (!hx_array_alloc(dst, src->d, src->k, src->sz))
+    throw("failed to allocate destination array");
+
+  /* copy the coefficients from the source array into the destination array.
+   */
+  memcpy(dst->x, src->x, src->len * sizeof(real));
+
+  /* return success. */
   return 1;
 }
 

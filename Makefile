@@ -7,7 +7,7 @@ LIBS=-lm
 # LIBSRC: library source basenames.
 LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-cmp hx-arith hx-fourier
 LIBSRC+= trace opts str bytes nmr-datum nmr-bruker nmr-varian nmr-pipe
-LIBSRC+= fn fn-add fn-fft fn-ht
+LIBSRC+= fn fn-add fn-fft fn-ht fn-scale
 
 # LIBOBJ: library object filenames.
 LIBOBJ=$(addprefix libhxnd/,$(addsuffix .o,$(LIBSRC)))
@@ -42,7 +42,7 @@ again: clean all
 
 fixme:
 	@echo " FIXME"
-	@grep -RHni fixme hxnd/*.h libhxnd/*.c bin/*.[ch]
+	@grep -RHni fixme hxnd/*.h libhxnd/*.c bin/*.[ch] man/*.[0-9]
 
 linecount:
 	@echo " WC"

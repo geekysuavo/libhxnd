@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to:
  *
@@ -37,9 +37,16 @@
 
 /* define string names for all available processing functions.
  */
-#define FN_NAME_ADD  "add"
-#define FN_NAME_FFT  "fft"
-#define FN_NAME_HT   "ht"
+#define FN_NAME_ABS     "abs"
+#define FN_NAME_ADD     "add"
+#define FN_NAME_FFT     "fft"
+#define FN_NAME_HT      "ht"
+#define FN_NAME_IST     "ist"
+#define FN_NAME_PHASE   "phase"
+#define FN_NAME_RESIZE  "resize"
+#define FN_NAME_SCALE   "scale"
+#define FN_NAME_SHIFT   "shift"
+#define FN_NAME_WINDOW  "window"
 
 /* fn_args: structure for holding information on arguments accepted by any
  * given processing function.
@@ -65,11 +72,31 @@ int fn_execute (datum *D, const char *name, const int dim, const char *argstr);
 
 /* function declarations, processing: */
 
+/* FIXME: implement fn_execute_abs() */
+int fn_execute_abs (datum *D, const int dim, const char *argstr);
+
 int fn_execute_add (datum *D, const int dim, const char *argstr);
 
 int fn_execute_fft (datum *D, const int dim, const char *argstr);
 
 int fn_execute_ht (datum *D, const int dim, const char *argstr);
+
+/* FIXME: implement fn_execute_ist() */
+int fn_execute_ist (datum *D, const int dim, const char *argstr);
+
+/* FIXME: implement fn_execute_phase() */
+int fn_execute_phase (datum *D, const int dim, const char *argstr);
+
+/* FIXME: implement fn_execute_resize() */
+int fn_execute_resize (datum *D, const int dim, const char *argstr);
+
+int fn_execute_scale (datum *D, const int dim, const char *argstr);
+
+/* FIXME: implement fn_execute_shift() */
+int fn_execute_shift (datum *D, const int dim, const char *argstr);
+
+/* FIXME: implement fn_execute_window() */
+int fn_execute_window (datum *D, const int dim, const char *argstr);
 
 #endif /* __HXND_FN_H__ */
 

@@ -1,4 +1,25 @@
 
+/* hxnd: A framework for n-dimensional hypercomplex calculations for NMR.
+ * Copyright (C) 2014  Bradley Worley  <geekysuavo@gmail.com>.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to:
+ *
+ *   Free Software Foundation, Inc.
+ *   51 Franklin Street, Fifth Floor
+ *   Boston, MA  02110-1301, USA.
+ */
+
 /* include the datum and function headers. */
 #include <hxnd/nmr-datum.h>
 #include <hxnd/fn.h>
@@ -279,8 +300,30 @@ int main (int argc, char **argv) {
       return 1;
     }
 
-    /* load the array data, if required. */
-    if (!pretend && !datum_read_array(&D)) {
+    /* apply parameter corrections at this point. */
+    for (i = 0; i < n_corrs; i++) {
+      /* apply the currently indexed correction. */
+      if (!datum_set_dim_parameter(&D, corrs[i].key, corrs[i].d - 1,
+                                   corrs[i].val)) {
+        /* raise an exception. */
+        raise("failed to correct %s[%u] to '%s'",
+              corrs[i].key, corrs[i].d, corrs[i].val);
+
+        /* end execution. */
+        traceback_print();
+        return 1;
+      }
+    }
+
+    /* free the parameter corrections array. */
+    if (n_corrs) {
+      /* only if corrections have been allocated. */
+      free(corrs);
+      n_corrs = 0;
+    }
+
+    /* load the array data. */
+    if (!datum_read_array(&D)) {
       /* raise an error and end execution. */
       raise("failed to generate hx-format data from '%s'", fname_in);
       traceback_print();
@@ -292,7 +335,7 @@ int main (int argc, char **argv) {
     D.type = DATUM_TYPE_HXND;
 
     /* fill the datum structure from standard input. */
-    if (!datum_fread(&D, stdin, !pretend)) {
+    if (!datum_fread(&D, stdin, 1)) {
       /* raise an error and end execution. */
       raise("failed to read hx-format data from stdin");
       traceback_print();
@@ -300,33 +343,8 @@ int main (int argc, char **argv) {
     }
   }
 
-  /* apply parameter corrections at this point. */
-  for (i = 0; i < n_corrs; i++) {
-    /* apply the currently indexed correction. */
-    if (!datum_set_dim_parameter(&D, corrs[i].key, corrs[i].d - 1,
-                                 corrs[i].val)) {
-      /* raise an exception. */
-      raise("failed to correct %s[%u] to '%s'",
-            corrs[i].key, corrs[i].d, corrs[i].val);
-
-      /* end execution. */
-      traceback_print();
-      return 1;
-    }
-  }
-
-  /* free the parameter corrections array. */
-  if (n_corrs) {
-    /* only if corrections have been allocated. */
-    free(corrs);
-    n_corrs = 0;
-  }
-
   /* check if we're only pretending to read the data. */
   if (pretend) {
-    /* make sure the array has been dropped from the structure. */
-    datum_free_array(&D);
-
     /* print the datum metadata to the terminal. */
     if (!datum_print(&D, fname_out)) {
       /* raise an error. */
