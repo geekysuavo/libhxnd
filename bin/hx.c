@@ -103,28 +103,34 @@ int main (int argc, char **argv) {
   char *fname_in = NULL;
   FILE *fh;
 
-  /* declare variables for behavior determination. */
+  /* declare variables for behavior determination:
+   * @pretend: whether to continue writing to @fh or print header info.
+   */
   int pretend = 0;
 
   /* declare variables for function execution:
-   * @fnname: function name temporary string.
-   * @fnargs: function args temporary string.
    * @procs: array of processing functions.
    * @n_procs: array length.
    */
   struct parsed_arg *procs = NULL;
   unsigned int n_procs = 0;
 
-  char *lval, *rval;
-  int dval;
-
   /* declare variables for parameter correction:
-   * @kbuf, vbuf, ibuf: temporary parsing locations.
    * @corrs: array of correction values.
    * @n_corrs: array length.
    */
   struct parsed_arg *corrs = NULL;
   unsigned int n_corrs = 0;
+
+  /* declare variables for general option argument string parsing:
+   * @lval: left-hand value string.
+   * @rval: right-hand value string.
+   * @dval: dimension index.
+   */
+  char *lval, *rval;
+  int dval;
+
+  /* declare a general loop counter. */
   unsigned int i;
 
   /* loop until the arguments are exhausted. */
