@@ -210,6 +210,14 @@ int datum_print (datum *D, const char *fname) {
   fprintf(fh, "\n");
 
   /* print the real/complex modes. */
+  fprintf(fh, "Domain:   ");
+  for (d = 0; d < D->nd; d++)
+    fprintf(fh, "%15s", D->dims[d].ft ? "Frequency" : "Time");
+
+  /* print a newline. */
+  fprintf(fh, "\n");
+
+  /* print the real/complex modes. */
   fprintf(fh, "Mode:     ");
   for (d = 0; d < D->nd; d++)
     fprintf(fh, "%15s", D->dims[d].cx ? "Complex" : "Real");
