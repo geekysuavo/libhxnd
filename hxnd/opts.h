@@ -24,10 +24,8 @@
 #ifndef __HXND_OPTS_H__
 #define __HXND_OPTS_H__
 
-/* include required standard c headers. */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+/* include the string handling header. */
+#include <hxnd/str.h>
 
 /* opts_def: options definition structure for informing opts_get() about
  * all possible command-line options that are accepted by a program.
@@ -46,6 +44,10 @@ opts_def;
 /* function declarations: */
 
 int opts_get (int argc, char **argv, const opts_def *opts, int *argi);
+
+int opts_parse_arg (char *arg, const char *delim,
+                    char **lvalue, char **rvalue,
+                    int *d);
 
 #endif /* __HXND_OPTS_H__ */
 

@@ -118,3 +118,72 @@ int opts_get (int argc, char **argv, const opts_def *opts, int *argi) {
   return -1;
 }
 
+/* opts_parse_arg(): parses an option argument string based on a few simple
+ * rules. requires a null-terminated string @arg.
+ * @arg: the argument string to tease apart.
+ * @delim: the delimiter string between l-value and r-value.
+ * @lvalue: pointer to the output l-value string.
+ * @rvalue: pointer to the output r-value string.
+ * @d: pointer to the output dimension index.
+ */
+int opts_parse_arg (char *arg, const char *delim,
+                    char **lvalue, char **rvalue,
+                    int *d) {
+  /* declare a few required variables:
+   */
+  unsigned int narr, nl, nr;
+  char **arr;
+
+  /* initialize the output values. */
+  *lvalue = NULL;
+  *rvalue = NULL;
+  *d = 0;
+
+  /* split the string by the specified delimiter. */
+  arr = strsplit(arg, delim, &narr);
+
+  /* check that the split was successful. */
+  if (!arr || narr < 1)
+    throw("failed to split '%s' by '%s'", arg, delim);
+
+  /* trim whitespace from each array element. */
+  strvtrim(arr, narr);
+
+  /* compute the l-value and r-value string lengths. */
+  nl = strlen(arr[0]) + 2;
+  nr = (narr >= 2 ? strlen(arr[1]) + 2 : 2);
+
+  /* allocate memory for the left-value. */
+  *lvalue = (char*) malloc(nl * sizeof(char));
+
+  /* check that allocation was successful. */
+  if (*lvalue == NULL)
+    throw("failed to allocate l-value string");
+
+  /* allocate memory for the right-value. */
+  *rvalue = (char*) malloc(nr * sizeof(char));
+
+  /* check that allocation was successful. */
+  if (*rvalue == NULL)
+    throw("failed to allocate r-value string");
+
+  /* initialize the value strings. */
+  strcpy(*lvalue, "");
+  strcpy(*rvalue, "");
+
+  /* attempt to parse the left-value. */
+  if (sscanf(arr[0], " %[^ [] [ %d ] ", *lvalue, d) != 2 &&
+      sscanf(arr[0], " %s ", *lvalue) != 1)
+    throw("failed to parse l-value '%s'", arr[0]);
+
+  /* copy the right-value string, if one exists. */
+  if (narr >= 2)
+    strcpy(*rvalue, arr[1]);
+
+  /* free the string array. */
+  strvfree(arr, narr);
+
+  /* return success. */
+  return 1;
+}
+

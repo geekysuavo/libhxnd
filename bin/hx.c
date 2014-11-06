@@ -53,30 +53,18 @@
 \n\
 "
 
-/* processor: structure that defines functions that need to be applied to
- * datum content.
+/* parsed_arg: structure that defines...
+ *  (1) parameter corrections that need to be made to datum metadata fields.
+ *  (2) processing functions that need to be applied to datum content.
  */
-struct processor {
+struct parsed_arg {
   /* @d: dimension index.
-   * @name: function name string.
-   * @args: function arguments string.
+   * @lstr: argument left-value string.
+   * @rstr: argument right-valuestring.
    */
   int d;
-  char *name;
-  char *args;
-};
-
-/* correction: structure that defines parameter corrections that need to
- * be made to datum metadata fields.
- */
-struct correction {
-  /* @d: dimension index.
-   * @key: parameter key string.
-   * @val: parameter value string.
-   */
-  unsigned int d;
-  char key[32];
-  char val[32];
+  char *lstr;
+  char *rstr;
 };
 
 /* main(): application entry point.
@@ -124,21 +112,20 @@ int main (int argc, char **argv) {
    * @procs: array of processing functions.
    * @n_procs: array length.
    */
-  struct processor *procs = NULL;
-  unsigned int n, fnc, n_procs = 0;
-  char *fnname, *fnargs;
-  char **fnv;
-  int dbuf;
+  struct parsed_arg *procs = NULL;
+  unsigned int n_procs = 0;
+
+  char *lval, *rval;
+  int dval;
 
   /* declare variables for parameter correction:
    * @kbuf, vbuf, ibuf: temporary parsing locations.
    * @corrs: array of correction values.
    * @n_corrs: array length.
    */
-  struct correction *corrs = NULL;
+  struct parsed_arg *corrs = NULL;
   unsigned int n_corrs = 0;
-  char kbuf[32], vbuf[32];
-  unsigned int i, ibuf;
+  unsigned int i;
 
   /* loop until the arguments are exhausted. */
   while ((c = opts_get(argc, argv, long_options, &argi)) != -1) {
@@ -166,60 +153,17 @@ int main (int argc, char **argv) {
 
       /* f: processing function. */
       case 'f':
-        /* allocate the buffer strings for storing function name/args. */
-        n = strlen(argv[argi - 1]);
-        fnname = (char*) malloc(n * sizeof(char));
-        fnargs = (char*) malloc(n * sizeof(char));
-
-        /* initialize the buffer strings. */
-        strcpy(fnname, "");
-        strcpy(fnargs, "");
-
-        /* initialize the dimension index. this value will result in
-         * an 'invalid dimension' error for any function that requires
-         * a valid dimension index, because the call to fn_execute()
-         * will subtract 1.
-         */
-        dbuf = 0;
-
-        /* check that allocation succeeded. */
-        if (!fnname || !fnargs) {
-          /* raise an error and end execution. */
-          raise("failed to allocate temporary buffers");
+        /* parse the processing function argument string. */
+        if (!opts_parse_arg(argv[argi - 1], ":", &lval, &rval, &dval)) {
+          /* raise an exception and end execution. */
+          raise("failed to parse function argument '%s'", argv[argi - 1]);
           traceback_print();
           return 1;
         }
-
-        /* try to split the function and arguments. */
-        fnv = strsplit(argv[argi - 1], ":", &fnc);
-
-        /* check that the split succeeded. */
-        if (!fnv || fnc < 1) {
-          /* raise an error and end execution. */
-          raise("failed to split function string");
-          traceback_print();
-          return 1;
-        }
-
-        /* attempt to parse the function name and dimension. */
-        if (sscanf(fnv[0], " %[^ [] [ %d ] ", fnname, &dbuf) != 2 &&
-            sscanf(fnv[0], " %s ", fnname) != 1) {
-          /* raise an error and end execution. */
-          raise("failed to parse function '%s'", fnv[0]);
-          traceback_print();
-          return 1;
-        }
-
-        /* attempt to parse the function arguments. */
-        if (fnc >= 2)
-          strcpy(fnargs, fnv[1]);
-
-        /* free the function string array. */
-        strvfree(fnv, fnc);
 
         /* reallocate the array of functions. */
-        procs = (struct processor*)
-          realloc(procs, ++n_procs * sizeof(struct processor));
+        procs = (struct parsed_arg*)
+          realloc(procs, ++n_procs * sizeof(struct parsed_arg));
 
         /* check that the reallocation succeeded. */
         if (!procs) {
@@ -230,28 +174,32 @@ int main (int argc, char **argv) {
         }
 
         /* store the processing information. */
-        procs[n_procs - 1].name = fnname;
-        procs[n_procs - 1].args = fnargs;
-        procs[n_procs - 1].d = dbuf;
+        procs[n_procs - 1].lstr = lval;
+        procs[n_procs - 1].rstr = rval;
+        procs[n_procs - 1].d = dval;
         break;
 
       /* v: dimension parameter correction. */
       case 'v':
-        /* attempt to parse the parameter values. */
-        if (sscanf(argv[argi - 1], " %31[^ [] [ %u ] = %31s ",
-                   kbuf, &ibuf, vbuf) != 3) {
-          /* raise an error and end execution. */
-          raise("failed to parse correction '%s'", argv[argi - 1]);
+        /* parse the modifier argument string. */
+        if (!opts_parse_arg(argv[argi - 1], "=", &lval, &rval, &dval)) {
+          /* raise an exception and end execution. */
+          raise("failed to parse value argument '%s'", argv[argi - 1]);
           traceback_print();
           return 1;
         }
 
-        /* ensure string termination. */
-        kbuf[31] = vbuf[31] = '\0';
+        /* check for the required right-value string. */
+        if (strcmp(rval, "") == 0) {
+          /* raise an exception and end execution. */
+          raise("value argument '%s' lacks required right-hand value", lval);
+          traceback_print();
+          return 1;
+        }
 
         /* reallocate the array of corrections. */
-        corrs = (struct correction*)
-          realloc(corrs, ++n_corrs * sizeof(struct correction));
+        corrs = (struct parsed_arg*)
+          realloc(corrs, ++n_corrs * sizeof(struct parsed_arg));
 
         /* check that the reallocation succeeded. */
         if (!corrs) {
@@ -262,9 +210,9 @@ int main (int argc, char **argv) {
         }
 
         /* store the correction information. */
-        corrs[n_corrs - 1].d = ibuf;
-        strcpy(corrs[n_corrs - 1].key, kbuf);
-        strcpy(corrs[n_corrs - 1].val, vbuf);
+        corrs[n_corrs - 1].lstr = lval;
+        corrs[n_corrs - 1].rstr = rval;
+        corrs[n_corrs - 1].d = dval;
         break;
 
       /* unknown option or argument. */
@@ -303,16 +251,21 @@ int main (int argc, char **argv) {
     /* apply parameter corrections at this point. */
     for (i = 0; i < n_corrs; i++) {
       /* apply the currently indexed correction. */
-      if (!datum_set_dim_parameter(&D, corrs[i].key, corrs[i].d - 1,
-                                   corrs[i].val)) {
+      if (!datum_set_dim_parameter(&D, corrs[i].lstr,
+                                   corrs[i].d - 1,
+                                   corrs[i].rstr)) {
         /* raise an exception. */
         raise("failed to correct %s[%u] to '%s'",
-              corrs[i].key, corrs[i].d, corrs[i].val);
+              corrs[i].lstr, corrs[i].d, corrs[i].rstr);
 
         /* end execution. */
         traceback_print();
         return 1;
       }
+
+      /* free the allocated correction strings. */
+      free(corrs[i].lstr);
+      free(corrs[i].rstr);
     }
 
     /* free the parameter corrections array. */
@@ -365,9 +318,9 @@ int main (int argc, char **argv) {
   /* apply processing functions at this point. */
   for (i = 0; i < n_procs; i++) {
     /* apply the currently indexed processing function. */
-    if (!fn_execute(&D, procs[i].name, procs[i].d - 1, procs[i].args)) {
+    if (!fn_execute(&D, procs[i].lstr, procs[i].d - 1, procs[i].rstr)) {
       /* raise an exception. */
-      raise("failed to apply function '%s' (#%u)", procs[i].name, i);
+      raise("failed to apply function '%s' (#%u)", procs[i].lstr, i);
 
       /* end execution. */
       traceback_print();
@@ -375,8 +328,8 @@ int main (int argc, char **argv) {
     }
 
     /* free the allocated processing function strings. */
-    free(procs[i].name);
-    free(procs[i].args);
+    free(procs[i].lstr);
+    free(procs[i].rstr);
   }
 
   /* free the processing functions array. */
