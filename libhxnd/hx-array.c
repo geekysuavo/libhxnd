@@ -1054,21 +1054,21 @@ int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
 
     /* slice the currently indexed vector from the array. */
     if (!hx_array_slice_vector(x, &y, k, arr))
-      throw("failed to slice vector %d", k);
+      throw("failed to slice vector");
 
     /* initialize the variable arguments list. */
     va_start(vl, fn);
 
     /* execute the callback function. */
     if (!fn(x, &y, arr, idx, &vl))
-      throw("failed to execute callback %d", k);
+      throw("failed to execute callback");
 
     /* free the variable arguments list. */
     va_end(vl);
 
     /* store the modified sliced vector back into the array. */
     if (!hx_array_store_vector(x, &y, k, arr))
-      throw("failed to store vector %d", k);
+      throw("failed to store vector");
   }
   while (hx_array_index_inc(x->k, x->sz, &arr));
 
