@@ -215,11 +215,13 @@ new dimension size array, when no dimension is specified.
 The \fBscale\fR command multiplies the current datum by a scalar constant.
 .TP
 \fBfirst\fR (float) [1.0]
-real scalar constant to scale the first point by.
+real scalar constant to scale each first point by. specifying \fID\fR sets
+which array dimension the first-point scaling is applied to. an unspecified
+value indicates the first array dimension.
 .TP
 \fBfactor\fR (float) [1.0]
-real scalar constant to scale the data by; can be added into any dimension
-by specifying \fID\fR.
+real scalar constant to scale the data by; always applied as a real value,
+regardless of the value of \fID\fR.
 .TP
 \fBinvert\fR (boolean) [false]
 inverts the value of \fBfactor\fR prior to multiplication when set.

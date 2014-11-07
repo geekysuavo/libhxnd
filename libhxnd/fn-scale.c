@@ -44,14 +44,14 @@ int fn_execute_scale (datum *D, const int dim, const char *argstr) {
    * @fscale: scaling factor.
    * @atmp: temporary array.
    */
+  int inv, d, nd, *arr, idx;
   hx_scalar hxscale;
   real fscale, f0;
   hx_array atmp;
-  int inv, d, n;
 
   /* parse the function argument string. */
   if (!fn_scan_args(argstr, fn_argdef_scale, &f0, &fscale, &inv))
-    throw("failed to parse add arguments");
+    throw("failed to parse scale arguments");
 
   /* check if an inversion was specified. */
   if (inv)
@@ -60,17 +60,13 @@ int fn_execute_scale (datum *D, const int dim, const char *argstr) {
   /* store a local copy of the dimension index. */
   d = dim;
 
-  /* check the dimension index. setting no dimension implies adding a
-   * real value to the array.
-   */
+  /* check the dimension index (lower bound). */
   if (d < 0)
     d = 0;
 
   /* check the dimension index (upper bound). */
   if (d >= D->nd)
     throw("dimension index %d out of bounds [0,%u)", d, D->nd);
-
-  /* FIXME: implement first-point scaling in fn_execute_scale() */
 
   /* allocate a temporary scalar for the scaling operation. */
   if (!hx_scalar_alloc(&hxscale, D->array.d))
@@ -80,13 +76,52 @@ int fn_execute_scale (datum *D, const int dim, const char *argstr) {
   if (!hx_array_copy(&atmp, &D->array))
     throw("failed to allocate duplicate array");
 
-  /* set up the scalar value for multiplication. */
-  n = 1 << d;
-  hxscale.x[n] = fscale;
+  /* check if first-point scaling was requested. */
+  if (f0 != 1.0) {
+    /* set up the scalar value for first-point multiplication. */
+    hxscale.x[0] = f0;
+
+    /* get the size of the operation dimension. */
+    nd = D->array.sz[d];
+
+    /* allocate an array for holding iteration indices. */
+    arr = hx_array_index_alloc(D->array.k);
+
+    /* check that allocation was successful. */
+    if (!arr)
+      throw("failed to allocate %d indices", D->array.k);
+
+    /* iterate over the elements of the array. */
+    do {
+      /* check if we've arrived at the next slice vector. */
+      if (arr[d]) {
+        /* accelerate the processing of finding the next vector. */
+        arr[d] = nd - 1;
+        continue;
+      }
+
+      /* pack the index array into a linear index. */
+      hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
+      idx *= atmp.n;
+
+      /* scale the currently indexed array element. */
+      if (!hx_data_mul(atmp.x + idx, hxscale.x, D->array.x + idx,
+                       atmp.d, atmp.n, atmp.tbl)) {
+        /* fail. throw an exception. */
+        throw("failed to scale by real value %d", f0);
+      }
+    } while (hx_array_index_inc(D->array.k, D->array.sz, &arr));
+
+    /* free the temporary index array. */
+    free(arr);
+  }
+
+  /* set up the scalar value for whole-array multiplication. */
+  hxscale.x[0] = fscale;
 
   /* perform the addition. */
   if (!hx_array_mul_scalar(&atmp, &hxscale, &D->array))
-    throw("failed to scale by scalar value %f(%d)", fscale, n);
+    throw("failed to scale by scalar value %f(0)", fscale);
 
   /* free the allocated temporary scalar and array. */
   hx_scalar_free(&hxscale);

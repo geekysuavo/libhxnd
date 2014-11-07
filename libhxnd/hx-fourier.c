@@ -217,7 +217,7 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
 
   /* allocate a temporary array to store each transformed vector. */
   if (!hx_array_alloc(&xv, x->d, 1, &nk))
-    throw("failed to allocate temporary (%d, %k)-array", x->d, 1);
+    throw("failed to allocate temporary (%d, %d)-array", x->d, 1);
 
   /* iterate over the elements of the array. */
   do {

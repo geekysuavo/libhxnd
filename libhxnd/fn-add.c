@@ -81,22 +81,26 @@ int fn_execute_add (datum *D, const int dim, const char *argstr) {
     /* store a local copy of the dimension index. */
     d = dim;
 
-    /* check the dimension index. setting no dimension implies adding a
-     * real value to the array.
-     */
-    if (d < 0)
-      d = 0;
-
     /* check the dimension index (upper bound). */
     if (d >= D->nd)
       throw("dimension index %d out of bounds [0,%u)", d, D->nd);
+
+    /* check the dimension index. */
+    if (d < 0) {
+      /* no dimension set: real addition. */
+      d = 0;
+      n = 0;
+    }
+    else {
+      /* dimension set: complex addition. */
+      n = 1 << d;
+    }
 
     /* allocate a temporary scalar for the addition operation. */
     if (!hx_scalar_alloc(&hxadd, D->array.d))
       throw("failed to allocate scalar addition operand");
 
     /* set up the scalar value for addition. */
-    n = 1 << d;
     hxadd.x[n] = cadd;
 
     /* perform the addition. */
