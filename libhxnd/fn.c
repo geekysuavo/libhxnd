@@ -23,6 +23,31 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
+/* fn_def: function definition structure for holding all available function
+ * names and pointers.
+ */
+struct fn_def {
+  /* @name: the function name string.
+   * @fn: the function pointer.
+   */
+  const char *name;
+  int (*fn) (datum *D, const int dim, const char *argstr);
+};
+
+/* functions: local table of all available function names and pointers.
+ */
+const struct fn_def functions[] = {
+  { FN_NAME_ABS,      &fn_execute_abs },
+  { FN_NAME_ADD,      &fn_execute_add },
+  { FN_NAME_FFT,      &fn_execute_fft },
+  { FN_NAME_HT,       &fn_execute_ht },
+  { FN_NAME_RESIZE,   &fn_execute_resize },
+  { FN_NAME_SCALE,    &fn_execute_scale },
+  { FN_NAME_WINDOW,   &fn_execute_window },
+  { FN_NAME_ZEROFILL, &fn_execute_zerofill },
+  { NULL, NULL }
+};
+
 /* fn_parse_arg_int(): parses an integer from a key-value string array.
  * @v: the string array.
  * @c: the string array length.
@@ -329,39 +354,45 @@ int fn_execute (datum *D,
                 const char *name,
                 const int dim,
                 const char *argstr) {
-  /* act based on the function name. */
-  if (strcmp(name, FN_NAME_ABS) == 0) {
-    /* execute the 'abs' function. */
-    return fn_execute_abs(D, dim, argstr);
-  }
-  else if (strcmp(name, FN_NAME_ADD) == 0) {
-    /* execute the 'add' function. */
-    return fn_execute_add(D, dim, argstr);
-  }
-  else if (strcmp(name, FN_NAME_FFT) == 0) {
-    /* execute the 'fft' function. */
-    return fn_execute_fft(D, dim, argstr);
-  }
-  else if (strcmp(name, FN_NAME_HT) == 0) {
-    /* execute the 'ht' function. */
-    return fn_execute_ht(D, dim, argstr);
-  }
-  else if (strcmp(name, FN_NAME_RESIZE) == 0) {
-    /* execute the 'resize' function. */
-    return fn_execute_resize(D, dim, argstr);
-  }
-  else if (strcmp(name, FN_NAME_SCALE) == 0) {
-    /* execute the 'scale' function. */
-    return fn_execute_scale(D, dim, argstr);
-  }
-  else if (strcmp(name, FN_NAME_ZEROFILL) == 0) {
-    /* execute the 'zerofill' function. */
-    return fn_execute_zerofill(D, dim, argstr);
-  }
-  else
-    throw("invalid function name '%s'", name);
+  /* declare a few required variables. */
+  int i, len1, len2, len, matches, last_match;
 
-  /* return success. */
-  return 1;
+  /* initialize the match counter and index. */
+  matches = 0;
+  last_match = 0;
+
+  /* loop over the array of possible function names. */
+  for (i = 0; functions[i].name; i++) {
+    /* get the length of the strings in the comparison. */
+    len1 = strlen(name);
+    len2 = strlen(functions[i].name);
+
+    /* get the minimum of the two lengths. */
+    len = (len1 < len2 ? len1 : len2);
+
+    /* check if the current function name is a match. */
+    if (strncmp(name, functions[i].name, len) == 0) {
+      /* yes. increment the match counter and store the index. */
+      matches++;
+      last_match = i;
+    }
+  }
+
+  /* check if a match was identified. */
+  if (matches == 1) {
+    /* awesome. execute the function. */
+    return functions[last_match].fn(D, dim, argstr);
+  }
+  else if (matches == 0) {
+    /* no match. */
+    throw("no functions matching name '%s'", name);
+  }
+  else if (matches > 1) {
+    /* multiple matches. */
+    throw("function name '%s' is ambiguous", name);
+  }
+
+  /* this should never occur. */
+  throw("unknown error calling function '%s'", name);
 }
 

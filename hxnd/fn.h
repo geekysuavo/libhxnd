@@ -99,7 +99,6 @@ int fn_execute_scale (datum *D, const int dim, const char *argstr);
 /* FIXME: implement fn_execute_shift() */
 int fn_execute_shift (datum *D, const int dim, const char *argstr);
 
-/* FIXME: implement fn_execute_window() */
 int fn_execute_window (datum *D, const int dim, const char *argstr);
 
 int fn_execute_zerofill (datum *D, const int dim, const char *argstr);
