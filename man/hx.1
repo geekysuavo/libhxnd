@@ -201,7 +201,14 @@ FIXME
 FIXME
 
 .SS resize
-FIXME
+The \fBresize\fR command resizes the current datum by truncation and/or
+zero-filling.
+.TP
+\fBsize\fR (integer) [0]
+new dimension size, when a dimension \fID\fR is specified.
+.TP
+\fBshape\fR (int-array) [empty]
+new dimension size array, when no dimension is specified.
 
 .SS scale
 The \fBscale\fR command multiplies the current datum by a scalar constant.

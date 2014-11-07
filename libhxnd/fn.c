@@ -36,6 +36,68 @@ int fn_parse_arg_int (char **v, int c) {
   return atoi(v[1]);
 }
 
+/* fn_parse_arg_intarray(): parses an array of integers from a key-value
+ * string array.
+ * @v: the string array.
+ * @c: the string array length.
+ */
+int *fn_parse_arg_intarray (char **v, int c) {
+  /* declare a few required variables:
+   */
+  unsigned int i, n;
+  char **strv;
+  int *intv;
+
+  /* check the array length. */
+  if (c != 2) {
+    /* raise an exception and return nothing. */
+    raise("r-value required for int-array parsing");
+    return NULL;
+  }
+
+  /* convert the leading character to removable whitespace. */
+  if (v[1][0] == '(' || v[1][0] == '{')
+    v[1][0] = ' ';
+
+  /* convert the trailing character to removable whitespace. */
+  n = (strlen(v[1]) > 0 ? strlen(v[1]) - 1 : 0);
+  if (v[1][n] == ')' || v[1][n] == '}')
+    v[1][n] = ' ';
+
+  /* split the value from the string array into a new string array. */
+  strv = strsplit(v[1], ".", &n);
+
+  /* check that the split was successful. */
+  if (!strv || n < 1) {
+    /* raise an exception and return nothing. */
+    raise("failed to split int-array string");
+    return NULL;
+  }
+
+  /* trim whitespace from the string array. */
+  strvtrim(strv, n);
+
+  /* allocate an array of integers having the same number of elements as
+   * the string array.
+   */
+  intv = (int*) calloc(n + 1, sizeof(int));
+  if (!intv) {
+    /* raise an exception and return nothing. */
+    raise("failed to allocate int-array");
+    return NULL;
+  }
+
+  /* loop over the strings in the string array. */
+  for (i = 0, intv[0] = n; i < n; i++)
+    intv[i + 1] = atoi(strv[i]);
+
+  /* free the string array */
+  strvfree(strv, n);
+
+  /* return the complete array of integers. */
+  return intv;
+}
+
 /* fn_parse_arg_bool(): parses a boolean (in the form of an integer) from
  * a key-value string array.
  * @v: the string array.
@@ -215,6 +277,11 @@ int fn_scan_args (const char *argstr, const fn_args *argdef, ...) {
                                  atoi(argdef[defi].def));
         break;
 
+      /* int array. */
+      case FN_ARGTYPE_INTS:
+        *((int**) ptr) = (found ? fn_parse_arg_intarray(valv, valc) : NULL);
+        break;
+
       /* boolean. */
       case FN_ARGTYPE_BOOL:
         *((int*) ptr) = (found ? fn_parse_arg_bool(valv, valc) :
@@ -274,6 +341,10 @@ int fn_execute (datum *D,
   else if (strcmp(name, FN_NAME_HT) == 0) {
     /* execute the 'ht' function. */
     return fn_execute_ht(D, dim, argstr);
+  }
+  else if (strcmp(name, FN_NAME_RESIZE) == 0) {
+    /* execute the 'resize' function. */
+    return fn_execute_resize(D, dim, argstr);
   }
   else if (strcmp(name, FN_NAME_SCALE) == 0) {
     /* execute the 'scale' function. */

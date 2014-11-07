@@ -31,6 +31,7 @@
  * strings.
  */
 #define FN_ARGTYPE_INT     'i'
+#define FN_ARGTYPE_INTS    'I'
 #define FN_ARGTYPE_BOOL    'b'
 #define FN_ARGTYPE_FLOAT   'f'
 #define FN_ARGTYPE_STRING  's'
@@ -39,6 +40,7 @@
  */
 #define FN_NAME_ABS     "abs"
 #define FN_NAME_ADD     "add"
+#define FN_NAME_CUT     "cut"
 #define FN_NAME_FFT     "fft"
 #define FN_NAME_HT      "ht"
 #define FN_NAME_IST     "ist"
@@ -77,6 +79,9 @@ int fn_execute_abs (datum *D, const int dim, const char *argstr);
 
 int fn_execute_add (datum *D, const int dim, const char *argstr);
 
+/* FIXME: implement fn_execute_cut() */
+int fn_execute_cut (datum *D, const int dim, const char *argstr);
+
 int fn_execute_fft (datum *D, const int dim, const char *argstr);
 
 int fn_execute_ht (datum *D, const int dim, const char *argstr);
@@ -87,7 +92,6 @@ int fn_execute_ist (datum *D, const int dim, const char *argstr);
 /* FIXME: implement fn_execute_phase() */
 int fn_execute_phase (datum *D, const int dim, const char *argstr);
 
-/* FIXME: implement fn_execute_resize() */
 int fn_execute_resize (datum *D, const int dim, const char *argstr);
 
 int fn_execute_scale (datum *D, const int dim, const char *argstr);

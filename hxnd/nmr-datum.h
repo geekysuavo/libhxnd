@@ -153,6 +153,8 @@ int datum_read_array (datum *D);
 
 int datum_free_array (datum *D);
 
+int datum_resize_array (datum *D, int *sz);
+
 int datum_fill (datum *D, const char *fname);
 
 #endif /* __HXND_NMR_DATUM_H__ */

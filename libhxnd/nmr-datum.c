@@ -918,6 +918,33 @@ int datum_free_array (datum *D) {
   return 1;
 }
 
+/* datum_resize_array(): resizes each array dimension (if requested) in an
+ * NMR datum, but does not change the number of dimensions.
+ * @D: pointer to the datum to manipulate.
+ * @sz: new size array to use for resizing.
+ */
+int datum_resize_array (datum *D, int *sz) {
+  /* declare a few required variables:
+   * @d: dimension loop counter.
+   */
+  unsigned int d;
+
+  /* check that the array has been allocated. */
+  if (!D->array_alloc)
+    throw("array is unallocated");
+
+  /* attempt to resize the array content. */
+  if (!hx_array_resize(&D->array, D->array.d, D->array.k, sz))
+    throw("failed to resize core array");
+
+  /* loop over the acquisition dimensions to store the new sizes. */
+  for (d = 0; d < D->nd; d++)
+    D->dims[d].sz = sz[d];
+
+  /* return success. */
+  return 1;
+}
+
 /* datum_fill(): parses acquisition parameters into an NMR datum structure.
  * the 'type' member of the datum structure must be initialized to the type
  * of parms/data to parse in.
