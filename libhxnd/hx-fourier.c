@@ -78,14 +78,19 @@ unsigned int hx_nextpow2 (unsigned int value) {
 
 /* hx_array_fft1d(): computes an in-place radix-2 fast fourier transform
  * of a hypercomplex one-dimensional array.
- * @x: a pointer to the array structure.
- * @d: dimension to transform.
- * @dir: direction of transformation.
- * @w: preallocated hypercomplex scalar.
- * @swp: reallocated coefficient array of a hypercomplex scalar.
+ *
+ * args:
+ *  see hx_array_vector_cb().
+ *
+ * varargs:
+ *  @d: dimension to transform.
+ *  @dir: direction of transformation.
+ *  @w: preallocated hypercomplex scalar.
+ *  @swp: reallocated coefficient array of a hypercomplex scalar.
  */
-int hx_array_fft1d (hx_array *x, int d, real dir,
-                    hx_scalar *w, real *swp) {
+int hx_array_fft1d (hx_array *x, hx_array *y,
+                    int *arr, int idx,
+                    va_list *vl) {
   /* declare a few required variables:
    * @i, @j, @k, @m: loop counters.
    * @n: array (scalar) element count.
@@ -97,6 +102,12 @@ int hx_array_fft1d (hx_array *x, int d, real dir,
    */
   int i, j, k, m, n, ncpy, step;
   real phi, *pxxi, *pxxik;
+
+  /* extract the varargs. */
+  int d = va_arg(*vl, int);
+  real dir = (real) va_arg(*vl, double);
+  hx_scalar *w = va_arg(*vl, hx_scalar*);
+  real *swp = va_arg(*vl, real*);
 
   /* check that the transformation dimension is within bounds. */
   if (d < 0 || d >= x->d)
@@ -172,7 +183,7 @@ int hx_array_fft1d (hx_array *x, int d, real dir,
   return 1;
 }
 
-/* hx_array_fft(): computes an in-place radix-2 fast fourier transform along
+/* hx_array_fftfn(): computes an in-place radix-2 fast fourier transform along
  * a single dimension @d and direction @k of a hypercomplex multidimensional
  * array.
  * @x: pointer to the array structure.
@@ -189,8 +200,6 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
    * @xv: temporary vector for transformations.
    */
   hx_scalar w, swp;
-  int nk, *arr;
-  hx_array xv;
 
   /* check that the dimensions are in bounds. */
   if (d < 0 || d >= x->d)
@@ -200,56 +209,18 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
   if (k < 0 || k >= x->k)
     throw("topological dimension %d out of bounds [0,%d)", k, x->k);
 
-  /* get the size of the transformation dimension. */
-  nk = x->sz[k];
-
-  /* allocate an array for holding iteration indices. */
-  arr = hx_array_index_alloc(x->k);
-
-  /* check that the allocation was successful. */
-  if (!arr)
-    throw("failed to allocate %d indices", x->k);
-
   /* allocate temporary scalars for use in every transformation. */
   if (!hx_scalar_alloc(&w, x->d) ||
       !hx_scalar_alloc(&swp, x->d))
     throw("failed to allocate temporary %d-scalars", x->d);
 
-  /* allocate a temporary array to store each transformed vector. */
-  if (!hx_array_alloc(&xv, x->d, 1, &nk))
-    throw("failed to allocate temporary (%d, %d)-array", x->d, 1);
-
-  /* iterate over the elements of the array. */
-  do {
-    /* check if we've arrived at the next vector to transform. */
-    if (arr[k]) {
-      /* accelerate the process of finding the next vector. */
-      arr[k] = nk - 1;
-      continue;
-    }
-
-    /* slice the currently indexed vector from the array. */
-    if (!hx_array_slice_vector(x, &xv, k, arr))
-      throw("failed to slice vector");
-
-    /* compute the fast fourier transform of the sliced vector. */
-    if (!hx_array_fft1d(&xv, d, dir, &w, swp.x))
-      throw("failed to execute fft1d");
-
-    /* store the sliced vector back into the array. */
-    if (!hx_array_store_vector(x, &xv, k, arr))
-      throw("failed to store vector");
-  } while (hx_array_index_inc(x->k, x->sz, &arr));
-
-  /* free the temporary array. */
-  hx_array_free(&xv);
+  /* run the fft1d() callback function over every vector along @k */
+  if (!hx_array_vector_op(x, k, &hx_array_fft1d, d, dir, &w, swp.x))
+    throw("failed to execute fft1d");
 
   /* free the temporary scalars. */
   hx_scalar_free(&w);
   hx_scalar_free(&swp);
-
-  /* free the index array. */
-  free(arr);
 
   /* return success. */
   return 1;

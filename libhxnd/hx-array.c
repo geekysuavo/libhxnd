@@ -1008,3 +1008,77 @@ int hx_array_store_vector (hx_array *x, hx_array *y, int k, int *loc) {
   return 1;
 }
 
+/* hx_array_vector_op(): perform an operation on each vector of a hypercomplex
+ * array @x using a standardized callback-based scheme.
+ */
+int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
+  /* declare a few required variables:
+   * @arr: the index array for the current position in @x.
+   * @idx: the linear index for the current position in @x.
+   * @y: hypercomplex array holding the currently sliced vector values.
+   * @vl: the variable argument list passed to each callback invocation.
+   */
+  int *arr, idx, szk;
+  hx_array y;
+  va_list vl;
+
+  /* check that the dimension index is in bounds. */
+  if (k < 0 || k >= x->k)
+    throw("dimension index %d is out of bounds [0,%d)", k, x->k);
+
+  /* retrieve the size of the dimension under operation. */
+  szk = x->sz[k];
+
+  /* allocate an index array. */
+  arr = hx_array_index_alloc(x->k);
+
+  /* check that allocation was successful. */
+  if (!arr)
+    throw("failed to allocate %d indices", x->k);
+
+  /* allocate a temporary array to store each sliced vector. */
+  if (!hx_array_alloc(&y, x->d, 1, &szk))
+    throw("failed to allocate slice (%d, 1)-array", x->d);
+
+  /* iterate over the elements of the array. */
+  do {
+    /* quickly seek to the start of each vector. */
+    if (arr[k]) {
+      /* every vector begins at: arr[k] == 0 */
+      arr[k] = szk - 1;
+      continue;
+    }
+
+    /* pack the index array into a linear index. */
+    hx_array_index_pack(x->k, x->sz, arr, &idx);
+
+    /* slice the currently indexed vector from the array. */
+    if (!hx_array_slice_vector(x, &y, k, arr))
+      throw("failed to slice vector %d", k);
+
+    /* initialize the variable arguments list. */
+    va_start(vl, fn);
+
+    /* execute the callback function. */
+    if (!fn(x, &y, arr, idx, &vl))
+      throw("failed to execute callback %d", k);
+
+    /* free the variable arguments list. */
+    va_end(vl);
+
+    /* store the modified sliced vector back into the array. */
+    if (!hx_array_store_vector(x, &y, k, arr))
+      throw("failed to store vector %d", k);
+  }
+  while (hx_array_index_inc(x->k, x->sz, &arr));
+
+  /* free the temporary array. */
+  hx_array_free(&y);
+
+  /* free the index array. */
+  free(arr);
+
+  /* return success. */
+  return 1;
+}
+

@@ -28,6 +28,7 @@
 static const fn_args fn_argdef_fft[] = {
   { "alternate", FN_ARGTYPE_BOOL, "0" },
   { "negate",    FN_ARGTYPE_BOOL, "0" },
+  { "inverse",   FN_ARGTYPE_BOOL, "0" },
   { NULL, '\0', NULL }
 };
 
@@ -39,17 +40,31 @@ static const fn_args fn_argdef_fft[] = {
 int fn_execute_fft (datum *D, const int dim, const char *argstr) {
   /* declare variables to hold argument values.
    */
-  int alt, neg;
+  int alt, neg, inv;
+  real dir;
 
   /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_fft, &alt, &neg))
+  if (!fn_scan_args(argstr, fn_argdef_fft, &alt, &neg, &inv))
     throw("failed to parse fft arguments");
 
   /* check the dimension index. */
   if (dim < 0 || dim >= D->nd)
     throw("dimension index %d out of bounds [0,%u)", dim, D->nd);
 
-  /* FIXME: implement fn_execute_fft() */
+  /* FIXME: handle 'alternate' option. */
+
+  /* FIXME: handle 'negate' option. */
+
+  /* determine which direction to run the transform. */
+  dir = (inv ? HX_FFT_REVERSE : HX_FFT_FORWARD);
+
+  /* run the fourier transform operation. */
+  if (!hx_array_fftfn(&D->array, dim, dim, dir))
+    throw("failed to perform fourier transform");
+
+  /* change the fourier transform status flag in the datum dimension.
+   */
+  D->dims[dim].ft = 1;
 
   /* return success. */
   return 1;

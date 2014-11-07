@@ -60,6 +60,18 @@ typedef struct {
 }
 hx_array;
 
+/* hx_array_vector_cb: callback function prototype for per-vector operations
+ * that act on hypercomplex arrays.
+ * @x: the host array pointer.
+ * @y: the current slice from the host array.
+ * @arr: the set of array indices for the first vector point.
+ * @idx: the linear array index for the first vector point.
+ * @vl: custom arguments, stored in a variable arguments list.
+ */
+typedef int (*hx_array_vector_cb) (hx_array *x, hx_array *y,
+                                   int *arr, int idx,
+                                   va_list *vl);
+
 /* function declarations: */
 
 int hx_array_alloc (hx_array *x, int d, int k, int *sz);
@@ -104,6 +116,8 @@ int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper);
 int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int *loc);
 
 int hx_array_store_vector (hx_array *x, hx_array *y, int k, int *loc);
+
+int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...);
 
 #endif /* __HXND_HX_ARRAY_H__ */
 
