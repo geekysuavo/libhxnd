@@ -7,7 +7,7 @@ LIBS=-lm
 # LIBSRC: library source basenames.
 LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-cmp hx-arith hx-fourier
 LIBSRC+= trace opts str bytes nmr-datum nmr-bruker nmr-varian nmr-pipe
-LIBSRC+= fn fn-add fn-fft fn-ht fn-scale fn-resize
+LIBSRC+= fn fn-add fn-fft fn-ht fn-resize fn-scale fn-zerofill
 
 # LIBOBJ: library object filenames.
 LIBOBJ=$(addprefix libhxnd/,$(addsuffix .o,$(LIBSRC)))

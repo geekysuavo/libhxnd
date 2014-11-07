@@ -229,6 +229,14 @@ FIXME
 .SS window
 FIXME
 
+.SS zerofill
+The \fBzerofill\fR command resizes the current datum to a power-of-two size
+by zero-filling. The dimension \fID\fR (or each dimension) is up-converted
+first to a power-of-two size, then the zero-fill is performed.
+.TP
+\fBtimes\fR (integer) [0]
+number of times to double the up-converted dimension size.
+
 .SH "MODIFYING VALUES"
 .PP
 Occasionally, incorrect parameter values may be read in from the files that

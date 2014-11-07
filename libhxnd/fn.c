@@ -350,6 +350,10 @@ int fn_execute (datum *D,
     /* execute the 'scale' function. */
     return fn_execute_scale(D, dim, argstr);
   }
+  else if (strcmp(name, FN_NAME_ZEROFILL) == 0) {
+    /* execute the 'zerofill' function. */
+    return fn_execute_zerofill(D, dim, argstr);
+  }
   else
     throw("invalid function name '%s'", name);
 

@@ -38,17 +38,18 @@
 
 /* define string names for all available processing functions.
  */
-#define FN_NAME_ABS     "abs"
-#define FN_NAME_ADD     "add"
-#define FN_NAME_CUT     "cut"
-#define FN_NAME_FFT     "fft"
-#define FN_NAME_HT      "ht"
-#define FN_NAME_IST     "ist"
-#define FN_NAME_PHASE   "phase"
-#define FN_NAME_RESIZE  "resize"
-#define FN_NAME_SCALE   "scale"
-#define FN_NAME_SHIFT   "shift"
-#define FN_NAME_WINDOW  "window"
+#define FN_NAME_ABS       "abs"
+#define FN_NAME_ADD       "add"
+#define FN_NAME_CUT       "cut"
+#define FN_NAME_FFT       "fft"
+#define FN_NAME_HT        "ht"
+#define FN_NAME_IST       "ist"
+#define FN_NAME_PHASE     "phase"
+#define FN_NAME_RESIZE    "resize"
+#define FN_NAME_SCALE     "scale"
+#define FN_NAME_SHIFT     "shift"
+#define FN_NAME_WINDOW    "window"
+#define FN_NAME_ZEROFILL  "zerofill"
 
 /* fn_args: structure for holding information on arguments accepted by any
  * given processing function.
@@ -101,6 +102,8 @@ int fn_execute_shift (datum *D, const int dim, const char *argstr);
 
 /* FIXME: implement fn_execute_window() */
 int fn_execute_window (datum *D, const int dim, const char *argstr);
+
+int fn_execute_zerofill (datum *D, const int dim, const char *argstr);
 
 #endif /* __HXND_FN_H__ */
 
