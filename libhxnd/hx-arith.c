@@ -111,6 +111,39 @@ int hx_data_mul (real *xa, real *xb, real *xc, int d, int n, hx_algebra tbl) {
   return 1;
 }
 
+/* hx_data_norm(): compute the norm of the raw array elements of
+ * a hypercomplex value.
+ * @x: the raw array data of the input operand.
+ * @d: the algebraic dimensionality of the operand.
+ * @n: the number of array elements of the operand.
+ *
+ * operation:
+ *   x <= ||x||
+ *
+ * operands:
+ *   x: hypercomplex scalar.
+ */
+int hx_data_norm (real *x, int d, int n) {
+  /* declare a few required variables. */
+  int i;
+
+  /* square the first array element. */
+  x[0] *= x[0];
+
+  /* loop over the remaining array elements. */
+  for (i = 1; i < n; i++) {
+    /* sum in the product and zero the element. */
+    x[0] += x[i] * x[i];
+    x[i] = 0.0;
+  }
+
+  /* square-root the first (real) array element. */
+  x[0] = sqrt(x[0]);
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_scalar_add(): add two hypercomplex scalar values.
  * @a: the structure pointer of the first operand.
  * @b: the structure pointer of the second operand.
@@ -157,6 +190,20 @@ int hx_scalar_mul (hx_scalar *a, hx_scalar *b, hx_scalar *c) {
 
   /* perform the raw data operation. */
   return hx_data_mul(a->x, b->x, c->x, a->d, a->n, a->tbl);
+}
+
+/* hx_scalar_norm(): compute the norm of a hypercomplex scalar.
+ * @a: the structure pointer of the input operand.
+ *
+ * operation:
+ *   a <= ||a||
+ *
+ * operands:
+ *   a: hypercomplex scalar.
+ */
+int hx_scalar_norm (hx_scalar *a) {
+  /* perform the raw data operation. */
+  return hx_data_norm(a->x, a->d, a->n);
 }
 
 /* hx_array_add_scalar(): add a hypercomplex array and a scalar.
@@ -286,6 +333,30 @@ int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c) {
   for (i = 0; i < a->len; i += a->n) {
     /* perform the raw scalar data operation. */
     if (!hx_data_mul(a->x + i, b->x + i, c->x + i, a->d, a->n, a->tbl))
+      return 0;
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_norm(): compute the norm of a hypercomplex array.
+ * @a: the structure pointer to the input operand.
+ *
+ * operation:
+ *   a <= ||a||
+ *
+ * operands:
+ *   a: hypercomplex array.
+ */
+int hx_array_norm (hx_array *a) {
+  /* declare a required variable. */
+  int i;
+
+  /* loop over the array elements. */
+  for (i = 0; i < a->len; i += a->n) {
+    /* perform the raw scalar data operation. */
+    if (!hx_data_norm(a->x + i, a->d, a->n))
       return 0;
   }
 

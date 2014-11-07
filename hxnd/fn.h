@@ -75,7 +75,6 @@ int fn_execute (datum *D, const char *name, const int dim, const char *argstr);
 
 /* function declarations, processing: */
 
-/* FIXME: implement fn_execute_abs() */
 int fn_execute_abs (datum *D, const int dim, const char *argstr);
 
 int fn_execute_add (datum *D, const int dim, const char *argstr);

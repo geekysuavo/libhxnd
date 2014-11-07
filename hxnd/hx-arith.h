@@ -30,11 +30,15 @@ int hx_data_add (real *xa, real *xb, real *xc, real s, int d, int n);
 
 int hx_data_mul (real *xa, real *xb, real *xc, int d, int n, hx_algebra tbl);
 
+int hx_data_norm (real *x, int d, int n);
+
 /* function declarations, scalars: */
 
 int hx_scalar_add (hx_scalar *a, hx_scalar *b, real s, hx_scalar *c);
 
 int hx_scalar_mul (hx_scalar *a, hx_scalar *b, hx_scalar *c);
+
+int hx_scalar_norm (hx_scalar *a);
 
 /* function declarations, arrays: */
 
@@ -45,6 +49,8 @@ int hx_array_add_array (hx_array *a, hx_array *b, real s, hx_array *c);
 int hx_array_mul_scalar (hx_array *a, hx_scalar *b, hx_array *c);
 
 int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c);
+
+int hx_array_norm (hx_array *a);
 
 #endif /* __HXND_HX_ARITH_H__ */
 

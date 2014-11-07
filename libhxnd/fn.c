@@ -330,7 +330,11 @@ int fn_execute (datum *D,
                 const int dim,
                 const char *argstr) {
   /* act based on the function name. */
-  if (strcmp(name, FN_NAME_ADD) == 0) {
+  if (strcmp(name, FN_NAME_ABS) == 0) {
+    /* execute the 'abs' function. */
+    return fn_execute_abs(D, dim, argstr);
+  }
+  else if (strcmp(name, FN_NAME_ADD) == 0) {
     /* execute the 'add' function. */
     return fn_execute_add(D, dim, argstr);
   }
