@@ -1018,7 +1018,7 @@ int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
    * @y: hypercomplex array holding the currently sliced vector values.
    * @vl: the variable argument list passed to each callback invocation.
    */
-  int *arr, idx, szk;
+  int *arr, idx, szk, slice;
   hx_array y;
   va_list vl;
 
@@ -1040,6 +1040,9 @@ int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
   if (!hx_array_alloc(&y, x->d, 1, &szk))
     throw("failed to allocate slice (%d, 1)-array", x->d);
 
+  /* initialize the linear indices. */
+  idx = slice = 0;
+
   /* iterate over the elements of the array. */
   do {
     /* quickly seek to the start of each vector. */
@@ -1054,21 +1057,24 @@ int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
 
     /* slice the currently indexed vector from the array. */
     if (!hx_array_slice_vector(x, &y, k, arr))
-      throw("failed to slice vector");
+      throw("failed to slice vector %d", slice);
 
     /* initialize the variable arguments list. */
     va_start(vl, fn);
 
     /* execute the callback function. */
     if (!fn(x, &y, arr, idx, &vl))
-      throw("failed to execute callback");
+      throw("failed to execute callback %d", slice);
 
     /* free the variable arguments list. */
     va_end(vl);
 
     /* store the modified sliced vector back into the array. */
     if (!hx_array_store_vector(x, &y, k, arr))
-      throw("failed to store vector");
+      throw("failed to store vector %d", slice);
+
+    /* increment the slice index. */
+    slice++;
   }
   while (hx_array_index_inc(x->k, x->sz, &arr));
 
