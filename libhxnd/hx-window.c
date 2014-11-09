@@ -271,7 +271,7 @@ int hx_window_trap (hx_array *wnd, int d, int len, real width,
  * @end: height of ending point.
  */
 int hx_window_tri (hx_array *wnd, int d, int len, real width,
-                   real locus, real start, real end) {
+                   real center, real start, real end) {
   /* declare required variables:
    * @i: integer point index.
    * @fi: fractional point index.
@@ -279,9 +279,9 @@ int hx_window_tri (hx_array *wnd, int d, int len, real width,
   real fi, xi;
   int i;
 
-  /* check that the locus value is within bounds. */
-  if (locus < 0.0 || locus > 1.0)
-    throw("locus argument %.3f out of bounds [0,1]", locus);
+  /* check that the center value is within bounds. */
+  if (center < 0.0 || center > 1.0)
+    throw("locus argument %.3f out of bounds [0,1]", center);
 
   /* check that the start value is within bounds. */
   if (start < 0.0 || start > 1.0)
@@ -301,13 +301,13 @@ int hx_window_tri (hx_array *wnd, int d, int len, real width,
     fi = ((real) i) / ((real) (len - 1));
 
     /* compute the current window value. */
-    if (fi > locus) {
+    if (fi > center) {
       /* final: downward slope. */
-      xi = fi * (end - 1.0) / (1.0 - locus);
+      xi = fi * (end - 1.0) / (1.0 - center);
     }
     else {
       /* initial: upward slope. */
-      xi = fi * (1.0 - start) / locus;
+      xi = fi * (1.0 - start) / center;
     }
 
     /* store the computed window value. */

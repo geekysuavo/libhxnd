@@ -65,7 +65,7 @@ int hx_window_trap (hx_array *wnd, int d, int len, real width,
                     real start, real end);
 
 int hx_window_tri (hx_array *wnd, int d, int len, real width,
-                   real locus, real start, real end);
+                   real center, real start, real end);
 
 #endif /* __HXND_HX_WINDOW_H__ */
 

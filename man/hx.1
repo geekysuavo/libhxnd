@@ -230,7 +230,33 @@ inverts the value of \fBfactor\fR prior to multiplication when set.
 FIXME
 
 .SS window
-FIXME
+The \fBwindow\fR command multiplies the current datum by a window function
+along dimension \fID\fR. When no dimension is specified, \fBwindow\fR defaults
+to the first dimension.
+.TP
+\fBtype\fR (string) ['sine']
+window type string. must be one of \fIsine\fR, \fIexp\fR, \fIgauss\fR,
+\fItrap\fR or \fItri\fR.
+.TP
+\fBstart\fR (float) [0.0]
+starting point for \fIsine\fR windows. rising edge endpoint for \fItrap\fR
+windows. first-point height for \fItri\fR windows.
+.TP
+\fBend\fR (float) [1.0]
+ending point for \fIsine\fR windows. falling edge starting point for
+\fItrap\fR windows. last-point height for \fItri\fR windows.
+.TP
+\fBorder\fR (float) [1.0]
+exponent value for \fIsine\fR windows.
+.TP
+\fBlb\fR (float) [0.0]
+forward line-broadening factor for \fIexp\fR and \fIgauss\fR windows.
+.TP
+\fBinvlb\fR (float) [0.0]
+inverse exponential line-broadening factor for \fIgauss\fR windows.
+.TP
+\fBcenter\fR (float) [0.0]
+point of function maximum for \fIgauss\fR and \fItri\fR windows.
 
 .SS zerofill
 The \fBzerofill\fR command resizes the current datum to a power-of-two size

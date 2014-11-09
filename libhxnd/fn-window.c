@@ -44,10 +44,6 @@ static const fn_args fn_argdef_window[] = {
   { "invlb",  FN_ARGTYPE_FLOAT, "0.0" },
   { "center", FN_ARGTYPE_FLOAT, "0.0" },
 
-  /* @locus: triangular window options.
-   */
-  { "locus", FN_ARGTYPE_FLOAT, "0.0" },
-
   /* null-termination. */
   { NULL, '\0', NULL }
 };
@@ -58,25 +54,30 @@ static const fn_args fn_argdef_window[] = {
  * @args: function argument string.
  */
 int fn_execute_window (datum *D, const int dim, const char *argstr) {
-  /* declare variables to hold argument values.
+  /* declare a few required variables:
    */
   enum hx_window_type type;
-  int d, n, len, ret;
+  int ldim, d, n, len, ret;
   hx_array wnd, atmp;
   real width;
 
   /* declare variables to hold argument values. */
-  real start, end, order, lb, invlb, center, locus;
+  real start, end, order, lb, invlb, center;
   char *stype;
 
   /* parse the function argument string. */
   if (!fn_scan_args(argstr, fn_argdef_window, &stype, &start,
-                    &end, &order, &lb, &invlb, &center, &locus))
+                    &end, &order, &lb, &invlb, &center))
     throw("failed to parse window arguments");
 
+  /* store the dimensionality into a local variable. */
+  ldim = dim;
+  if (ldim < 0)
+    ldim = 0;
+
   /* check the dimension index. */
-  if (dim < 0 || dim >= D->nd)
-    throw("dimension index %d out of bounds [0,%d)", dim, D->nd);
+  if (ldim >= D->nd)
+    throw("dimension index %d out of bounds [0,%d)", ldim, D->nd);
 
   /* check that a type was provided. */
   if (!stype) {
@@ -96,9 +97,12 @@ int fn_execute_window (datum *D, const int dim, const char *argstr) {
   type = hx_window_lookup_type(stype);
 
   /* store local window variables. */
-  width = D->dims[dim].width;
-  len = D->array.sz[dim];
+  width = D->dims[ldim].width;
+  len = D->array.sz[ldim];
   d = D->array.d;
+
+  /* be extremely safe. */
+  wnd.d = wnd.k = -1;
 
   /* determine which window function to construct. */
   ret = 0;
@@ -130,7 +134,7 @@ int fn_execute_window (datum *D, const int dim, const char *argstr) {
     /* triangular. */
     case HX_WINDOW_TYPE_TRI:
       /* construct a triangular window. */
-      ret = hx_window_tri(&wnd, d, len, width, locus, start, end);
+      ret = hx_window_tri(&wnd, d, len, width, center, start, end);
       break;
 
     /* undefined. */
@@ -148,12 +152,12 @@ int fn_execute_window (datum *D, const int dim, const char *argstr) {
     throw("failed to allocate duplicate array");
 
   /* perform a trace-wise multiplication by the window. */
-  if (!hx_array_mul_vector(&atmp, &wnd, dim, &D->array))
+  if (!hx_array_mul_vector(&atmp, &wnd, ldim, &D->array))
     throw("failed to perform window multiplication");
 
   /* free the allocated arrays. */
-  hx_array_free(&wnd);
   hx_array_free(&atmp);
+  hx_array_free(&wnd);
 
   /* free the window type string. */
   free(stype);

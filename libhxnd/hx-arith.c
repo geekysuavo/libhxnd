@@ -340,23 +340,86 @@ int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c) {
   return 1;
 }
 
+/* hx_array_mul_vector_cb(): callback function for hx_array_mul_vector().
+ *
+ * args:
+ *  see hx_array_vector_cb().
+ *
+ * varargs:
+ *  @b: vector multiplier.
+ *  @c: destination array.
+ *  @ck: destination vector slice.
+ */
+int hx_array_mul_vector_cb (hx_array *x, hx_array *y,
+                            int *arr, int idx,
+                            va_list *vl) {
+  /* extract the varargs. */
+  hx_array *b = va_arg(*vl, hx_array*);
+  hx_array *ytmp = va_arg(*vl, hx_array*);
+
+  /* copy the array contents from @y to @ytmp. */
+  memcpy(ytmp->x, y->x, y->len * sizeof(real));
+
+  /* perform the array multiplication. */
+  if (!hx_array_mul_array(ytmp, b, y))
+    throw("failed to multiply vector inside array");
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_array_mul_vector(): multiply each vector of an array @a along a given
- * dimension @dmul by a vector-shaped array @b.
+ * (topological) dimension @kmul by a vector-shaped array @b.
  * @a: the structure pointer to the first (whole-array) operand.
  * @b: the structure pointer to the second (vector) operand.
- * @dmul: the dimension index along which to multiply.
+ * @kmul: the dimension index along which to multiply.
  * @c: the structure pointer to the result.
  *
  * operation:
- *   c_k <= a_k * b, foreach k in a.sz[dmul]
+ *   c_k <= a_k * b, foreach k in a.sz[kmul]
  *
  * operands:
  *   a: hypercomplex array, at least one-dimensional.
  *   b: hypercomplex array, must be one-dimensional.
  *   c: hypercomplex array, same dimensionality as @a.
  */
-int hx_array_mul_vector (hx_array *a, hx_array *b, int dmul, hx_array *c) {
-  /* FIXME: implement hx_array_mul_vector() */
+int hx_array_mul_vector (hx_array *a, hx_array *b, int kmul, hx_array *c) {
+  /* declare a required variable:
+   * @ytmp: temporary array of same configuration as slices.
+   */
+  hx_array ytmp;
+
+  /* check that the dimension index is in bounds. */
+  if (kmul < 0 || kmul >= a->k)
+    throw("array index %d out of bounds [0,%d)", kmul, a->k);
+
+  /* check that the vector operand is truly a vector. */
+  if (!hx_array_is_vector(b))
+    throw("vector argument has invalid dimensionality");
+
+  /* check that the array algebraic dimensionalities match. */
+  if (hx_array_dims_cmp(a, b) ||
+      hx_array_dims_cmp(a, c))
+    throw("array algebraic dimensionality mismatch");
+
+  /* check that the important topological dimensionalities match. */
+  if (a->sz[kmul] != b->sz[0] ||
+      hx_array_topo_cmp(a, c))
+    throw("array topological dimensionality mismatch");
+
+  /* allocate a temporary array for destination slice storage. */
+  if (!hx_array_copy(&ytmp, b))
+    throw("failed to allocate slice (%d, 1)-array", b->d);
+
+  /* copy the array contents from the first operand to the destination. */
+  memcpy(c->x, a->x, a->len * sizeof(real));
+
+  /* run the callback function over every vector along @kmul. */
+  if (!hx_array_vector_op(c, kmul, &hx_array_mul_vector_cb, b, &ytmp))
+    return 0;
+
+  /* free the temporary array. */
+  hx_array_free(&ytmp);
 
   /* return success. */
   return 1;
