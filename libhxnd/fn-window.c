@@ -23,19 +23,32 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* define all accepted window types.
- */
-#define HX_WINTYPE_SINE
-#define HX_WINTYPE_EXP
-#define HX_WINTYPE_GAUSS
-#define HX_WINTYPE_L2G
-#define HX_WINTYPE_TRAP
+/* include the window function header. */
+#include <hxnd/hx-window.h>
 
 /* fn_argdef_window: define all accepted arguments for the 'window' function.
  */
 static const fn_args fn_argdef_window[] = {
+  /* @type: string specifying the window type. */
   { "type", FN_ARGTYPE_STRING, NULL },
-  /* FIXME: define all 'window' arguments. */
+
+  /* @start, @end, @order: sine and trapezoidal window options.
+   */
+  { "start", FN_ARGTYPE_FLOAT, "0.0" },
+  { "end",   FN_ARGTYPE_FLOAT, "1.0" },
+  { "order", FN_ARGTYPE_FLOAT, "1.0" },
+
+  /* @lb, @invlb: line-broadening and inverse line-broadening options.
+   */
+  { "lb",     FN_ARGTYPE_FLOAT, "0.0" },
+  { "invlb",  FN_ARGTYPE_FLOAT, "0.0" },
+  { "center", FN_ARGTYPE_FLOAT, "0.0" },
+
+  /* @locus: triangular window options.
+   */
+  { "locus", FN_ARGTYPE_FLOAT, "0.0" },
+
+  /* null-termination. */
   { NULL, '\0', NULL }
 };
 
@@ -47,13 +60,93 @@ static const fn_args fn_argdef_window[] = {
 int fn_execute_window (datum *D, const int dim, const char *argstr) {
   /* declare variables to hold argument values.
    */
-  char *wtype;
+  enum hx_window_type type;
+  int d, n, len, ret;
+  hx_array wnd;
+  real width;
+
+  /* declare variables to hold argument values. */
+  real start, end, order, lb, invlb, center, locus;
+  char *stype;
 
   /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_window, &wtype))
+  if (!fn_scan_args(argstr, fn_argdef_window, &stype, &start,
+                    &end, &order, &lb, &invlb, &center, &locus))
     throw("failed to parse window arguments");
 
+  /* check the dimension index. */
+  if (dim < 0 || dim >= D->nd)
+    throw("dimension index %d out of bounds [0,%d)", dim, D->nd);
+
+  /* check that a type was provided. */
+  if (!stype) {
+    /* none provided. set the default window type. */
+    n = strlen(HX_WINDOW_NAME_SINE) + 1;
+    stype = (char*) malloc(n * sizeof(char));
+
+    /* check that allocation was successful. */
+    if (!stype)
+      throw("failed to allocate window type string");
+
+    /* store the default window name. */
+    strcpy(stype, HX_WINDOW_NAME_SINE);
+  }
+
+  /* determine the window enumerated type. */
+  type = hx_window_lookup_type(stype);
+
+  /* store local window variables. */
+  width = D->dims[dim].width;
+  len = D->array.sz[dim];
+  d = D->array.d;
+
+  /* determine which window function to construct. */
+  ret = 0;
+  switch (type) {
+    /* sine. */
+    case HX_WINDOW_TYPE_SINE:
+      /* construct a sine window. */
+      ret = hx_window_sine(&wnd, d, len, width, start, end, order);
+      break;
+
+    /* exponential. */
+    case HX_WINDOW_TYPE_EXP:
+      /* construct an exponential window. */
+      ret = hx_window_exp(&wnd, d, len, width, lb);
+      break;
+
+    /* gaussian. */
+    case HX_WINDOW_TYPE_GAUSS:
+      /* construct a gaussian window. */
+      ret = hx_window_gauss(&wnd, d, len, width, invlb, lb, center);
+      break;
+
+    /* trapezoidal. */
+    case HX_WINDOW_TYPE_TRAP:
+      /* construct a trapezoidal window. */
+      ret = hx_window_trap(&wnd, d, len, width, start, end);
+      break;
+
+    /* triangular. */
+    case HX_WINDOW_TYPE_TRI:
+      /* construct a triangular window. */
+      ret = hx_window_tri(&wnd, d, len, width, locus, start, end);
+      break;
+
+    /* undefined. */
+    default:
+    case HX_WINDOW_TYPE_UNDEFINED:
+      throw("window type '%s' undefined", stype);
+  }
+
+  /* check if the array was successfully constructed. */
+  if (!ret)
+    throw("failed to construct %s window", stype);
+
   /* FIXME: implement the 'window' function. */
+
+  /* free the window type string. */
+  free(stype);
 
   /* return success. */
   return 1;

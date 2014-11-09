@@ -48,10 +48,24 @@ enum hx_window_type {
 
 /* function declarations: */
 
-int hx_window_alloc (hx_array *wnd, int d, int len, real width,
-                     enum hx_window_type type);
-
 enum hx_window_type hx_window_lookup_type (const char *name);
+
+int hx_window_alloc (hx_array *wnd, int d, int len, real width);
+
+int hx_window_sine (hx_array *wnd, int d, int len, real width,
+                    real start, real end, real order);
+
+int hx_window_exp (hx_array *wnd, int d, int len, real width,
+                   real lb);
+
+int hx_window_gauss (hx_array *wnd, int d, int len, real width,
+                     real invlb, real lb, real center);
+
+int hx_window_trap (hx_array *wnd, int d, int len, real width,
+                    real start, real end);
+
+int hx_window_tri (hx_array *wnd, int d, int len, real width,
+                   real locus, real start, real end);
 
 #endif /* __HXND_HX_WINDOW_H__ */
 

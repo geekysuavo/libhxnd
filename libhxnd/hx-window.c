@@ -45,22 +45,6 @@ const struct wnd_def windows[] = {
   { NULL,                 HX_WINDOW_TYPE_UNDEFINED }
 };
 
-/* hx_window_alloc(): allocates memory for a hypercomplex window function
- * and stores the computed values in the allocated array.
- * @wnd: hypercomplex array pointer for the result.
- * @d: dimension count for the array.
- * @len: length of the window vector.
- * @width: spectral width parameter.
- * @type: type of the window function.
- */
-int hx_window_alloc (hx_array *wnd, int d, int len, real width,
-                     enum hx_window_type type) {
-  /* FIXME */
-
-  /* return success. */
-  return 1;
-}
-
 /* hx_window_lookup_type(): returns the enumerated type based on its string
  * representation.
  * @name: the window name string.
@@ -78,5 +62,109 @@ enum hx_window_type hx_window_lookup_type (const char *name) {
 
   /* return an undefined window type. */
   return HX_WINDOW_TYPE_UNDEFINED;
+}
+
+/* hx_window_alloc(): allocates memory for a hypercomplex window function
+ * and stores the computed values in the allocated array.
+ * @wnd: hypercomplex array pointer for the result.
+ * @d: dimensionality for the array.
+ * @len: length of the window vector.
+ * @width: spectral width parameter.
+ */
+int hx_window_alloc (hx_array *wnd, int d, int len, real width) {
+  /* store a local copy of the length argument. */
+  int sz = len;
+
+  /* allocate memory for the destination array, but only if the output
+   * array does not match the configuration needed.
+   */
+  if ((wnd->d != d || wnd->k != 1 || wnd->sz[0] != len) &&
+      !hx_array_alloc(wnd, d, 1, &sz))
+    throw("failed to allocate destination array");
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_window_sine(): allocate and construct a sinusoidal window function.
+ * @start: sine starting phase.
+ * @end: sine ending phase.
+ * @order: sine exponent.
+ */
+int hx_window_sine (hx_array *wnd, int d, int len, real width,
+                    real start, real end, real order) {
+  /* ensure that the destination array is allocated. */
+  if (!hx_window_alloc(wnd, d, len, width))
+    throw("failed to allocate sinusoidal array");
+
+  /* FIXME: implement hx_window_sine() */
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_window_exp(): allocate and construct an exponential window function.
+ * @lb: exponential line-broadening in Hertz.
+ */
+int hx_window_exp (hx_array *wnd, int d, int len, real width,
+                   real lb) {
+  /* ensure that the destination array is allocated. */
+  if (!hx_window_alloc(wnd, d, len, width))
+    throw("failed to allocate exponential array");
+
+  /* FIXME: implement hx_window_exp() */
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_window_gauss(): allocate and construct a gaussian window function.
+ * @invlb: exponential inverse line-broadening in Hertz.
+ * @lb: gaussian line-broadening in Hertz.
+ * @center: position of gauss maximum.
+ */
+int hx_window_gauss (hx_array *wnd, int d, int len, real width,
+                     real invlb, real lb, real center) {
+  /* ensure that the destination array is allocated. */
+  if (!hx_window_alloc(wnd, d, len, width))
+    throw("failed to allocate gaussian array");
+
+  /* FIXME: implement hx_window_gauss() */
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_window_trap(): allocate and construct a trapezoidal window function.
+ * @start: size of starting ramp.
+ * @end: size of ending ramp.
+ */
+int hx_window_trap (hx_array *wnd, int d, int len, real width,
+                    real start, real end) {
+  /* ensure that the destination array is allocated. */
+  if (!hx_window_alloc(wnd, d, len, width))
+    throw("failed to allocate trapezoidal array");
+
+  /* FIXME: implement hx_window_trap() */
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_window_tri(): allocate and construct a triangular window function.
+ * @locus: position of triangle maximum.
+ * @start: height of starting point.
+ * @end: height of ending point.
+ */
+int hx_window_tri (hx_array *wnd, int d, int len, real width,
+                   real locus, real start, real end) {
+  /* ensure that the destination array is allocated. */
+  if (!hx_window_alloc(wnd, d, len, width))
+    throw("failed to allocate triangular array");
+
+  /* FIXME: implement hx_window_tri() */
+
+  /* return success. */
+  return 1;
 }
 
