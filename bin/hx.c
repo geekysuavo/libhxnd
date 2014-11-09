@@ -364,6 +364,9 @@ int main (int argc, char **argv) {
     return 1;
   }
 
+  /* free the datum structure. */
+  datum_free(&D);
+
   /* return successfully. */
   return 0;
 }

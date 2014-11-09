@@ -93,11 +93,41 @@ int hx_window_alloc (hx_array *wnd, int d, int len, real width) {
  */
 int hx_window_sine (hx_array *wnd, int d, int len, real width,
                     real start, real end, real order) {
+  /* declare required variables:
+   * @i: integer point index.
+   * @fi: fractional point index.
+   */
+  real fi, xi;
+  int i;
+
+  /* check that the start value is within bounds. */
+  if (start < 0.0 || start > 1.0)
+    throw("start argument %.3f out of bounds [0,1]", start);
+
+  /* check that the end value is within bounds. */
+  if (end < 0.0 || end > 1.0)
+    throw("end argument %.3f out of bounds [0,1]", end);
+
+  /* check that the order value is within bounds. */
+  if (order < 1.0)
+    throw("order argument %.3f out of bounds [1,inf)", order);
+
   /* ensure that the destination array is allocated. */
   if (!hx_window_alloc(wnd, d, len, width))
     throw("failed to allocate sinusoidal array");
 
-  /* FIXME: implement hx_window_sine() */
+  /* compute the values of the window. */
+  for (i = 0; i < len; i++) {
+    /* compute the fractional index. */
+    fi = ((real) i) / ((real) (len - 1));
+
+    /* compute the current window value. */
+    xi = M_PI * (start + (end - start) * fi);
+    xi = pow(sin(xi), order);
+
+    /* store the computed window value. */
+    wnd->x[i * wnd->n] = xi;
+  }
 
   /* return success. */
   return 1;
@@ -108,11 +138,29 @@ int hx_window_sine (hx_array *wnd, int d, int len, real width,
  */
 int hx_window_exp (hx_array *wnd, int d, int len, real width,
                    real lb) {
+  /* declare required variables:
+   * @i: integer point index.
+   * @t: time index.
+   */
+  real t, xi;
+  int i;
+
   /* ensure that the destination array is allocated. */
   if (!hx_window_alloc(wnd, d, len, width))
     throw("failed to allocate exponential array");
 
-  /* FIXME: implement hx_window_exp() */
+  /* compute the values of the window. */
+  for (i = 0; i < len; i++) {
+    /* compute the time index. */
+    t = ((real) i) / width;
+
+    /* compute the current window value. */
+    xi = -M_PI * t * lb;
+    xi = exp(xi);
+
+    /* store the computed window value. */
+    wnd->x[i * wnd->n] = xi;
+  }
 
   /* return success. */
   return 1;
@@ -125,11 +173,37 @@ int hx_window_exp (hx_array *wnd, int d, int len, real width,
  */
 int hx_window_gauss (hx_array *wnd, int d, int len, real width,
                      real invlb, real lb, real center) {
+  /* declare required variables:
+   * @i: integer point index.
+   * @t0: center time index.
+   * @t: time index.
+   */
+  real t, t0, xi;
+  int i;
+
+  /* check that the center value is within bounds. */
+  if (center < 0.0 || center > 1.0)
+    throw("center argument %.3f out of bounds [0,1]", center);
+
   /* ensure that the destination array is allocated. */
   if (!hx_window_alloc(wnd, d, len, width))
     throw("failed to allocate gaussian array");
 
-  /* FIXME: implement hx_window_gauss() */
+  /* compute the scaled center value. */
+  t0 = center * ((real) (len - 1)) / width;
+
+  /* compute the values of the window. */
+  for (i = 0; i < len; i++) {
+    /* compute the time index. */
+    t = ((real) i) / width;
+
+    /* compute the current window value. */
+    xi = M_PI * t * invlb - pow(0.6 * M_PI * lb * (t0 - t), 2.0);
+    xi = exp(xi);
+
+    /* store the computed window value. */
+    wnd->x[i * wnd->n] = xi;
+  }
 
   /* return success. */
   return 1;
@@ -141,11 +215,51 @@ int hx_window_gauss (hx_array *wnd, int d, int len, real width,
  */
 int hx_window_trap (hx_array *wnd, int d, int len, real width,
                     real start, real end) {
+  /* declare required variables:
+   * @i: integer point index.
+   * @fi: fractional point index.
+   */
+  real fi, xi;
+  int i;
+
+  /* check that the start value is within bounds. */
+  if (start < 0.0 || start > 1.0)
+    throw("start argument %.3f out of bounds [0,1]", start);
+
+  /* check that the end value is within bounds. */
+  if (end < 0.0 || end > 1.0)
+    throw("end argument %.3f out of bounds [0,1]", end);
+
+  /* check that the start and end do not cross. */
+  if (start > end)
+    throw("start argument may not exceed end argument");
+
   /* ensure that the destination array is allocated. */
   if (!hx_window_alloc(wnd, d, len, width))
     throw("failed to allocate trapezoidal array");
 
-  /* FIXME: implement hx_window_trap() */
+  /* compute the values of the window. */
+  for (i = 0; i < len; i++) {
+    /* compute the fractional index. */
+    fi = ((real) i) / ((real) (len - 1));
+
+    /* compute the current window value. */
+    if (fi >= end) {
+      /* final: download slope. */
+      xi = fi / (end - 1.0);
+    }
+    else if (fi >= start) {
+      /* middle: plateau. */
+      xi = 1.0;
+    }
+    else {
+      /* initial: upward slope. */
+      xi = fi / start;
+    }
+
+    /* store the computed window value. */
+    wnd->x[i * wnd->n] = xi;
+  }
 
   /* return success. */
   return 1;
@@ -158,11 +272,47 @@ int hx_window_trap (hx_array *wnd, int d, int len, real width,
  */
 int hx_window_tri (hx_array *wnd, int d, int len, real width,
                    real locus, real start, real end) {
+  /* declare required variables:
+   * @i: integer point index.
+   * @fi: fractional point index.
+   */
+  real fi, xi;
+  int i;
+
+  /* check that the locus value is within bounds. */
+  if (locus < 0.0 || locus > 1.0)
+    throw("locus argument %.3f out of bounds [0,1]", locus);
+
+  /* check that the start value is within bounds. */
+  if (start < 0.0 || start > 1.0)
+    throw("start argument %.3f out of bounds [0,1]", start);
+
+  /* check that the end value is within bounds. */
+  if (end < 0.0 || end > 1.0)
+    throw("end argument %.3f out of bounds [0,1]", end);
+
   /* ensure that the destination array is allocated. */
   if (!hx_window_alloc(wnd, d, len, width))
     throw("failed to allocate triangular array");
 
-  /* FIXME: implement hx_window_tri() */
+  /* compute the values of the window. */
+  for (i = 0; i < len; i++) {
+    /* compute the fractional index. */
+    fi = ((real) i) / ((real) (len - 1));
+
+    /* compute the current window value. */
+    if (fi > locus) {
+      /* final: downward slope. */
+      xi = fi * (end - 1.0) / (1.0 - locus);
+    }
+    else {
+      /* initial: upward slope. */
+      xi = fi * (1.0 - start) / locus;
+    }
+
+    /* store the computed window value. */
+    wnd->x[i * wnd->n] = xi;
+  }
 
   /* return success. */
   return 1;

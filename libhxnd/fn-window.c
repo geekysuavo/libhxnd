@@ -62,7 +62,7 @@ int fn_execute_window (datum *D, const int dim, const char *argstr) {
    */
   enum hx_window_type type;
   int d, n, len, ret;
-  hx_array wnd;
+  hx_array wnd, atmp;
   real width;
 
   /* declare variables to hold argument values. */
@@ -143,7 +143,17 @@ int fn_execute_window (datum *D, const int dim, const char *argstr) {
   if (!ret)
     throw("failed to construct %s window", stype);
 
-  /* FIXME: implement the 'window' function. */
+  /* allocate a temporary duplicate array for the scaling operation. */
+  if (!hx_array_copy(&atmp, &D->array))
+    throw("failed to allocate duplicate array");
+
+  /* perform a trace-wise multiplication by the window. */
+  if (!hx_array_mul_vector(&atmp, &wnd, dim, &D->array))
+    throw("failed to perform window multiplication");
+
+  /* free the allocated arrays. */
+  hx_array_free(&wnd);
+  hx_array_free(&atmp);
 
   /* free the window type string. */
   free(stype);

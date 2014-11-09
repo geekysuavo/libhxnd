@@ -50,6 +50,8 @@ int hx_array_mul_scalar (hx_array *a, hx_scalar *b, hx_array *c);
 
 int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c);
 
+int hx_array_mul_vector (hx_array *a, hx_array *b, int dmul, hx_array *c);
+
 int hx_array_norm (hx_array *a);
 
 #endif /* __HXND_HX_ARITH_H__ */

@@ -32,6 +32,31 @@ static const fn_args fn_argdef_scale[] = {
   { NULL, '\0', NULL }
 };
 
+/* fn_scale_first(): callback function for first-point scaling operations.
+ *
+ * args:
+ *  see hx_array_vector_cb().
+ *
+ * varargs:
+ *  @hxscale: first-point scaling factor.
+ */
+int fn_scale_first (hx_array *x, hx_array *y,
+                    int *arr, int idx,
+                    va_list *vl) {
+  /* extract the vararg. */
+  hx_scalar *hxscale = va_arg(*vl, hx_scalar*);
+
+  /* scale the currently indexed array element. */
+  if (!hx_data_mul(x->x + idx * x->n, hxscale->x, y->x,
+                   x->d, x->n, x->tbl)) {
+    /* fail. throw an exception. */
+    throw("failed to scale by real value %f", hxscale->x[0]);
+  }
+
+  /* return success. */
+  return 1;
+}
+
 /* fn_execute_scale(): scales a datum structure by a constant factor.
  * @D: pointer to the datum to manipulate (in-place).
  * @dim: dimension of function application.
@@ -44,10 +69,10 @@ int fn_execute_scale (datum *D, const int dim, const char *argstr) {
    * @fscale: scaling factor.
    * @atmp: temporary array.
    */
-  int inv, d, nd, *arr, idx;
   hx_scalar hxscale;
   real fscale, f0;
   hx_array atmp;
+  int inv, d;
 
   /* parse the function argument string. */
   if (!fn_scan_args(argstr, fn_argdef_scale, &f0, &fscale, &inv))
@@ -72,60 +97,35 @@ int fn_execute_scale (datum *D, const int dim, const char *argstr) {
   if (!hx_scalar_alloc(&hxscale, D->array.d))
     throw("failed to allocate scalar multiplication operand");
 
-  /* allocate a temporary duplicate array for the scaling operation. */
-  if (!hx_array_copy(&atmp, &D->array))
-    throw("failed to allocate duplicate array");
-
   /* check if first-point scaling was requested. */
   if (f0 != 1.0) {
     /* set up the scalar value for first-point multiplication. */
     hxscale.x[0] = f0;
 
-    /* get the size of the operation dimension. */
-    nd = D->array.sz[d];
-
-    /* allocate an array for holding iteration indices. */
-    arr = hx_array_index_alloc(D->array.k);
-
-    /* check that allocation was successful. */
-    if (!arr)
-      throw("failed to allocate %d indices", D->array.k);
-
-    /* iterate over the elements of the array. */
-    do {
-      /* check if we've arrived at the next slice vector. */
-      if (arr[d]) {
-        /* accelerate the processing of finding the next vector. */
-        arr[d] = nd - 1;
-        continue;
-      }
-
-      /* pack the index array into a linear index. */
-      hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
-      idx *= atmp.n;
-
-      /* scale the currently indexed array element. */
-      if (!hx_data_mul(atmp.x + idx, hxscale.x, D->array.x + idx,
-                       atmp.d, atmp.n, atmp.tbl)) {
-        /* fail. throw an exception. */
-        throw("failed to scale by real value %d", f0);
-      }
-    } while (hx_array_index_inc(D->array.k, D->array.sz, &arr));
-
-    /* free the temporary index array. */
-    free(arr);
+    /* perform the first-point scaling. */
+    if (!hx_array_vector_op(&D->array, d, &fn_scale_first, &hxscale))
+      throw("failed to execute first-point scaling");
   }
 
-  /* set up the scalar value for whole-array multiplication. */
-  hxscale.x[0] = fscale;
+  /* check if all-point scaling was requested. */
+  if (fscale != 1.0) {
+    /* set up the scalar value for whole-array multiplication. */
+    hxscale.x[0] = fscale;
 
-  /* perform the addition. */
-  if (!hx_array_mul_scalar(&atmp, &hxscale, &D->array))
-    throw("failed to scale by scalar value %f(0)", fscale);
+    /* allocate a temporary duplicate array for the scaling operation. */
+    if (!hx_array_copy(&atmp, &D->array))
+      throw("failed to allocate duplicate array");
 
-  /* free the allocated temporary scalar and array. */
+    /* perform the scaling. */
+    if (!hx_array_mul_scalar(&atmp, &hxscale, &D->array))
+      throw("failed to scale by scalar value %f(0)", fscale);
+
+    /* free the allocated temporary array. */
+    hx_array_free(&atmp);
+  }
+
+  /* free the allocated temporary scalar. */
   hx_scalar_free(&hxscale);
-  hx_array_free(&atmp);
 
   /* return success. */
   return 1;

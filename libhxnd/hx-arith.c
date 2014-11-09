@@ -230,7 +230,7 @@ int hx_array_add_scalar (hx_array *a, hx_scalar *b, real s, hx_array *c) {
     throw("array-scalar configuration mismatch");
 
   /* loop over the array elements. */
-  for (i = 0; i < a->len; i++) {
+  for (i = 0; i < a->len; i += a->n) {
     /* perform the raw scalar data operation. */
     if (!hx_data_add(a->x + i, b->x, c->x + i, s, a->d, a->n))
       return 0;
@@ -297,7 +297,7 @@ int hx_array_mul_scalar (hx_array *a, hx_scalar *b, hx_array *c) {
     throw("array-scalar configuration mismatch");
 
   /* loop over the array elements. */
-  for (i = 0; i < a->len; i++) {
+  for (i = 0; i < a->len; i += a->n) {
     /* perform the raw scalar data operation. */
     if (!hx_data_mul(b->x, a->x + i, c->x + i, a->d, a->n, a->tbl))
       return 0;
@@ -335,6 +335,28 @@ int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c) {
     if (!hx_data_mul(a->x + i, b->x + i, c->x + i, a->d, a->n, a->tbl))
       return 0;
   }
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_mul_vector(): multiply each vector of an array @a along a given
+ * dimension @dmul by a vector-shaped array @b.
+ * @a: the structure pointer to the first (whole-array) operand.
+ * @b: the structure pointer to the second (vector) operand.
+ * @dmul: the dimension index along which to multiply.
+ * @c: the structure pointer to the result.
+ *
+ * operation:
+ *   c_k <= a_k * b, foreach k in a.sz[dmul]
+ *
+ * operands:
+ *   a: hypercomplex array, at least one-dimensional.
+ *   b: hypercomplex array, must be one-dimensional.
+ *   c: hypercomplex array, same dimensionality as @a.
+ */
+int hx_array_mul_vector (hx_array *a, hx_array *b, int dmul, hx_array *c) {
+  /* FIXME: implement hx_array_mul_vector() */
 
   /* return success. */
   return 1;

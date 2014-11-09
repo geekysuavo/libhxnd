@@ -672,7 +672,7 @@ int hx_array_deinterlace (hx_array *x) {
  */
 int hx_array_resize (hx_array *x, int d, int k, int *sz) {
   /* define a required variable. */
-  int *sznew, *arr, idx, idxprev, i, n, len, ok;
+  int *arr, idx, idxprev, i, n, len, ok;
   int nmin, kmax;
   real *xnew;
 
@@ -686,20 +686,14 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
   /* compute the sizes that are smaller, before or after. */
   nmin = (n < x->n ? n : x->n);
 
-  /* allocate a new sizes array. */
-  sznew = hx_array_index_alloc(k);
-
   /* allocate an array to hold the iteration indices. */
   kmax = (k > x->k ? k : x->k);
   arr = hx_array_index_alloc(kmax);
   idxprev = 0;
 
-  /* check that the size array was successfully allocated. */
-  if (!sznew || !arr)
+  /* check that the index array was successfully allocated. */
+  if (!arr)
     throw("failed to allocate %d indices", kmax);
-
-  /* copy the size array. */
-  memcpy(sznew, sz, k * sizeof(int));
 
   /* compute the final size of the new coefficients array. */
   for (i = 0, len = n; i < k; i++)
@@ -740,7 +734,7 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
     }
 
     /* increment the multidimensional indices. */
-    hx_array_index_inc(k, sznew, &arr);
+    hx_array_index_inc(k, sz, &arr);
     idx++;
   }
 
@@ -751,9 +745,12 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
   free(x->x);
   x->x = xnew;
 
+  /* resize the size array, if the new size is different. */
+  if (k != x->k)
+    x->sz = (int*) realloc(x->sz, k * sizeof(int));
+
   /* store the new size array. */
-  free(x->sz);
-  x->sz = sznew;
+  memcpy(x->sz, sz, k * sizeof(int));
 
   /* store the new dimensionality constants. */
   x->d = d;
