@@ -189,6 +189,18 @@ scale factor applied to the contents of \fBfile\fR before addition.
 \fBsubtract\fR (boolean) [false]
 negates the value of \fBscale\fR prior to addition when set.
 
+.SS cut
+The \fBcut\fR command cuts a single trace or plane from the current datum,
+removing all other content.
+.TP
+\fBtrace\fR (int-array) [empty]
+array of (one-based) indices specifying the trace location. the trace
+dimension should be indicated by a zero-value or \fIx\fR.
+.TP
+\fBplane\fR (int-array) [empty]
+array of (one-based) indices specifying the plane location. the two plane
+dimensions should be indicated by zero-values or \fIx\fR.
+
 .SS fft
 FIXME
 
@@ -209,7 +221,8 @@ zero-filling.
 new dimension size, when a dimension \fID\fR is specified.
 .TP
 \fBshape\fR (int-array) [empty]
-new dimension size array, when no dimension is specified.
+new dimension size array, when no dimension is specified. must contain a size
+value for each datum dimension.
 
 .SS scale
 The \fBscale\fR command multiplies the current datum by a scalar constant.

@@ -79,7 +79,6 @@ int fn_execute_abs (datum *D, const int dim, const char *argstr);
 
 int fn_execute_add (datum *D, const int dim, const char *argstr);
 
-/* FIXME: implement fn_execute_cut() */
 int fn_execute_cut (datum *D, const int dim, const char *argstr);
 
 int fn_execute_fft (datum *D, const int dim, const char *argstr);

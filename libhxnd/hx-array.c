@@ -859,8 +859,17 @@ int hx_array_repack (hx_array *x, int ndiv) {
  */
 int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper) {
   /* declare a few required variables:
+   * @i: general-purpose loop counter.
+   * @xycmp: set high if @y needs allocation.
+   * @n: number of coefficients per scalar.
+   * @ncpy: number of bytes per scalar.
+   * @idxi: input array linear index.
+   * @idxo: output array linear index.
+   * @arri: input array index set.
+   * @arro: output array index set.
+   * @sznew: output array sizes.
    */
-  int i, n, ncpy, idxi, idxo, *arri, *arro, *sznew;
+  int i, xycmp, n, ncpy, idxi, idxo, *arri, *arro, *sznew;
 
   /* store the number of coefficients and bytes per hypercomplex scalar. */
   n = x->n;
@@ -884,10 +893,24 @@ int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper) {
   for (i = 0; i < x->k; i++)
     sznew[i]++;
 
-  /* allocate memory for the sliced outputs, but only if the output
-   * array does not match the configuration of the input array.
+  /* check that the output array has the same dimensionalities as
+   * the input array.
    */
-  if (hx_array_conf_cmp(x, y) && !hx_array_alloc(y, x->d, x->k, sznew))
+  xycmp = ((x->d != y->d) || (x->k != y->k));
+
+  /* if the above comparisons both evaluated to false, then the following
+   * block is safe to execute.
+   */
+  if (!xycmp) {
+    /* check that the output array has the desired size. */
+    for (i = 0; i < x->k; i++)
+      xycmp = (xycmp || (y->sz[i] != sznew[i]));
+  }
+
+  /* allocate memory for the sliced outputs, but only if the output
+   * array does pass the tests performed above that yield @xycmp.
+   */
+  if (xycmp && !hx_array_alloc(y, x->d, x->k, sznew))
     throw("failed to allocate slice destination array");
 
   /* iterate over the larger (input) array. */

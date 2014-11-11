@@ -33,7 +33,7 @@ int fn_execute_abs (datum *D, const int dim, const char *argstr) {
    */
   unsigned int d;
 
-  /* check that no dimension was set. */
+  /* check that no dimension was specified. */
   if (dim >= 0)
     throw("dimension index specification not supported");
 

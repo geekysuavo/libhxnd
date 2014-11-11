@@ -39,6 +39,7 @@ struct fn_def {
 const struct fn_def functions[] = {
   { FN_NAME_ABS,      &fn_execute_abs },
   { FN_NAME_ADD,      &fn_execute_add },
+  { FN_NAME_CUT,      &fn_execute_cut },
   { FN_NAME_FFT,      &fn_execute_fft },
   { FN_NAME_HT,       &fn_execute_ht },
   { FN_NAME_RESIZE,   &fn_execute_resize },
