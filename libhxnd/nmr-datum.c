@@ -945,6 +945,75 @@ int datum_resize_array (datum *D, int *sz) {
   return 1;
 }
 
+/* datum_slice_array(): slices out a portion of the array from an NMR datum.
+ * @D: pointer to the datum to manipulate.
+ * @lower: lower bound index array.
+ * @upper: upper bound index array.
+ */
+int datum_slice_array (datum *D, int *lower, int *upper) {
+  /* declare a few required variables:
+   * @arrnew: destination slice array.
+   * @ndnew: new number of dimensions.
+   * @ord: dimension reordering array.
+   */
+  hx_array arrnew;
+  int ndnew, *ord;
+
+  /* slice the datum array into a local array. */
+  if (!hx_array_slice(&D->array, &arrnew, lower, upper))
+    throw("failed to slice datum array");
+
+  /* replace the datum array with the local array. */
+  hx_array_free(&D->array);
+  hx_array_copy(&D->array, &arrnew);
+  hx_array_free(&arrnew);
+
+  /* compute the number of nonzero-size dimensions in the slice result. */
+  ndnew = hx_array_nnzdims(&D->array);
+
+  /* FIXME: store the new array sizes in the datum dimensions.
+  for (d = 0; d < D->nd; d++)
+    D->dims[d].sz = D->array.sz[d];
+   */
+
+  /* FIXME: compact zero-size array dimensions out of the array.
+  if (!hx_array_compact(&D->array))
+    throw("failed to compact core array");
+   */
+
+  /* check if the dimension count changed. */
+  if (ndnew != D->nd) {
+    /* allocate an array to specify how to reorder the datum dimensions. */
+    ord = hx_array_index_alloc(D->nd);
+
+    /* check that allocation succeeded. */
+    if (!ord)
+      throw("failed to allocate %d indices", D->nd);
+
+    /* FIXME: store the correct values into @ord. */
+
+    /* reorder the datum dimensions. */
+    if (!datum_reorder_dims(D, ord))
+      throw("failed to reorder datum dimensions");
+
+    /* free the dimension reordering array. */
+    free(ord);
+
+    /* reallocate the dimension array. */
+    D->dims = (datum_dim*) realloc(D->dims, ndnew * sizeof(datum_dim));
+
+    /* check that allocated succeeded. */
+    if (D->dims == NULL)
+      throw("failed to reallocate dimension array");
+
+    /* set the new dimension count. */
+    D->nd = ndnew;
+  }
+
+  /* return success. */
+  return 1;
+}
+
 /* datum_fill(): parses acquisition parameters into an NMR datum structure.
  * the 'type' member of the datum structure must be initialized to the type
  * of parms/data to parse in.

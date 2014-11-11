@@ -94,6 +94,8 @@ int hx_array_save (hx_array *x, const char *fname);
 
 int hx_array_load (hx_array *x, const char *fname);
 
+int hx_array_nnzdims (hx_array *x);
+
 int hx_array_is_vector (hx_array *x);
 
 int hx_array_is_matrix (hx_array *x);

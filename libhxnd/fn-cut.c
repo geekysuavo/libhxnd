@@ -44,6 +44,10 @@ int fn_execute_cut (datum *D, const int dim, const char *argstr) {
    */
   int *ivtr, *ivpl;
 
+  /* declare a few required variables.
+   */
+  int *lower, *upper;
+
   /* check that no dimension was specified. */
   if (dim >= 0)
     throw("dimension index specification not supported");
@@ -61,6 +65,18 @@ int fn_execute_cut (datum *D, const int dim, const char *argstr) {
     /* throw an exception. */
     throw("trace and plane cut modes are mutually exclusive");
   }
+
+  /* ensure that at least one mode was specified. */
+  if (!ivtr && !ivpl)
+    throw("no cut mode specified");
+
+  /* allocate the lower and upper bound index arrays. */
+  lower = hx_array_index_alloc(D->array.k);
+  upper = hx_array_index_alloc(D->array.k);
+
+  /* check that allocation succeeded. */
+  if (!lower || !upper)
+    throw("failed to allocate index arrays");
 
   /* determine which cut mode was specified. */
   if (ivtr) {
@@ -83,8 +99,10 @@ int fn_execute_cut (datum *D, const int dim, const char *argstr) {
     /* free the plane int-array. */
     free(ivpl);
   }
-  else
-    throw("no cut mode specified");
+
+  /* free the lower and upper bound index arrays. */
+  free(lower);
+  free(upper);
 
   /* return success. */
   return 1;
