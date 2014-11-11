@@ -371,12 +371,10 @@ int main (int argc, char **argv) {
   else
     fh = stdout;
 
-  /* FIXME: manage writing to multiple output formats. */
-
   /* write the data out. */
-  if (!datum_fwrite(&D, fh)) {
+  if (!datum_fwrite_formatted(&D, fh, fmt_out)) {
     /* raise an error. */
-    raise("failed to write hx-format data to %s%s%s",
+    raise("failed to write data to %s%s%s",
           fname_out ? "'" : "",
           fname_out ? fname_out : "stdout",
           fname_out ? "'" : "");

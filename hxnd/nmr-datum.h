@@ -119,6 +119,10 @@ int datum_print (datum *D, const char *fname);
 
 int datum_check_magic (const char *fname);
 
+int datum_fwrite_formatted (datum *D, FILE *fh, enum datum_type fmt);
+
+int datum_fwrite_text (datum *D, FILE *fh);
+
 int datum_fwrite (datum *D, FILE *fh);
 
 int datum_fread (datum *D, FILE *fh, int read_array);

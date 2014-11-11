@@ -356,6 +356,94 @@ int datum_check_magic (const char *fname) {
 #define NMR_DATUM_S_NUS      0x0000000000000002
 #define NMR_DATUM_S_FFT      0x0000000000000004
 
+/* datum_fwrite_formatted(): writes an NMR datum structure an an opened file
+ * stream in the specified output format.
+ * @D: pointer to the source structure.
+ * @fh: the output file stream.
+ * @fmt: the output format.
+ */
+int datum_fwrite_formatted (datum *D, FILE *fh, enum datum_type fmt) {
+  /* determine which write routine to utilize. */
+  switch (fmt) {
+    /* hx native format. */
+    case DATUM_TYPE_HXND:
+      return datum_fwrite(D, fh);
+
+    /* text format. */
+    case DATUM_TYPE_TEXT:
+      return datum_fwrite_text(D, fh);
+
+    /* default: unsupported. */
+    default:
+      throw("unsupported output format %d", fmt);
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* datum_fwrite_text(): writes an NMR datum structure in text-format to
+ * an opened file stream.
+ * @D: pointer to the source structure.
+ * @fh: the output file stream.
+ */
+int datum_fwrite_text (datum *D, FILE *fh) {
+  /* declare required variables:
+   * @d: dimension loop counter.
+   */
+  int i, *arr, idx;
+  unsigned int d;
+
+  /* print heading information for each dimension. */
+  for (d = 0; d < D->nd; d++) {
+    /* print the dimension index and name. */
+    fprintf(fh, "# Axis %2u ('%s'):\n", d + 1, D->dims[d].nuc);
+
+    /* print the dimension sizes. */
+    fprintf(fh, "# Points:   %15u\n", D->dims[d].sz);
+    fprintf(fh, "# Total:    %15u\n", D->dims[d].td);
+
+    /* print the spectral parameters. */
+    fprintf(fh, "# Obs (MHz):%15.3f\n", D->dims[d].carrier);
+    fprintf(fh, "# SW (Hz):  %15.3f\n", D->dims[d].width);
+    fprintf(fh, "# Off (Hz): %15.3f\n", D->dims[d].offset);
+
+    /* print a spacer. */
+    fprintf(fh, "#\n");
+  }
+
+  /* allocate an index array for iteration. */
+  arr = hx_array_index_alloc(D->array.k);
+
+  /* check that allocation was successful. */
+  if (!arr)
+    throw("failed to allocate %d indices", D->array.k);
+
+  /* iterate over the points in the core array. */
+  idx = 0;
+  do {
+    /* print the indices. */
+    for (i = 0; i < D->array.k; i++)
+      fprintf(fh, "%6d ", arr[i]);
+
+    /* print the coefficients. */
+    for (i = 0; i < D->array.n; i++)
+      fprintf(fh, "%18.8e ", D->array.x[i + D->array.n * idx]);
+
+    /* print a newline. */
+    fprintf(fh, "\n");
+
+    /* increment the linear index. */
+    idx++;
+  } while (hx_array_index_inc(D->array.k, D->array.sz, &arr));
+
+  /* free the index array. */
+  free(arr);
+
+  /* return success. */
+  return 1;
+}
+
 /* datum_fwrite(): writes an NMR datum structure to an opened file stream.
  * @D: pointer to the source structure.
  * @fh: the output file stream.

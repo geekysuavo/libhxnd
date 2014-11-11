@@ -150,7 +150,7 @@ int hx_data_norm (real *x, int d, int n) {
  * in a hypercomplex array. the target ordering will be achieved by swapping
  * pairs of bases in @order until they are in increasing order.
  *
- * NOTE 1: the @d values in @order *MUST* be unique and range from 0 to @d.
+ * NOTE 1: the @d values in @order *MUST* be unique and lie in [0, @d).
  * NOTE 2: the values in @order get re-arranged by this function.
  *
  * @x: the structure pointer to the target array.
