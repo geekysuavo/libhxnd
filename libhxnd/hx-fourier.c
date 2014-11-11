@@ -86,7 +86,7 @@ unsigned int hx_nextpow2 (unsigned int value) {
  *  @d: dimension to transform.
  *  @dir: direction of transformation.
  *  @w: preallocated hypercomplex scalar.
- *  @swp: reallocated coefficient array of a hypercomplex scalar.
+ *  @swp: preallocated hypercomplex scalar.
  */
 int hx_array_fft1d (hx_array *x, hx_array *y,
                     int *arr, int idx,
@@ -107,24 +107,20 @@ int hx_array_fft1d (hx_array *x, hx_array *y,
   int d = va_arg(*vl, int);
   real dir = (real) va_arg(*vl, double);
   hx_scalar *w = va_arg(*vl, hx_scalar*);
-  real *swp = va_arg(*vl, real*);
-
-  /* check that the transformation dimension is within bounds. */
-  if (d < 0 || d >= x->d)
-    throw("dimension %d out of bounds [0,%d)", d, x->d);
+  hx_scalar *swp = va_arg(*vl, hx_scalar*);
 
   /* compute the number of bytes per scalar and the number of scalars. */
-  ncpy = x->n * sizeof(real);
-  n = x->sz[0];
+  ncpy = y->n * sizeof(real);
+  n = y->sz[0];
 
   /* presort the scalar elements of the array. */
   for (i = 0, j = 0; i < n - 1; i++) {
     /* swap values according to sorting rules. */
     if (j > i) {
       /* swap all coefficients: x[i] <-> x[j]. */
-      memcpy(swp, x->x + x->n * i, ncpy);
-      memcpy(x->x + x->n * i, x->x + x->n * j, ncpy);
-      memcpy(x->x + x->n * j, swp, ncpy);
+      memcpy(swp->x, y->x + y->n * i, ncpy);
+      memcpy(y->x + y->n * i, y->x + y->n * j, ncpy);
+      memcpy(y->x + y->n * j, swp->x, ncpy);
     }
 
     /* right-shift the point count. */
@@ -160,18 +156,18 @@ int hx_array_fft1d (hx_array *x, hx_array *y,
         /* identify the memory addresses of the coefficients at
          * the (i) and (i+k) indices.
          */
-        pxxi = x->x + x->n * i;
-        pxxik = x->x + x->n * (i + k);
+        pxxi = y->x + y->n * i;
+        pxxik = y->x + y->n * (i + k);
 
         /* compute the new values at the current memory locations:
          * swp <- w * x[i+k]
          * x[i+k] <- x[i] - swp;
          * x[i] <- x[i] + swp;
          */
-        memset(swp, 0, ncpy);
-        hx_data_mul(w->x, pxxik, swp, x->d, x->n, x->tbl);
-        hx_data_add(pxxi, swp, pxxik, -1.0, x->d, x->n);
-        hx_data_add(pxxi, swp, pxxi, 1.0, x->d, x->n);
+        memset(swp->x, 0, ncpy);
+        hx_data_mul(w->x, pxxik, swp->x, y->d, y->n, y->tbl);
+        hx_data_add(pxxi, swp->x, pxxik, -1.0, y->d, y->n);
+        hx_data_add(pxxi, swp->x, pxxi, 1.0, y->d, y->n);
       }
     }
 
@@ -215,7 +211,7 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
     throw("failed to allocate temporary %d-scalars", x->d);
 
   /* run the fft1d() callback function over every vector along @k */
-  if (!hx_array_vector_op(x, k, &hx_array_fft1d, d, dir, &w, swp.x))
+  if (!hx_array_vector_op(x, k, &hx_array_fft1d, d, dir, &w, &swp))
     throw("failed to execute fft1d");
 
   /* free the temporary scalars. */
