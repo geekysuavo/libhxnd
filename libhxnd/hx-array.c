@@ -814,6 +814,8 @@ int hx_array_reshape (hx_array *x, int k, int *sz) {
  */
 int hx_array_repack (hx_array *x, int ndiv) {
   /* declare a few required variables:
+   * @ksrc: source array dimension index.
+   * @kdst: destination array dimension index.
    */
   int ksrc, kdest;
 
@@ -844,6 +846,46 @@ int hx_array_repack (hx_array *x, int ndiv) {
   /* set up the sizes of the source and destination array dimensions. */
   x->sz[kdest] = x->sz[ksrc] / ndiv;
   x->sz[ksrc] = ndiv;
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_compact(): removes any topological dimensions from an array that
+ * have zero size, thus 'compacting' the array as much as possible.
+ * @x: pointer to the array to compact.
+ */
+int hx_array_compact (hx_array *x) {
+  /* declare a few required variables:
+   */
+  int k, kadj, *sznew;
+
+  /* allocate a new size array. */
+  sznew = hx_array_index_alloc(x->k);
+
+  /* check that allocation succeeded. */
+  if (!sznew)
+    throw("failed to allocate %d indices", x->k);
+
+  /* loop over the current dimension set. */
+  for (k = 0, kadj = 0; k < x->k; k++) {
+    /* check if the current dimension has nonzero size. */
+    if (x->sz[k] > 1) {
+      /* store the size into the new array. */
+      sznew[kadj] = x->sz[k];
+      kadj++;
+    }
+  }
+
+  /* check if the new number of dimensions differs from the current value. */
+  if (kadj != x->k) {
+    /* reshape the array using the new sizes. */
+    if (!hx_array_reshape(x, kadj, sznew))
+      throw("failed to reshape array");
+  }
+
+  /* free the new size array. */
+  free(sznew);
 
   /* return success. */
   return 1;

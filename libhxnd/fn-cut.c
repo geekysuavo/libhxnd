@@ -44,9 +44,14 @@ int fn_execute_cut (datum *D, const int dim, const char *argstr) {
    */
   int *ivtr, *ivpl;
 
-  /* declare a few required variables.
+  /* declare a few required variables:
+   * @iv: int-array that points to either @ivtr or @ivpl.
+   * @lower: lower bound index array for slicing.
+   * @upper: upper bound index array for slicing.
+   * @i: general-purpose loop counter.
+   * @nz: number of zeros in @ivtr or @ivpl.
    */
-  int *lower, *upper;
+  int *iv, *lower, *upper, i, nz;
 
   /* check that no dimension was specified. */
   if (dim >= 0)
@@ -70,6 +75,11 @@ int fn_execute_cut (datum *D, const int dim, const char *argstr) {
   if (!ivtr && !ivpl)
     throw("no cut mode specified");
 
+  /* store the int-array in a variable that reduces the amount of
+   * code duplication below.
+   */
+  iv = (ivtr ? ivtr : ivpl);
+
   /* allocate the lower and upper bound index arrays. */
   lower = hx_array_index_alloc(D->array.k);
   upper = hx_array_index_alloc(D->array.k);
@@ -78,27 +88,50 @@ int fn_execute_cut (datum *D, const int dim, const char *argstr) {
   if (!lower || !upper)
     throw("failed to allocate index arrays");
 
-  /* determine which cut mode was specified. */
-  if (ivtr) {
-    /* check that the trace int-array is of correct length. */
-    if (ivtr[0] != D->array.k)
-      throw("invalid array length (%d != %d)", ivtr[0], D->array.k);
+  /* check that the int-array is of correct length. */
+  if (iv[0] != D->array.k)
+    throw("invalid array length (%d != %d)", iv[0], D->array.k);
 
-    /* FIXME: implement trace cutting. */
+  /* build the lower and upper bound arrays. */
+  for (i = 0, nz = 0; i < D->array.k; i++) {
+    /* store the lower bound. */
+    lower[i] = (iv[i + 1] > 0 ? iv[i + 1] - 1 : 0);
 
-    /* free the trace int-array. */
-    free(ivtr);
+    /* store the upper bound. */
+    upper[i] = (iv[i + 1] > 0 ? iv[i + 1] - 1 : D->array.sz[i] - 1);
+
+    /* count the number of zero-valued indices. */
+    if (iv[i + 1] < 1)
+      nz++;
   }
-  else if (ivpl) {
-    /* check that the plane int-array is of correct length. */
-    if (ivpl[0] != D->array.k)
-      throw("invalid array length (%d != %d)", ivpl[0], D->array.k);
 
-    /* FIXME: implement plane cutting. */
+  /* check that the index array contains only one invalid entry. */
+  if (ivtr && nz != 1)
+    throw("trace cutting requires one zero-valued index");
+  else if (ivpl && nz != 2)
+    throw("plane cutting requires two zero-valued indices");
 
-    /* free the plane int-array. */
-    free(ivpl);
+  /* free the trace/plane int-array. */
+  free(iv);
+
+  /* check all values in the built lower and upper bounds. */
+  for (i = 0; i < D->array.k; i++) {
+    /* check the lower bound. */
+    if (lower[i] < 0 || lower[i] >= D->array.sz[i]) {
+      throw("lower bound %d (#%d) out of range [0,%d)",
+            lower[i], i, D->array.sz[i]);
+    }
+
+    /* check the upper bound. */
+    if (upper[i] < 0 || upper[i] >= D->array.sz[i]) {
+      throw("upper bound %d (#%d) out of range [0,%d)",
+            upper[i], i, D->array.sz[i]);
+    }
   }
+
+  /* slice the datum based on the built lower and upper bounds. */
+  if (!datum_slice_array(D, lower, upper))
+    throw("failed to perform slice operation");
 
   /* free the lower and upper bound index arrays. */
   free(lower);

@@ -956,8 +956,8 @@ int datum_slice_array (datum *D, int *lower, int *upper) {
    * @ndnew: new number of dimensions.
    * @ord: dimension reordering array.
    */
+  int ndnew, d, dadj, *ord;
   hx_array arrnew;
-  int ndnew, *ord;
 
   /* slice the datum array into a local array. */
   if (!hx_array_slice(&D->array, &arrnew, lower, upper))
@@ -968,36 +968,44 @@ int datum_slice_array (datum *D, int *lower, int *upper) {
   hx_array_copy(&D->array, &arrnew);
   hx_array_free(&arrnew);
 
-  /* compute the number of nonzero-size dimensions in the slice result. */
-  ndnew = hx_array_nnzdims(&D->array);
-
-  /* FIXME: store the new array sizes in the datum dimensions.
-  for (d = 0; d < D->nd; d++)
-    D->dims[d].sz = D->array.sz[d];
+  /* allocate an array to specify how to reorder the datum dimensions,
+   * if the need arises.
    */
+  ord = hx_array_index_alloc(D->nd);
 
-  /* FIXME: compact zero-size array dimensions out of the array.
+  /* check that allocation succeeded. */
+  if (!ord)
+    throw("failed to allocate %u indices", D->nd);
+
+  /* store the new array sizes in the datum dimensions. */
+  for (d = 0, dadj = 0, ndnew = 0; d < D->nd; d++) {
+    /* check if the current dimension has nonzero size. */
+    if (D->array.sz[d] > 1) {
+      /* store a sortable value in the ordering array. */
+      ord[d] = dadj;
+      dadj++;
+
+      /* increment the number of nonzero-size dimensions. */
+      ndnew++;
+    }
+    else {
+      /* store an unsortable value in the ordering array. */
+      ord[d] = (int) D->nd;
+    }
+
+    /* store the new array dimension size. */
+    D->dims[d].sz = D->array.sz[d];
+  }
+
+  /* compact zero-size array dimensions out of the array. */
   if (!hx_array_compact(&D->array))
     throw("failed to compact core array");
-   */
 
   /* check if the dimension count changed. */
   if (ndnew != D->nd) {
-    /* allocate an array to specify how to reorder the datum dimensions. */
-    ord = hx_array_index_alloc(D->nd);
-
-    /* check that allocation succeeded. */
-    if (!ord)
-      throw("failed to allocate %d indices", D->nd);
-
-    /* FIXME: store the correct values into @ord. */
-
     /* reorder the datum dimensions. */
     if (!datum_reorder_dims(D, ord))
       throw("failed to reorder datum dimensions");
-
-    /* free the dimension reordering array. */
-    free(ord);
 
     /* reallocate the dimension array. */
     D->dims = (datum_dim*) realloc(D->dims, ndnew * sizeof(datum_dim));
@@ -1009,6 +1017,9 @@ int datum_slice_array (datum *D, int *lower, int *upper) {
     /* set the new dimension count. */
     D->nd = ndnew;
   }
+
+  /* free the allocated index array. */
+  free(ord);
 
   /* return success. */
   return 1;

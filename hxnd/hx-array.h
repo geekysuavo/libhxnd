@@ -113,6 +113,8 @@ int hx_array_reshape (hx_array *x, int k, int *sz);
 
 int hx_array_repack (hx_array *x, int ndiv);
 
+int hx_array_compact (hx_array *x);
+
 int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper);
 
 int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int *loc);
