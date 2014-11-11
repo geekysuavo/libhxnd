@@ -40,6 +40,7 @@
    -h, --help             Display this help message\n\
    -i, --input FIN        Specify an input filename [stdin]\n\
    -o, --output FOUT      Specify an output filename [stdout]\n\
+   -F, --format FMT       Specify an output format [hx]\n\
    -p, --pretend          Perform no actual processing\n\
    -f, --function FNDEF   Apply a processing function (optional)\n\
    -v, --value VALDEF     Change a parameter value (optional)\n\
@@ -81,6 +82,7 @@ int main (int argc, char **argv) {
     { "help",     0, 'h' },
     { "input",    1, 'i' },
     { "output",   1, 'o' },
+    { "format",   1, 'F' },
     { "pretend",  0, 'p' },
     { "function", 1, 'f' },
     { "value",    1, 'v' },
@@ -95,10 +97,12 @@ int main (int argc, char **argv) {
   int c;
 
   /* declare variables for file input/output:
+   * @fmt_out: output file format.
    * @fname_out: output filename.
    * @fname_in: input filename.
    * @fh: output file handle.
    */
+  enum datum_type fmt_out = DATUM_TYPE_HXND;
   char *fname_out = NULL;
   char *fname_in = NULL;
   FILE *fh;
@@ -150,6 +154,22 @@ int main (int argc, char **argv) {
       /* o: output filename. */
       case 'o':
         fname_out = argv[argi - 1];
+        break;
+
+      /* F: output format. */
+      case 'F':
+        /* determine which output type was specified. */
+        fmt_out = datum_lookup_type(argv[argi - 1]);
+
+        /* check that the datum type is supported. */
+        if (fmt_out == DATUM_TYPE_UNDEFINED) {
+          /* raise an error an end execution. */
+          raise("unsupported output format '%s'", argv[argi - 1]);
+          traceback_print();
+          return 1;
+        }
+
+        /* break the switch. */
         break;
 
       /* p: pretend mode. */
@@ -350,6 +370,8 @@ int main (int argc, char **argv) {
     fh = fopen(fname_out, "wb");
   else
     fh = stdout;
+
+  /* FIXME: manage writing to multiple output formats. */
 
   /* write the data out. */
   if (!datum_fwrite(&D, fh)) {

@@ -32,6 +32,8 @@ int hx_data_mul (real *xa, real *xb, real *xc, int d, int n, hx_algebra tbl);
 
 int hx_data_norm (real *x, int d, int n);
 
+int hx_data_reorder_bases (real *x, int d, int n, int *order);
+
 /* function declarations, scalars: */
 
 int hx_scalar_add (hx_scalar *a, hx_scalar *b, real s, hx_scalar *c);
@@ -39,6 +41,8 @@ int hx_scalar_add (hx_scalar *a, hx_scalar *b, real s, hx_scalar *c);
 int hx_scalar_mul (hx_scalar *a, hx_scalar *b, hx_scalar *c);
 
 int hx_scalar_norm (hx_scalar *a);
+
+int hx_scalar_reorder_bases (hx_scalar *x, int *order);
 
 /* function declarations, arrays: */
 
@@ -53,6 +57,8 @@ int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c);
 int hx_array_mul_vector (hx_array *a, hx_array *b, int kmul, hx_array *c);
 
 int hx_array_norm (hx_array *a);
+
+int hx_array_reorder_bases (hx_array *x, int *order);
 
 #endif /* __HXND_HX_ARITH_H__ */
 

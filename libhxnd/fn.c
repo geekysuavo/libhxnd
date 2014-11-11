@@ -36,7 +36,7 @@ struct fn_def {
 
 /* functions: local table of all available function names and pointers.
  */
-const struct fn_def functions[] = {
+static const struct fn_def functions[] = {
   { FN_NAME_ABS,      &fn_execute_abs },
   { FN_NAME_ADD,      &fn_execute_add },
   { FN_NAME_CUT,      &fn_execute_cut },

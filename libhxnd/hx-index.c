@@ -208,3 +208,53 @@ int hx_array_index_bounded (int k, int *arr, int *lower, int *upper) {
   return 1;
 }
 
+/* hx_array_index_sort(): sorts the values in @order, returning in @order
+ * the resulting zero-based indices in their new swapped positions.
+ */
+int hx_array_index_sort (int k, int *order) {
+  /* declare required variables:
+   */
+  unsigned int i, j;
+  int *zord, swp;
+
+  /* allocate a temporary array of indices. */
+  zord = (int*) malloc(k * sizeof(int));
+  if (!zord)
+    return 0;
+
+  /* copy the ordering into the temporary array. */
+  memcpy(zord, order, k * sizeof(int));
+
+  /* initialize the variables in the output array. */
+  for (i = 0; i < k; i++)
+    order[i] = i;
+
+  /* loop over the array of dimensions. */
+  for (i = 1; i < k; i++) {
+    /* set the initial inner loop index. */
+    j = i;
+
+    /* loop over the unsorted dimensions. */
+    while (j > 0 && zord[j - 1] > zord[j]) {
+      /* swap the (j-1) and (j) output indices. */
+      swp = order[j];
+      order[j] = order[j - 1];
+      order[j - 1] = swp;
+
+      /* swap the ordering of the temporary indices. */
+      swp = zord[j];
+      zord[j] = zord[j - 1];
+      zord[j - 1] = swp;
+
+      /* decrement the inner loop counter. */
+      j--;
+    }
+  }
+
+  /* free the ordering array. */
+  free(zord);
+
+  /* return success. */
+  return 1;
+}
+

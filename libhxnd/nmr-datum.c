@@ -23,6 +23,43 @@
 /* include the nmr data header. */
 #include <hxnd/nmr-datum.h>
 
+/* datum_type_def: datum type definition structure for holding all available
+ * datum type names and values.
+ */
+struct datum_type_def {
+  /* @name: the string name of the datum type.
+   * @type: the value of the datum type.
+   */
+  const char *name;
+  enum datum_type type;
+};
+
+/* datum_dim_desc: structure that defines a mapping between dimension
+ * parameter names, their locations within the datum_dim structure,
+ * and their types in the structure.
+ */
+typedef struct {
+  /* @name: parameter name string.
+   * @type: parameter type character.
+   * @off: struct member offset.
+   */
+  const char *name;
+  char type;
+  size_t off;
+}
+datum_dim_desc;
+
+/* datum_types: local table of all available datum type names and values.
+ */
+static const struct datum_type_def datum_types[] = {
+  { "bruker", DATUM_TYPE_BRUKER },
+  { "varian", DATUM_TYPE_VARIAN },
+  { "pipe",   DATUM_TYPE_PIPE },
+  { "hx",     DATUM_TYPE_HXND },
+  { "text",   DATUM_TYPE_TEXT },
+  { NULL, DATUM_TYPE_UNDEFINED }
+};
+
 /* datum_dim_parms: array of dimension description structures that indicate
  * the names, types and offets of each datum dimension structure member .
  */
@@ -75,6 +112,25 @@ void datum_free (datum *D) {
 
   /* re-initialize the datum. */
   datum_init(D);
+}
+
+/* datum_lookup_type(): returns the enumerated type based on its string
+ * representation.
+ * @name: the datum type string.
+ */
+enum datum_type datum_lookup_type (const char *name) {
+  /* declare a required variable. */
+  unsigned int i;
+
+  /* loop over all supported datum types. */
+  for (i = 0; datum_types[i].name; i++) {
+    /* break if the datum name matches. */
+    if (strcmp(name, datum_types[i].name) == 0)
+      break;
+  }
+
+  /* return the identified type value. */
+  return datum_types[i].type;
 }
 
 /* datum_guess_type(): attempts to reliably determine the type of file format
@@ -799,6 +855,8 @@ int datum_refactor_array (datum *D) {
             D->array.d + 1, D->array.k, D->array.sz))
         throw("failed to complex-promote dimension %d", d);
     }
+
+    /* FIXME: implement infilling of nonuniformly sampled dimensions. */
   }
 
   /* return success. */
@@ -933,6 +991,13 @@ int datum_resize_array (datum *D, int *sz) {
   if (!D->array_alloc)
     throw("array is unallocated");
 
+  /* check that each new size is greater than one. */
+  for (d = 0; d < D->nd; d++) {
+    /* check that the current size is in bounds. */
+    if (sz[d] < 2)
+      throw("invalid size %d along dimension %u", sz[d], d);
+  }
+
   /* attempt to resize the array content. */
   if (!hx_array_resize(&D->array, D->array.d, D->array.k, sz))
     throw("failed to resize core array");
@@ -958,6 +1023,10 @@ int datum_slice_array (datum *D, int *lower, int *upper) {
    */
   int ndnew, d, dadj, *ord;
   hx_array arrnew;
+
+  /* initialize the local array values, just to be safe. */
+  arrnew.d = arrnew.k = 0;
+  arrnew.sz = NULL;
 
   /* slice the datum array into a local array. */
   if (!hx_array_slice(&D->array, &arrnew, lower, upper))
@@ -1013,6 +1082,17 @@ int datum_slice_array (datum *D, int *lower, int *upper) {
     /* check that allocated succeeded. */
     if (D->dims == NULL)
       throw("failed to reallocate dimension array");
+
+    /* sort the ordering array into a valid index list. */
+    hx_array_index_sort(D->nd, ord);
+
+    /* reorder the core array basis elements. */
+    if (!hx_array_reorder_bases(&D->array, ord))
+      throw("failed to reorder core array basis elements");
+
+    /* reduce the dimensionality of the core array. */
+    if (!hx_array_resize(&D->array, ndnew, D->array.k, D->array.sz))
+      throw("failed to resize core array");
 
     /* set the new dimension count. */
     D->nd = ndnew;

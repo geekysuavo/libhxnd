@@ -42,5 +42,7 @@ int hx_array_index_diff (int k, int *a, int *b, int **pc);
 
 int hx_array_index_bounded (int k, int *arr, int *lower, int *upper);
 
+int hx_array_index_sort (int k, int *order);
+
 #endif /* __HXND_HX_INDEX_H__ */
 

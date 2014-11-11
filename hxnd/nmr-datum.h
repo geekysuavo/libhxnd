@@ -42,23 +42,9 @@ enum datum_type {
   DATUM_TYPE_BRUKER,
   DATUM_TYPE_VARIAN,
   DATUM_TYPE_PIPE,
-  DATUM_TYPE_HXND
+  DATUM_TYPE_HXND,
+  DATUM_TYPE_TEXT
 };
-
-/* datum_dim_desc: structure that defines a mapping between dimension
- * parameter names, their locations within the datum_dim structure,
- * and their types in the structure.
- */
-typedef struct {
-  /* @name: parameter name string.
-   * @type: parameter type character.
-   * @off: struct member offset.
-   */
-  const char *name;
-  char type;
-  size_t off;
-}
-datum_dim_desc;
 
 /* datum_dim: single dimension of parameters for acquired NMR data.
  */
@@ -124,6 +110,8 @@ datum;
 void datum_init (datum *D);
 
 void datum_free (datum *D);
+
+enum datum_type datum_lookup_type (const char *name);
 
 enum datum_type datum_guess_type (const char *fname);
 

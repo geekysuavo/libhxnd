@@ -750,7 +750,8 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
     x->sz = (int*) realloc(x->sz, k * sizeof(int));
 
   /* store the new size array. */
-  memcpy(x->sz, sz, k * sizeof(int));
+  if (sz != x->sz)
+    memcpy(x->sz, sz, k * sizeof(int));
 
   /* store the new dimensionality constants. */
   x->d = d;

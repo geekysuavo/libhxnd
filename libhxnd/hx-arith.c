@@ -23,6 +23,8 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
+/* * * * * * * * * * * RAW DATA OPERATIONS * * * * * * * * * * */
+
 /* hx_data_add(): add the raw array elements of two hypercomplex values.
  * @xa: the raw array data of the first operand.
  * @xb: the raw array data of the second operand.
@@ -144,6 +146,70 @@ int hx_data_norm (real *x, int d, int n) {
   return 1;
 }
 
+/* hx_array_reorder_bases(): reorders the basis elements of each scalar value
+ * in a hypercomplex array. the target ordering will be achieved by swapping
+ * pairs of bases in @order until they are in increasing order.
+ *
+ * NOTE 1: the @d values in @order *MUST* be unique and range from 0 to @d.
+ * NOTE 2: the values in @order get re-arranged by this function.
+ *
+ * @x: the structure pointer to the target array.
+ * @order: the dimension ordering array.
+ */
+int hx_data_reorder_bases (real *x, int d, int n, int *order) {
+  /* declare a few required variables:
+   * @di: first basis element index in each swap.
+   * @dj: second basis element index in each swap.
+   */
+  int di, dj, ni, nj, i, j, iswp;
+  real swp;
+
+  /* loop over the basis elements. */
+  for (di = 0; di < d - 1; di++) {
+    /* if the current basis element is already in it's proper place, proceed
+     * to the next basis element.
+     */
+    if (order[di] == di)
+      continue;
+
+    /* locate the other basis element in the order array that will swap it's
+     * position with the current basis element.
+     */
+    for (dj = di + 1; dj < d; dj++) {
+      if (order[dj] == di)
+        break;
+    }
+
+    /* compute the coefficient masks for each basis element in the swap. */
+    ni = 1 << di;
+    nj = 1 << dj;
+
+    /* loop over the coefficients. */
+    for (i = 0; i < n; i++) {
+      /* check if we're at a swappable coefficient. */
+      if ((i & ni) && !(i & nj)) {
+        /* yes! compute the other swap coefficient index. */
+        j = (i & ~ni) | nj;
+
+        /* swap the coefficients. */
+        swp = x[i];
+        x[i] = x[j];
+        x[j] = swp;
+      }
+    }
+
+    /* swap the order values. */
+    iswp = order[di];
+    order[di] = order[dj];
+    order[dj] = iswp;
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* * * * * * * * * * * SCALAR OPERATIONS * * * * * * * * * * */
+
 /* hx_scalar_add(): add two hypercomplex scalar values.
  * @a: the structure pointer of the first operand.
  * @b: the structure pointer of the second operand.
@@ -205,6 +271,41 @@ int hx_scalar_norm (hx_scalar *a) {
   /* perform the raw data operation. */
   return hx_data_norm(a->x, a->d, a->n);
 }
+
+/* hx_scalar_reorder_bases(): reorders the basis elements of a hypercomplex
+ * scalar value.
+ * @x: the structure pointer to the target scalar.
+ * @order: the dimension ordering array.
+ */
+int hx_scalar_reorder_bases (hx_scalar *x, int *order) {
+  /* declare a few required variables. */
+  int *scratch;
+  int i, ret;
+
+  /* allocate scratch space for the reordering operation. */
+  scratch = (int*) malloc(x->d * sizeof(int));
+  if (!scratch)
+    throw("failed to allocate scratch space");
+
+  /* check the bounds on the ordering array. */
+  for (i = 0; i < x->d; i++) {
+    /* check that the current order is in bounds. */
+    if (order[i] < 0 || order[i] >= x->d)
+      throw("order %d (#%d) out of bounds [0,%d)", order[i], i, x->d);
+  }
+
+  /* copy the current ordering into the scratch space. */
+  memcpy(scratch, order, x->d * sizeof(int));
+
+  /* perform the raw scalar data operation. */
+  ret = hx_data_reorder_bases(x->x, x->d, x->n, scratch);
+
+  /* free the scratch space and return the result. */
+  free(scratch);
+  return ret;
+}
+
+/* * * * * * * * * * * ARRAY OPERATIONS * * * * * * * * * * */
 
 /* hx_array_add_scalar(): add a hypercomplex array and a scalar.
  * @a: the structure pointer to the array operand.
@@ -446,6 +547,43 @@ int hx_array_norm (hx_array *a) {
   }
 
   /* return success. */
+  return 1;
+}
+
+/* hx_array_reorder_bases(): reorders the basis elements of each scalar value
+ * in a hypercomplex array.
+ * @x: the structure pointer to the target array.
+ * @order: the dimension ordering array.
+ */
+int hx_array_reorder_bases (hx_array *x, int *order) {
+  /* declare a required variable. */
+  int *scratch;
+  int i;
+
+  /* allocate scratch space for the reordering operation. */
+  scratch = (int*) malloc(x->d * sizeof(int));
+  if (!scratch)
+    throw("failed to allocate scratch space");
+
+  /* check the bounds on the ordering array. */
+  for (i = 0; i < x->d; i++) {
+    /* check that the current order is in bounds. */
+    if (order[i] < 0 || order[i] >= x->d)
+      throw("order %d (#%d) out of bounds [0,%d)", order[i], i, x->d);
+  }
+
+  /* loop over the array elements. */
+  for (i = 0; i < x->len; i += x->n) {
+    /* copy the current ordering into the scratch space. */
+    memcpy(scratch, order, x->d * sizeof(int));
+
+    /* perform the raw scalar data operation. */
+    if (!hx_data_reorder_bases(x->x + i, x->d, x->n, scratch))
+      return 0;
+  }
+
+  /* free the scratch space and return success. */
+  free(scratch);
   return 1;
 }
 
