@@ -92,6 +92,10 @@ typedef struct {
   datum_dim *dims;
   unsigned int nd;
 
+  /* @grpdelay: bruker group delay correction value.
+   */
+  real grpdelay;
+
   /* @array: raw time-domain and/or frequency-domain NMR data.
    * @array_ok: whether the array has been allocated
    */

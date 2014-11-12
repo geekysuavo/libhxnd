@@ -272,6 +272,57 @@ int bruker_read (const char *fname, enum byteorder endianness,
   return 1;
 }
 
+/* bruker_fix_grpdelay(): corrects a hypercomplex array loaded from a bruker
+ * raw data file for group delay.
+ * @x: pointer to the array to correct.
+ * @grpdelay: group delay value, or -1 to use autodetection.
+ */
+int bruker_fix_grpdelay (hx_array *x, real grpdelay) {
+  /* declare a few required variables:
+   * @I: current absolute intensity value.
+   * @Ire: current real intensity value.
+   * @Iim: current imaginary intensity value.
+   * @Imax: maximum absolute intensity value.
+   * @gd: local variable used for group delay correction.
+   * @gdmax: first trace index having maximal absolute intensity.
+   */
+  real I, Ire, Iim, Imax;
+  int gd, gdmax;
+
+  /* store the group delay value locally. */
+  gd = (int) grpdelay;
+
+  /* check if the group delay value needs autodetection. */
+  if (gd == -1) {
+    /* loop until the trace intensity maximum is located. */
+    for (gd = 0, gdmax = 0, Imax = 0.0; gd < x->sz[0]; gd++) {
+      /* get the real and imaginary components of the trace. */
+      Ire = x->x[0 + gd * x->n];
+      Iim = x->x[1 + gd * x->n];
+
+      /* compute the trace magnitude. */
+      I = sqrt(Ire * Ire + Iim * Iim);
+
+      /* check if the current point has greater intensity than @Imax. */
+      if (I > Imax) {
+        /* store the new value. */
+        gdmax = gd;
+        Imax = I;
+      }
+    }
+
+    /* store the autodetected group delay. */
+    gd = gdmax;
+  }
+
+  /* left-shift each trace based on the group delay value. */
+  if (!hx_array_shift(x, 0, -gd))
+    throw("failed to correct bruker group delay");
+
+  /* return success. */
+  return 1;
+}
+
 /* bruker_fill_datum(): completely loads bruker raw data into an NMR datum
  * structure.
  * @dname: the input directory name.
@@ -315,6 +366,11 @@ int bruker_fill_datum (const char *dname, datum *D) {
   enum bruker_aqmod acqus_aqmod;
   enum bruker_fnmode acqus_fnmode;
 
+  /* declare variables for correcting group delay:
+   * @acqus_grpdly: group delay value.
+   */
+  real acqus_grpdly = -1.0;
+
   /* allocate memory for the fid/ser and acqu*s filenames. */
   n_fname = strlen(dname) + 16;
   fname_data = (char*) malloc(n_fname * sizeof(char));
@@ -332,6 +388,13 @@ int bruker_fill_datum (const char *dname, datum *D) {
         BRUKER_PARMTYPE_INT, "PARMODE", &acqus_parmode,
         BRUKER_PARMTYPE_INT, "BYTORDA", &acqus_bytorda) != 2)
     throw("failed to get PARMODE/BYTORDA from '%s'", fname_parm);
+
+  /* parse the group delay from the acqus file. */
+  bruker_read_parms(fname_parm, 1,
+    BRUKER_PARMTYPE_FLOAT, "GRPDLY", &acqus_grpdly);
+
+  /* store the parsed group delay value. */
+  D->grpdelay = acqus_grpdly;
 
   /* parse the acquisition sequence parameter, which will only succeed for
    * three-dimensional or higher data.

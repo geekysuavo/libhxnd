@@ -123,5 +123,7 @@ int hx_array_store_vector (hx_array *x, hx_array *y, int k, int *loc);
 
 int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...);
 
+int hx_array_shift (hx_array *x, int k, int amount);
+
 #endif /* __HXND_HX_ARRAY_H__ */
 

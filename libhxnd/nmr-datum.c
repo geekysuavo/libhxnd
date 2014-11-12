@@ -23,6 +23,18 @@
 /* include the nmr data header. */
 #include <hxnd/nmr-datum.h>
 
+/* define the number of (u64) members in the header and dimension sections of
+ * binary datum files.
+ */
+#define NMR_DATUM_FWRITE_SZ_HDR  4
+#define NMR_DATUM_FWRITE_SZ_DIM  8
+
+/* define bit field positions to store status flags in binary datum files.
+ */
+#define NMR_DATUM_S_COMPLEX  0x0000000000000001
+#define NMR_DATUM_S_NUS      0x0000000000000002
+#define NMR_DATUM_S_FFT      0x0000000000000004
+
 /* datum_type_def: datum type definition structure for holding all available
  * datum type names and values.
  */
@@ -90,6 +102,9 @@ void datum_init (datum *D) {
   /* initialize the dimension count and dimensions array. */
   D->dims = NULL;
   D->nd = 0;
+
+  /* initialize the group delay value. */
+  D->grpdelay = 0.0;
 
   /* indicate that the array is not allocated. */
   D->array_alloc = 0;
@@ -343,18 +358,6 @@ int datum_check_magic (const char *fname) {
   /* no match. */
   return 0;
 }
-
-/* define the number of (u64) members in the header and dimension sections of
- * binary datum files.
- */
-#define NMR_DATUM_FWRITE_SZ_HDR  4
-#define NMR_DATUM_FWRITE_SZ_DIM  8
-
-/* define bit field positions to store status flags in binary datum files.
- */
-#define NMR_DATUM_S_COMPLEX  0x0000000000000001
-#define NMR_DATUM_S_NUS      0x0000000000000002
-#define NMR_DATUM_S_FFT      0x0000000000000004
 
 /* datum_fwrite_formatted(): writes an NMR datum structure an an opened file
  * stream in the specified output format.
@@ -1041,6 +1044,16 @@ int datum_read_array (datum *D) {
    */
   if (D->type != DATUM_TYPE_HXND && !datum_refactor_array(D))
     throw("failed to refactor array");
+
+  /* correct for group delay *after* the array has been refactored. */
+  if (D->type == DATUM_TYPE_BRUKER) {
+    /* correct the loaded raw data for bruker group delay uberfail. */
+    if (!bruker_fix_grpdelay(&D->array, D->grpdelay))
+      throw("failed to correct bruker group delay");
+
+    /* reset the group delay back to zero. */
+    D->grpdelay = 0.0;
+  }
 
   /* return success. */
   return 1;

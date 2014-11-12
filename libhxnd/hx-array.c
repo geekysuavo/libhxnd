@@ -54,7 +54,7 @@ int hx_array_alloc (hx_array *x, int d, int k, int *sz) {
     throw("failed to retrieve %d-algebra", d);
 
   /* allocate the array of sizes. return failure if allocation fails. */
-  x->sz = (int*) calloc(x->k, sizeof(int));
+  x->sz = hx_array_index_alloc(x->k);
   if (x->sz == NULL)
     throw("failed to allocate size array");
 
@@ -1146,6 +1146,93 @@ int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
 
   /* free the index array. */
   free(arr);
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_shift_cb(): callback function for hx_array_shift().
+ *
+ * args:
+ *  see hx_array_vector_cb().
+ *
+ * varargs:
+ *  @delta: shift amount, in number of coefficients.
+ *  @swp: preallocated array for trace swaps.
+ */
+int hx_array_shift_cb (hx_array *x, hx_array *y,
+                       int *arr, int idx,
+                       va_list *vl) {
+  /* declare required variables:
+   */
+  int abdelta;
+
+  /* extract the varargs. */
+  int delta = va_arg(*vl, int);
+  hx_array *swp = va_arg(*vl, hx_array*);
+
+  /* compute the absolute shift magnitude. */
+  abdelta = (delta < 0 ? -delta : delta);
+
+  /* copy first into the temporary location. */
+  memcpy(swp->x, y->x, y->len * sizeof(real));
+
+  /* act based on the shift direction. */
+  if (delta < 0) {
+    /* copy the shifted segments out of the temporary location. */
+    memcpy(y->x, swp->x + abdelta, (y->len - abdelta) * sizeof(real));
+    memcpy(y->x + (y->len - abdelta), swp->x, abdelta * sizeof(real));
+  }
+  else if (delta > 0) {
+    /* copy the shifted segments out of the temporary location. */
+    memcpy(y->x, swp->x + (y->len - abdelta), abdelta * sizeof(real));
+    memcpy(y->x + abdelta, swp->x, (y->len - abdelta) * sizeof(real));
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_shift(): circularly shifts each vector along a given array
+ * topological dimension.
+ * @x: pointer to the array to manipulate.
+ * @k: shift topological dimension.
+ * @amount: shift amount.
+ */
+int hx_array_shift (hx_array *x, int k, int amount) {
+  /* declare a few required variables:
+   * @swp: array for storing swapped values.
+   * @delta: reduced shift amount.
+   */
+  hx_array swp;
+  int delta;
+
+  /* check that the shift dimension index is in bounds. */
+  if (k < 0 || k >= x->k)
+    throw("shift index %d out of bounds [0,%d)", k, x->k);
+
+  /* compute the reduced shift amount. */
+  delta = (amount < 0 ? -amount : amount);
+  delta = delta % x->sz[k];
+  delta = (amount < 0 ? -delta : delta);
+
+  /* check if the effective shift amount is zero. */
+  if (delta == 0)
+    return 1;
+
+  /* multiply the shift amount by the number of coefficients per scalar. */
+  delta *= x->n;
+
+  /* allocate the temporary array. */
+  if (!hx_array_alloc(&swp, x->d, 1, &(x->sz[k])))
+    throw("failed to allocate temporary shift array");
+
+  /* perform the per-vector shift operation. */
+  if (!hx_array_vector_op(x, k, &hx_array_shift_cb, delta, &swp))
+    throw("failed to perform shift by %d", delta);
+
+  /* free the temporary array. */
+  hx_array_free(&swp);
 
   /* return success. */
   return 1;

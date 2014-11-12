@@ -76,6 +76,8 @@ int bruker_read (const char *fname, enum byteorder endianness,
                  unsigned int nblk, unsigned int szblk,
                  hx_array *x);
 
+int bruker_fix_grpdelay (hx_array *x, real grpdelay);
+
 int bruker_fill_datum (const char *dname, datum *D);
 
 #endif /* __HXND_NMR_BRUKER_H__ */
