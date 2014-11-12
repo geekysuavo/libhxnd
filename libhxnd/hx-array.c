@@ -1203,17 +1203,21 @@ int hx_array_shift (hx_array *x, int k, int amount) {
   /* declare a few required variables:
    * @swp: array for storing swapped values.
    * @delta: reduced shift amount.
+   * @n: shift dimension size.
    */
   hx_array swp;
-  int delta;
+  int delta, n;
 
   /* check that the shift dimension index is in bounds. */
   if (k < 0 || k >= x->k)
     throw("shift index %d out of bounds [0,%d)", k, x->k);
 
+  /* locally store the size of the shift dimension. */
+  n = x->sz[k];
+
   /* compute the reduced shift amount. */
   delta = (amount < 0 ? -amount : amount);
-  delta = delta % x->sz[k];
+  delta = delta % n;
   delta = (amount < 0 ? -delta : delta);
 
   /* check if the effective shift amount is zero. */
@@ -1224,7 +1228,7 @@ int hx_array_shift (hx_array *x, int k, int amount) {
   delta *= x->n;
 
   /* allocate the temporary array. */
-  if (!hx_array_alloc(&swp, x->d, 1, &(x->sz[k])))
+  if (!hx_array_alloc(&swp, x->d, 1, &n))
     throw("failed to allocate temporary shift array");
 
   /* perform the per-vector shift operation. */

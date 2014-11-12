@@ -448,8 +448,7 @@ int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c) {
  *
  * varargs:
  *  @b: vector multiplier.
- *  @c: destination array.
- *  @ck: destination vector slice.
+ *  @ytmp: temporary array, same configuration as @b.
  */
 int hx_array_mul_vector_cb (hx_array *x, hx_array *y,
                             int *arr, int idx,
@@ -460,6 +459,9 @@ int hx_array_mul_vector_cb (hx_array *x, hx_array *y,
 
   /* copy the array contents from @y to @ytmp. */
   memcpy(ytmp->x, y->x, y->len * sizeof(real));
+
+  /* zero the destination array coefficients. */
+  memset(y->x, 0, y->len * sizeof(real));
 
   /* perform the array multiplication. */
   if (!hx_array_mul_array(ytmp, b, y))

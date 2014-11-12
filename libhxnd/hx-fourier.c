@@ -148,7 +148,7 @@ int hx_array_fft1d (hx_array *x, hx_array *y,
     /* loop through the current segment of the array. */
     for (m = 0; m < k; m++) {
       /* compute the twiddle factor. */
-      phi = M_PI * dir * (real) m / (real) k;
+      phi = -M_PI * dir * (real) m / (real) k;
       hx_scalar_phasor(w, d, phi);
 
       /* loop through the other segment of the array. */
@@ -243,7 +243,75 @@ int hx_array_ht (hx_array *x, int d, int k) {
  * @amount: fractional shift amount.
  */
 int hx_array_fshift (hx_array *x, int k, real amount) {
-  /* FIXME: implement hx_array_fshift() */
+  /* declare a few required variables:
+   * @phi: scalar phasor entries in @ph.
+   * @ph: linear phase adjustment array.
+   * @xtmp: temporary duplicate array.
+   * @i: general-purpose loop counter.
+   * @fi: fractional loop counter.
+   * @n: shift dimension size.
+   */
+  hx_array ph, xtmp;
+  hx_scalar phi;
+  int i, j, n;
+  real fi;
+
+  /* check that the shift dimension index is in bounds. */
+  if (k < 0 || k >= x->k)
+    throw("shift index %d out of bounds [0,%d)", k, x->k);
+
+  /* check if the shift amount is zero. */
+  if (amount == 0.0)
+    return 1;
+
+  /* locally store the size of the shift dimension. */
+  n = x->sz[k];
+
+  /* allocate the linear phase array. */
+  if (!hx_scalar_alloc(&phi, x->d) ||
+      !hx_array_alloc(&ph, x->d, 1, &n))
+    throw("failed to allocate temporary phase array");
+
+  /* compute the values that will reside in the linear phase array. */
+  for (i = 0; i < n; i++) {
+    /* compute the output index. */
+    if (n % 2)
+      j = (i > n / 2 ? i - n / 2 - 1 : i + n / 2);
+    else
+      j = (i < n / 2 ? i + n / 2 : i - n / 2);
+
+    /* compute the fractional loop index. */
+    fi = 2.0 * ((real) i) / ((real) (n - 1)) - 1.0;
+
+    /* compute the scalar phasing element. */
+    hx_scalar_phasor(&phi, k, -M_PI * amount * fi);
+
+    /* copy the phasor scalar element into the array. */
+    memcpy(ph.x + ph.n * j, phi.x, ph.n * sizeof(real));
+  }
+
+  /* allocate a temporary duplicate array. */
+  if (!hx_array_copy(&xtmp, x))
+    throw("failed to allocate duplicate array");
+
+  /* forward Fourier-transform the vectors. */
+  if (!hx_array_fft(&xtmp, k, k))
+    throw("failed to apply forward fft");
+
+  /* perform the scaling. */
+  if (!hx_array_mul_vector(&xtmp, &ph, k, x))
+    throw("failed to apply linear phase");
+
+  /* inverse Fourier-transform the vectors. */
+  if (!hx_array_ifft(x, k, k))
+    throw("failed to apply inverse fft");
+
+  /* free the temporary duplicate array. */
+  hx_array_free(&xtmp);
+
+  /* free the linear phase array. */
+  hx_scalar_free(&phi);
+  hx_array_free(&ph);
 
   /* return success. */
   return 1;
