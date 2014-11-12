@@ -222,3 +222,30 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
   return 1;
 }
 
+/* hx_array_ht(): computes an in-place hilbert transform using a fast Fourier
+ * transform to reconstruct the imaginary component of a signal from the
+ * real component.
+ * @x: pointer to the array structure.
+ * @d: dimension to transform.
+ * @k: direction to apply transform.
+ */
+int hx_array_ht (hx_array *x, int d, int k) {
+  /* FIXME: implement hx_array_ht() */
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_fshift(): circularly shifts each vector along a given array
+ * topological dimension, but by a fractional amount of points.
+ * @x: pointer to the array to manipulate.
+ * @k: shift topological dimension.
+ * @amount: fractional shift amount.
+ */
+int hx_array_fshift (hx_array *x, int k, real amount) {
+  /* FIXME: implement hx_array_fshift() */
+
+  /* return success. */
+  return 1;
+}
+

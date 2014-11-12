@@ -1194,10 +1194,10 @@ int hx_array_shift_cb (hx_array *x, hx_array *y,
 }
 
 /* hx_array_shift(): circularly shifts each vector along a given array
- * topological dimension.
+ * topological dimension, by an integer amount of points.
  * @x: pointer to the array to manipulate.
  * @k: shift topological dimension.
- * @amount: shift amount.
+ * @amount: integer shift amount.
  */
 int hx_array_shift (hx_array *x, int k, int amount) {
   /* declare a few required variables:
