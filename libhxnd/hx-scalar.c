@@ -115,17 +115,6 @@ int hx_scalar_resize (hx_scalar *x, int d) {
   return 1;
 }
 
-/* hx_scalar_zero(): sets all coefficients in a scalar to zero.
- * @x: a pointer to the scalar to modify.
- */
-void hx_scalar_zero (hx_scalar *x) {
-  /* don't manipulate null pointers. */
-  if (!x) return;
-
-  /* zero the scalar coefficient data as quickly as possible. */
-  memset(x->x, 0, x->n * sizeof(real));
-}
-
 /* hx_scalar_phasor(): stores the values of a phasor in a hypercomplex scalar.
  * @x: a pointer to the scalar to modify.
  * @d: the dimension index to act upon.

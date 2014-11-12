@@ -113,6 +113,18 @@ int hx_data_mul (real *xa, real *xb, real *xc, int d, int n, hx_algebra tbl) {
   return 1;
 }
 
+/* hx_data_zero(): sets the raw coefficients of a hypercomplex value to zero.
+ * @x: the raw array data of the input operand.
+ * @n: the number of array elements of the operand.
+ */
+int hx_data_zero (real *x, int n) {
+  /* set the coefficients to zero. */
+  memset(x, 0, n * sizeof(real));
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_data_norm(): compute the norm of the raw array elements of
  * a hypercomplex value.
  * @x: the raw array data of the input operand.
@@ -256,6 +268,17 @@ int hx_scalar_mul (hx_scalar *a, hx_scalar *b, hx_scalar *c) {
 
   /* perform the raw data operation. */
   return hx_data_mul(a->x, b->x, c->x, a->d, a->n, a->tbl);
+}
+
+/* hx_scalar_zero(): sets the coefficients of a hypercomplex scalar to zero.
+ * @a: the structure pointer of the input operand.
+ */
+int hx_scalar_zero (hx_scalar *a) {
+  /* set the coefficients to zero. */
+  memset(a->x, 0, a->n * sizeof(real));
+
+  /* return success. */
+  return 1;
 }
 
 /* hx_scalar_norm(): compute the norm of a hypercomplex scalar.
@@ -461,7 +484,7 @@ int hx_array_mul_vector_cb (hx_array *x, hx_array *y,
   memcpy(ytmp->x, y->x, y->len * sizeof(real));
 
   /* zero the destination array coefficients. */
-  memset(y->x, 0, y->len * sizeof(real));
+  hx_array_zero(y);
 
   /* perform the array multiplication. */
   if (!hx_array_mul_array(ytmp, b, y))
@@ -523,6 +546,17 @@ int hx_array_mul_vector (hx_array *a, hx_array *b, int kmul, hx_array *c) {
 
   /* free the temporary array. */
   hx_array_free(&ytmp);
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_zero(): sets the coefficients of a hypercomplex array to zero.
+ * @a: the structure pointer of the input operand.
+ */
+int hx_array_zero (hx_array *a) {
+  /* set the coefficients to zero. */
+  memset(a->x, 0, a->len * sizeof(real));
 
   /* return success. */
   return 1;

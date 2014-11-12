@@ -46,6 +46,9 @@ int fn_scale_first (hx_array *x, hx_array *y,
   /* extract the vararg. */
   hx_scalar *hxscale = va_arg(*vl, hx_scalar*);
 
+  /* zero the destination array element. */
+  hx_data_zero(y->x, y->n);
+
   /* scale the currently indexed array element. */
   if (!hx_data_mul(x->x + idx * x->n, hxscale->x, y->x,
                    x->d, x->n, x->tbl)) {
@@ -115,6 +118,9 @@ int fn_execute_scale (datum *D, const int dim, const char *argstr) {
     /* allocate a temporary duplicate array for the scaling operation. */
     if (!hx_array_copy(&atmp, &D->array))
       throw("failed to allocate duplicate array");
+
+    /* zero the destination array for scaling. */
+    hx_array_zero(&D->array);
 
     /* perform the scaling. */
     if (!hx_array_mul_scalar(&atmp, &hxscale, &D->array))
