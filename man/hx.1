@@ -211,9 +211,11 @@ current datum along a given dimension \fID\fR.
 .TP
 \fBalternate\fR (boolean) [false]
 negates every other point in the datum prior to transformation, when set.
+.TP
 \fBnegate\fR (boolean) [false]
 negates the imaginary basis element of dimension \fID\fR prior to
 transformation, when set.
+.TP
 \fBinverse\fR (boolean) [false]
 applies an inverse Fourier transform when set.
 
@@ -255,7 +257,27 @@ regardless of the value of \fID\fR.
 inverts the value of \fBfactor\fR prior to multiplication when set.
 
 .SS shift
-FIXME
+The \fBshift\fR command shifts the current datum along dimension \fID\fR by
+a specified amount.
+.TP
+\fBamount\fR (float) [0.0]
+the shift amount, in points (default) or the units specified.
+.TP
+\fBpoints\fR (boolean) [true]
+interprets the shift amount as a number of points when set.
+.TP
+\fBsec\fR (boolean) [false]
+interprets the shift amount as a time in seconds when set.
+.TP
+\fBppm\fR (boolean) [false]
+interprets the shift amount as a frequency in ppm when set.
+.TP
+\fBhz\fR (boolean) [false]
+interprets the shift amount as a frequency in Hertz when set.
+.TP
+\fBround\fR (boolean) [false]
+when set, forces the rounding of the shift amount, allowing the shifting of
+non power-of-two dimensions.
 
 .SS window
 The \fBwindow\fR command multiplies the current datum by a window function

@@ -44,6 +44,7 @@ static const struct fn_def functions[] = {
   { FN_NAME_HT,       &fn_execute_ht },
   { FN_NAME_RESIZE,   &fn_execute_resize },
   { FN_NAME_SCALE,    &fn_execute_scale },
+  { FN_NAME_SHIFT,    &fn_execute_shift },
   { FN_NAME_WINDOW,   &fn_execute_window },
   { FN_NAME_ZEROFILL, &fn_execute_zerofill },
   { NULL, NULL }
