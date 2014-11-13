@@ -62,6 +62,10 @@ int fn_execute_fft (datum *D, const int dim, const char *argstr) {
   if (!hx_array_fftfn(&D->array, dim, dim, dir))
     throw("failed to perform fourier transform");
 
+  /* run the shift operation. */
+  if (!hx_array_shift(&D->array, dim, D->array.sz[dim] / 2))
+    throw("failed to half-shift transformed result");
+
   /* change the fourier transform status flag in the datum dimension.
    */
   D->dims[dim].ft = 1;
