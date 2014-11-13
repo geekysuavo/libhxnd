@@ -176,14 +176,8 @@ int hx_array_fft1d (hx_array *x, hx_array *y,
   } while (k < n);
 
   /* for inverse transforms, scale each value in the vector. */
-  if (dir == HX_FFT_REVERSE) {
-    /* compute the real scaling value. */
-    phi = 1.0 / ((real) n);
-
-    /* scale each scalar element by the real value. */
-    for (i = 0; i < y->len; i += y->n)
-      hx_data_add(NULL, y->x + i, y->x + i, phi, y->d, y->n);
-  }
+  if (dir == HX_FFT_REVERSE && !hx_array_scale(y, 1.0 / ((real) n), y))
+    return 0;
 
   /* return success. */
   return 1;

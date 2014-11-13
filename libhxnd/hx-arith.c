@@ -158,6 +158,31 @@ int hx_data_norm (real *x, int d, int n) {
   return 1;
 }
 
+/* hx_data_negate_basis(): negates the specified basis element of the raw
+ * array elements of a hypercomplex value.
+ * @x: the raw array data of the input operand.
+ * @d: the algebraic dimensionality of the operand.
+ * @n: the number of array elements of the operand.
+ * @dneg: the algebraic dimension to negate.
+ */
+int hx_data_negate_basis (real *x, int d, int n, int dneg) {
+  /* declare a required variable. */
+  int i, ineg;
+
+  /* compute the binary mask of the negation dimension. */
+  ineg = 1 << dneg;
+
+  /* loop over the array elements. */
+  for (i = 0; i < n; i++) {
+    /* check if the current index needs negation. */
+    if (i & ineg)
+      x[i] *= -1.0;
+  }
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_array_reorder_bases(): reorders the basis elements of each scalar value
  * in a hypercomplex array. the target ordering will be achieved by swapping
  * pairs of bases in @order until they are in increasing order.
@@ -270,6 +295,28 @@ int hx_scalar_mul (hx_scalar *a, hx_scalar *b, hx_scalar *c) {
   return hx_data_mul(a->x, b->x, c->x, a->d, a->n, a->tbl);
 }
 
+/* hx_scalar_scale(): multiply a hypercomplex scalar and a real value.
+ * @a: the structure pointer of the first operand.
+ * @s: the value of the second operand.
+ * @b: the structure pointer of the result.
+ *
+ * operation:
+ *   b <= a * s
+ *
+ * operands:
+ *   a: hypercomplex scalar.
+ *   s: real scalar.
+ *   b: hypercomplex scalar.
+ */
+int hx_scalar_scale (hx_scalar *a, real s, hx_scalar *b) {
+  /* check if the algebraic dimensionalities match. */
+  if (hx_scalar_dims_cmp(a, b) != 0)
+    throw("scalar algebraic dimension mismatch");
+
+  /* perform the raw data operation. */
+  return hx_data_add(NULL, a->x, b->x, s, a->d, a->n);
+}
+
 /* hx_scalar_zero(): sets the coefficients of a hypercomplex scalar to zero.
  * @a: the structure pointer of the input operand.
  */
@@ -293,6 +340,16 @@ int hx_scalar_zero (hx_scalar *a) {
 int hx_scalar_norm (hx_scalar *a) {
   /* perform the raw data operation. */
   return hx_data_norm(a->x, a->d, a->n);
+}
+
+/* hx_scalar_negate_basis(): negates the specified basis element of a
+ * hypercomplex scalar value.
+ * @x: the structure pointer of the input operand.
+ * @dneg: the algebraic dimension to negate.
+ */
+int hx_scalar_negate_basis (hx_scalar *x, int dneg) {
+  /* perform the raw data operation. */
+  return hx_data_negate_basis(x->x, x->d, x->n, dneg);
 }
 
 /* hx_scalar_reorder_bases(): reorders the basis elements of a hypercomplex
@@ -551,6 +608,38 @@ int hx_array_mul_vector (hx_array *a, hx_array *b, int kmul, hx_array *c) {
   return 1;
 }
 
+/* hx_array_scale(): multiply a hypercomplex array and a real value.
+ * @a: the structure pointer of the first operand.
+ * @s: the value of the second operand.
+ * @b: the structure pointer of the result.
+ *
+ * operation:
+ *   b <= a * s
+ *
+ * operands:
+ *   a: hypercomplex array.
+ *   s: real scalar.
+ *   b: hypercomplex array.
+ */
+int hx_array_scale (hx_array *a, real s, hx_array *b) {
+  /* declare a required variable. */
+  int i;
+
+  /* check if the array configurations match. */
+  if (hx_array_conf_cmp(a, b) != 0)
+    throw("array configuration mismatch");
+
+  /* loop over the array elements. */
+  for (i = 0; i < a->len; i += a->n) {
+    /* perform the raw scalar data operation. */
+    if (!hx_data_add(NULL, a->x + i, b->x + i, s, a->d, a->n))
+      return 0;
+  }
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_array_zero(): sets the coefficients of a hypercomplex array to zero.
  * @a: the structure pointer of the input operand.
  */
@@ -562,7 +651,7 @@ int hx_array_zero (hx_array *a) {
   return 1;
 }
 
-/* hx_array_norm(): compute the norm of a hypercomplex array.
+/* hx_array_norm(): compute the norm every scalar in a hypercomplex array.
  * @a: the structure pointer to the input operand.
  *
  * operation:
@@ -579,6 +668,45 @@ int hx_array_norm (hx_array *a) {
   for (i = 0; i < a->len; i += a->n) {
     /* perform the raw scalar data operation. */
     if (!hx_data_norm(a->x + i, a->d, a->n))
+      return 0;
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_alternate_sign(): negate every other scalar in a hypercomplex
+ * array, in place.
+ * @a: the structure pointer to the input operand.
+ */
+int hx_array_alternate_sign (hx_array *a) {
+  /* declare a required variable. */
+  int i;
+
+  /* loop over the array elements. */
+  for (i = a->n; i < a->len; i += 2 * a->n) {
+    /* perform the raw scalar data operation. */
+    if (!hx_data_add(NULL, a->x + i, a->x + i, -1.0, a->d, a->n))
+      return 0;
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_negate_basis(): negates the specified basis element of each
+ * scalar value in a hypercomplex array.
+ * @x: the structure pointer to the target array.
+ * @dneg: the algebraic dimension to negate.
+ */
+int hx_array_negate_basis (hx_array *x, int dneg) {
+  /* declare a required variable. */
+  int i;
+
+  /* loop over the array elements. */
+  for (i = 0; i < x->len; i += x->n) {
+    /* perform the raw scalar data operation. */
+    if (!hx_data_negate_basis(x->x + i, x->d, x->n, dneg))
       return 0;
   }
 

@@ -51,20 +51,30 @@ int fn_execute_fft (datum *D, const int dim, const char *argstr) {
   if (dim < 0 || dim >= D->nd)
     throw("dimension index %d out of bounds [0,%u)", dim, D->nd);
 
-  /* FIXME: handle 'alternate' option. */
+  /* handle the 'alternate' option. */
+  if (alt && !hx_array_alternate_sign(&D->array))
+    throw("failed to apply alternating sign");
 
-  /* FIXME: handle 'negate' option. */
+  /* handle the 'negate' option. */
+  if (neg && !hx_array_negate_basis(&D->array, dim))
+    throw("failed to negate imaginaries");
 
   /* determine which direction to run the transform. */
   dir = (inv ? HX_FFT_REVERSE : HX_FFT_FORWARD);
+
+  /* run the back-shift operation before inverse transforms. */
+  if (dir == HX_FFT_REVERSE &&
+      !hx_array_shift(&D->array, dim, D->array.sz[dim] / 2))
+    throw("failed to half-shift before ifft");
 
   /* run the fourier transform operation. */
   if (!hx_array_fftfn(&D->array, dim, dim, dir))
     throw("failed to perform fourier transform");
 
-  /* run the shift operation. */
-  if (!hx_array_shift(&D->array, dim, D->array.sz[dim] / 2))
-    throw("failed to half-shift transformed result");
+  /* run the shift operation after forward transforms. */
+  if (dir == HX_FFT_FORWARD &&
+      !hx_array_shift(&D->array, dim, D->array.sz[dim] / 2))
+    throw("failed to half-shift after fft");
 
   /* change the fourier transform status flag in the datum dimension.
    */
