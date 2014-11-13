@@ -42,6 +42,8 @@ static const struct fn_def functions[] = {
   { FN_NAME_CUT,      &fn_execute_cut },
   { FN_NAME_FFT,      &fn_execute_fft },
   { FN_NAME_HT,       &fn_execute_ht },
+  { FN_NAME_IST,      &fn_execute_ist },
+  { FN_NAME_PHASE,    &fn_execute_phase },
   { FN_NAME_RESIZE,   &fn_execute_resize },
   { FN_NAME_SCALE,    &fn_execute_scale },
   { FN_NAME_SHIFT,    &fn_execute_shift },

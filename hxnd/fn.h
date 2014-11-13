@@ -85,10 +85,8 @@ int fn_execute_fft (datum *D, const int dim, const char *argstr);
 
 int fn_execute_ht (datum *D, const int dim, const char *argstr);
 
-/* FIXME: implement fn_execute_ist() */
 int fn_execute_ist (datum *D, const int dim, const char *argstr);
 
-/* FIXME: implement fn_execute_phase() */
 int fn_execute_phase (datum *D, const int dim, const char *argstr);
 
 int fn_execute_resize (datum *D, const int dim, const char *argstr);
