@@ -205,6 +205,10 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
   if (k < 0 || k >= x->k)
     throw("topological dimension %d out of bounds [0,%d)", k, x->k);
 
+  /* check that the transformation dimension is a power-of-two size. */
+  if (!hx_ispow2(x->sz[k]))
+    throw("dimension %d is not a power of two size (%d)", k, x->sz[k]);
+
   /* allocate temporary scalars for use in every transformation. */
   if (!hx_scalar_alloc(&w, x->d) ||
       !hx_scalar_alloc(&swp, x->d))
@@ -222,6 +226,46 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
   return 1;
 }
 
+/* hx_array_ht_cb(): callback function for hx_array_ht().
+ *
+ * args:
+ *  see hx_array_vector_cb().
+ *
+ * varargs:
+ *  @xtmp: temporary swap vector.
+ */
+int hx_array_ht_cb (hx_array *x, hx_array *y,
+                    int *arr, int idx,
+                    va_list *vl) {
+  /* declare required variables. */
+  int n, off0, off1;
+
+  /* extract the varargs. */
+  hx_array *xtmp = va_arg(*vl, hx_array*);
+
+  /* get the size of the vector. */
+  n = y->sz[0];
+
+  /* copy the slice into the temporary location. */
+  memcpy(xtmp->x, y->x, y->len * sizeof(real));
+
+  /* compute offsets to the (i=0) and (i=n/2) coefficients. */
+  off0 = 0;
+  off1 = (n / 2) * y->n;
+
+  /* build up the even-length shuffled result:
+   *  [y(0), 2 * y(1 : n/2 - 1), y(n/2), zeros(n/2-1)]
+   *   0     1 .. n/2 - 1        n/2
+   */
+  hx_array_zero(y);
+  hx_data_add(NULL, xtmp->x + off0, y->x + off0, 0.5, y->d, y->n);
+  hx_data_add(NULL, xtmp->x + off1, y->x + off1, 0.5, y->d, y->n);
+  memcpy(y->x + y->n, xtmp->x + y->n, ((n / 2) - 1) * y->n * sizeof(real));
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_array_ht(): computes an in-place hilbert transform using a fast Fourier
  * transform to reconstruct the imaginary component of a signal from the
  * real component.
@@ -230,7 +274,45 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
  * @k: direction to apply transform.
  */
 int hx_array_ht (hx_array *x, int d, int k) {
-  /* FIXME: implement hx_array_ht() */
+  /* declare a few required variables:
+   * @xtmp: temporary duplicate array of @x.
+   */
+  hx_array xtmp;
+  int i, n;
+
+  /* check that the algebraic dimension index is in bounds. */
+  if (d < 0 || d >= x->d)
+    throw("transform index %d out of bounds [0,%d)", d, x->d);
+
+  /* check that the topological dimension index is in bounds. */
+  if (k < 0 || k >= x->k)
+    throw("shift index %d out of bounds [0,%d)", k, x->k);
+
+  /* get the size of the transformation dimension. */
+  n = x->sz[k];
+
+  /* allocate a temporary duplicate array. */
+  if (!hx_array_alloc(&xtmp, x->d, 1, &n))
+    throw("failed to allocate temporary array");
+
+  /* zero the d-dimension values in the array. */
+  for (i = 0; i < xtmp.len; i += xtmp.n)
+    xtmp.x[(1 << d) + i] = 0.0;
+
+  /* forward Fourier-transform the vectors. */
+  if (!hx_array_fft(x, d, k))
+    throw("failed to apply forward fft");
+
+  /* perform the data shuffling. */
+  if (!hx_array_vector_op(x, k, &hx_array_ht_cb, &xtmp))
+    throw("failed to apply shuffling operation");
+
+  /* inverse Fourier-transform the vectors. */
+  if (!hx_array_ifft(x, d, k))
+    throw("failed to apply inverse fft");
+
+  /* free the temporary duplicate array. */
+  hx_array_free(&xtmp);
 
   /* return success. */
   return 1;

@@ -51,10 +51,6 @@ int fn_execute_fft (datum *D, const int dim, const char *argstr) {
   if (dim < 0 || dim >= D->nd)
     throw("dimension index %d out of bounds [0,%u)", dim, D->nd);
 
-  /* check the dimension size. */
-  if (!hx_ispow2(D->dims[dim].sz))
-    throw("dimension %d is not a power of two size", dim);
-
   /* FIXME: handle 'alternate' option. */
 
   /* FIXME: handle 'negate' option. */
