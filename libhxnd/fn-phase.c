@@ -28,6 +28,9 @@
 static const fn_args fn_argdef_phase[] = {
   { "ph0",     FN_ARGTYPE_FLOAT, "0.0" },
   { "ph1",     FN_ARGTYPE_FLOAT, "0.0" },
+  { "pivot",   FN_ARGTYPE_FLOAT, "0.5" },
+  { "ppm",     FN_ARGTYPE_BOOL,  "0" },
+  { "hz",      FN_ARGTYPE_BOOL,  "0" },
   { "inverse", FN_ARGTYPE_BOOL,  "0" },
   { NULL, '\0', NULL }
 };
@@ -40,11 +43,12 @@ static const fn_args fn_argdef_phase[] = {
 int fn_execute_phase (datum *D, const int dim, const char *argstr) {
   /* declare variables to hold argument values.
    */
-  real ph0, ph1;
-  int inv;
+  real ph0, ph1, piv;
+  int inv, ppm, hz;
 
   /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_phase, &ph0, &ph1, &inv))
+  if (!fn_scan_args(argstr, fn_argdef_phase,
+         &ph0, &ph1, &piv, &ppm, &hz, &inv))
     throw("failed to parse phase arguments");
 
   /* check the dimension index. */
