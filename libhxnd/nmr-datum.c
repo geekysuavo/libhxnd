@@ -438,7 +438,7 @@ int datum_fwrite_text (datum *D, FILE *fh) {
 
     /* increment the linear index. */
     idx++;
-  } while (hx_array_index_inc(D->array.k, D->array.sz, &arr));
+  } while (hx_array_index_incr(D->array.k, D->array.sz, arr));
 
   /* free the index array. */
   free(arr);

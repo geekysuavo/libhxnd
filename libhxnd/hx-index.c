@@ -73,6 +73,10 @@ int hx_array_index_init (int *arr, int k) {
 
 /* hx_array_index_pack(): packs an array of multidimensional indices into a
  * linear index.
+ * @k: the size of the array.
+ * @sz: the sizes of each array dimension.
+ * @arr: the input array of unpacked indices.
+ * @pidx: pointer to the output packed linear index.
  */
 int hx_array_index_pack (int k, int *sz, int *arr, int *pidx) {
   /* define a few required variables. */
@@ -91,13 +95,14 @@ int hx_array_index_pack (int k, int *sz, int *arr, int *pidx) {
 
 /* hx_array_index_unpack(): unpacks a linear index into an array of separate
  * multidimensional indices.
+ * @k: the size of the array.
+ * @sz: the sizes of each array dimension.
+ * @arr: the output array of unpacked indices.
+ * @idx: the input packed linear index.
  */
-int hx_array_index_unpack (int k, int *sz, int **parr, int idx) {
+int hx_array_index_unpack (int k, int *sz, int *arr, int idx) {
   /* define a few required variables. */
-  int ki, *arr, redidx;
-
-  /* dereference the multidimensional index. */
-  arr = *parr;
+  int ki, redidx;
 
   /* loop over the dimensions of the array. */
   for (ki = 0, redidx = idx; ki < k; ki++) {
@@ -112,23 +117,22 @@ int hx_array_index_unpack (int k, int *sz, int **parr, int idx) {
   return 1;
 }
 
-/* hx_array_index_inc(): increments a multidimensional index. the function
+/* hx_array_index_incr(): increments a multidimensional index. the function
  * returns '1' except when the increment operation causes all indices to
  * roll over to zero at once (i.e. at the array end).
+ * @k: the size of the array.
+ * @sz: the sizes of each array dimension.
+ * @arr: the array of unpacked indices to increment.
  */
-int hx_array_index_inc (int k, int *sz, int **parr) {
+int hx_array_index_incr (int k, int *sz, int *arr) {
   /* declare a few required variables:
    * @ki: the dimension loop counter.
-   * @arr: the index array.
    * @roundtrip: whether we've made it back to (0,0,0,...)
    */
-  int ki, *arr, roundtrip;
+  int ki, roundtrip;
 
   /* initialize the round trip indicator. */
   roundtrip = 0;
-
-  /* dereference the multidimensional index. */
-  arr = *parr;
 
   /* loop over the dimensions of the array. */
   for (ki = 0; ki < k; ki++) {
@@ -154,23 +158,98 @@ int hx_array_index_inc (int k, int *sz, int **parr) {
   return !roundtrip;
 }
 
+/* hx_array_index_skip(): increments a multidimensional index in a similar
+ * fashion to hx_array_index_incr(), but skips the incrementation over a
+ * specified index.
+ * @k: the size of the array.
+ * @sz: the sizes of each array dimension.
+ * @arr: the array of unpacked indices to increment.
+ * @kskip: the array index to avoid incrementing.
+ */
+int hx_array_index_skip (int k, int *sz, int *arr, int kskip) {
+  /* declare a few required variables. */
+  int ki, roundtrip;
+
+  /* initialize the round trip indicator. */
+  roundtrip = 0;
+
+  /* loop over the dimensions of the array. */
+  for (ki = 0; ki < k; ki++) {
+    /* skip the specified array index. */
+    if (ki == kskip)
+      continue;
+
+    /* increment the current index. */
+    arr[ki]++;
+
+    /* check if the current index has overflowed. */
+    if (arr[ki] >= sz[ki]) {
+      /* reset the index. */
+      arr[ki] = 0;
+    }
+    else {
+      /* break the loop. */
+      break;
+    }
+  }
+
+  /* check if a round trip was made. */
+  if (ki == k)
+    roundtrip = 1;
+
+  /* return success. */
+  return !roundtrip;
+}
+
+/* hx_array_index_jump_init(): computes the 'small' and 'large' index strides
+ * to use when computing packed linear indices where a single specified
+ * index is skipped.
+ * @k: the size of the array.
+ * @sz: the sizes of each array dimension.
+ * @kskip: the array index to avoid incrementing.
+ * @ja: pointer to the small stride value.
+ * @jb: pointer to the large stride value.
+ */
+int hx_array_index_jump_init (int k, int *sz, int kskip,
+                              int *ja, int *jb, int *jmax) {
+  /* declare a required variable. */
+  int i;
+
+  /* loop to compute the jump values. */
+  for (i = 0, *ja = 1, *jb = sz[0]; i < kskip; i++) {
+    *ja *= sz[i];
+    *jb *= sz[i + 1];
+  }
+
+  /* loop to compute the maximum loop control variable. */
+  for (i = 0, *jmax = 1; i < k; i++)
+    *jmax *= (i == kskip ? 1 : sz[i]);
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_index_jump(): computes a linear index from small and large index
+ * strides computed by hx_array_index_jump_init().
+ * @j: the for loop control variable, ranges from 0 .. jmax-1.
+ * @ja: the small stride value.
+ * @jb: the large stride value.
+ */
+inline int hx_array_index_jump (int j, int ja, int jb) {
+  /* return the computed value. */
+  return (jb * (j / ja) + j % ja);
+}
+
 /* hx_array_index_diff(): compute the difference of two indices along
  * each dimension.
  * @k: the number of index elements.
  * @a: the first operand.
  * @b: the second operand.
- * @pc: pointer the output array.
+ * @c: the output array.
  */
-int hx_array_index_diff (int k, int *a, int *b, int **pc) {
-  /* declare a few required variables:
-   * @c: the output index array.
-   * @i: a loop counter.
-   */
-  int *c;
+int hx_array_index_diff (int k, int *a, int *b, int *c) {
+  /* declare a required variable. */
   int i;
-
-  /* dereference the output. */
-  c = *pc;
 
   /* compute the element-wise differences. */
   for (i = 0; i < k; i++)

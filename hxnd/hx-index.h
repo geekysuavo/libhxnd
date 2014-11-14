@@ -34,11 +34,18 @@ int hx_array_index_init (int *arr, int k);
 
 int hx_array_index_pack (int k, int *sz, int *arr, int *pidx);
 
-int hx_array_index_unpack (int k, int *sz, int **parr, int idx);
+int hx_array_index_unpack (int k, int *sz, int *arr, int idx);
 
-int hx_array_index_inc (int k, int *sz, int **parr);
+int hx_array_index_incr (int k, int *sz, int *arr);
 
-int hx_array_index_diff (int k, int *a, int *b, int **pc);
+int hx_array_index_skip (int k, int *sz, int *arr, int kskip);
+
+int hx_array_index_jump_init (int k, int *sz, int kskip,
+                              int *ja, int *jb, int *jmax);
+
+int hx_array_index_jump (int j, int ja, int jb);
+
+int hx_array_index_diff (int k, int *a, int *b, int *c);
 
 int hx_array_index_bounded (int k, int *arr, int *lower, int *upper);
 

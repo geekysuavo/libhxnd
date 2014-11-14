@@ -213,7 +213,7 @@ int hx_array_print (hx_array *x, const char *fname) {
 
     /* increment the linear index. */
     idx++;
-  } while (hx_array_index_inc(x->k, x->sz, &arr));
+  } while (hx_array_index_incr(x->k, x->sz, arr));
 
   /* free the index array. */
   free(arr);
@@ -644,7 +644,7 @@ int hx_array_deinterlace (hx_array *x) {
 
     /* increment the input linear index. */
     idxi++;
-  } while (hx_array_index_inc(x->k, sznew, &arri));
+  } while (hx_array_index_incr(x->k, sznew, arri));
 
   /* free the array indices. */
   free(arri);
@@ -734,7 +734,7 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
     }
 
     /* increment the multidimensional indices. */
-    hx_array_index_inc(k, sz, &arr);
+    hx_array_index_incr(k, sz, arr);
     idx++;
   }
 
@@ -928,7 +928,7 @@ int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper) {
     throw("failed to allocate %d indices", x->k);
 
   /* subtract the lower bound from the upper bound. */
-  hx_array_index_diff(x->k, upper, lower, &sznew);
+  hx_array_index_diff(x->k, upper, lower, sznew);
 
   /* increment each element of the difference array, resulting in
    * the array of sizes of the sliced portion of the array.
@@ -972,7 +972,7 @@ int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper) {
 
     /* incremenet the input array linear index. */
     idxi++;
-  } while (hx_array_index_inc(x->k, x->sz, &arri));
+  } while (hx_array_index_incr(x->k, x->sz, arri));
 
   /* free the allocated index arrays. */
   free(sznew);
@@ -1108,13 +1108,6 @@ int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
 
   /* iterate over the elements of the array. */
   do {
-    /* quickly seek to the start of each vector. */
-    if (arr[k]) {
-      /* every vector begins at: arr[k] == 0 */
-      arr[k] = szk - 1;
-      continue;
-    }
-
     /* pack the index array into a linear index. */
     hx_array_index_pack(x->k, x->sz, arr, &idx);
 
@@ -1139,7 +1132,7 @@ int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
     /* increment the slice index. */
     slice++;
   }
-  while (hx_array_index_inc(x->k, x->sz, &arr));
+  while (hx_array_index_skip(x->k, x->sz, arr, k));
 
   /* free the temporary array. */
   hx_array_free(&y);
