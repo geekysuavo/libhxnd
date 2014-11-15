@@ -49,7 +49,7 @@ int fn_execute_phase (datum *D, const int dim, const char *argstr) {
    * @ph: temporary array of phase correction values.
    * @szk: size of phase correction array dimension.
    */
-  hx_array ph, atmp;
+  hx_array ph;
   int szk;
 
   /* parse the function argument string. */
@@ -92,10 +92,6 @@ int fn_execute_phase (datum *D, const int dim, const char *argstr) {
   ph0 *= (M_PI / 180.0);
   ph1 *= (M_PI / 180.0);
 
-  /* allocate a temporary duplicate array for the multiplication. */
-  if (!hx_array_copy(&atmp, &D->array))
-    throw("failed to allocate duplicate array");
-
   /* allocate a temporary phase correction vector. */
   szk = D->array.sz[dim];
   if (!hx_array_alloc(&ph, D->array.d, 1, &szk))
@@ -106,11 +102,10 @@ int fn_execute_phase (datum *D, const int dim, const char *argstr) {
     throw("failed to compute phasor array");
 
   /* perform the phase correction operation. */
-  if (!hx_array_mul_vector(&atmp, &ph, dim, &D->array))
+  if (!hx_array_mul_vector(&D->array, &ph, dim, &D->array))
     throw("failed to execute phase correction");
 
   /* free the temporary arrays. */
-  hx_array_free(&atmp);
   hx_array_free(&ph);
 
   /* return success. */

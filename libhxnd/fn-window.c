@@ -55,10 +55,18 @@ static const fn_args fn_argdef_window[] = {
  */
 int fn_execute_window (datum *D, const int dim, const char *argstr) {
   /* declare a few required variables:
+   * @type: the window function enumerated type to apply.
+   * @ldim: a local (thus mutable) copy of the @dim value.
+   * @d: algebraic dimensionality of the datum array.
+   * @n: number of characters in the window type string.
+   * @len: size of the windowed array dimension.
+   * @ret: return value of the window construction.
+   * @wnd: vector-shaped array of window coefficients.
+   * @width: spectral width of the windowed dimension.
    */
   enum hx_window_type type;
   int ldim, d, n, len, ret;
-  hx_array wnd, atmp;
+  hx_array wnd;
   real width;
 
   /* declare variables to hold argument values. */
@@ -147,16 +155,11 @@ int fn_execute_window (datum *D, const int dim, const char *argstr) {
   if (!ret)
     throw("failed to construct %s window", stype);
 
-  /* allocate a temporary duplicate array for the scaling operation. */
-  if (!hx_array_copy(&atmp, &D->array))
-    throw("failed to allocate duplicate array");
-
   /* perform a trace-wise multiplication by the window. */
-  if (!hx_array_mul_vector(&atmp, &wnd, ldim, &D->array))
+  if (!hx_array_mul_vector(&D->array, &wnd, ldim, &D->array))
     throw("failed to perform window multiplication");
 
-  /* free the allocated arrays. */
-  hx_array_free(&atmp);
+  /* free the allocated array. */
   hx_array_free(&wnd);
 
   /* free the window type string. */

@@ -68,13 +68,11 @@ int fn_scale_first (hx_array *x, hx_array *y,
 int fn_execute_scale (datum *D, const int dim, const char *argstr) {
   /* declare variables to hold argument values.
    * @hxscale: hypercomplex scalar for scaling..
+   * @fscale: whole-array scaling factor.
    * @f0: first point scaling factor.
-   * @fscale: scaling factor.
-   * @atmp: temporary array.
    */
   hx_scalar hxscale;
   real fscale, f0;
-  hx_array atmp;
   int inv, d;
 
   /* parse the function argument string. */
@@ -96,42 +94,29 @@ int fn_execute_scale (datum *D, const int dim, const char *argstr) {
   if (d >= D->nd)
     throw("dimension index %d out of bounds [0,%u)", d, D->nd);
 
-  /* allocate a temporary scalar for the scaling operation. */
-  if (!hx_scalar_alloc(&hxscale, D->array.d))
-    throw("failed to allocate scalar multiplication operand");
-
   /* check if first-point scaling was requested. */
   if (f0 != 1.0) {
+    /* allocate a temporary scalar for the scaling operation. */
+    if (!hx_scalar_alloc(&hxscale, D->array.d))
+      throw("failed to allocate scalar multiplication operand");
+
     /* set up the scalar value for first-point multiplication. */
     hxscale.x[0] = f0;
 
     /* perform the first-point scaling. */
     if (!hx_array_vector_op(&D->array, d, &fn_scale_first, &hxscale))
       throw("failed to execute first-point scaling");
+
+    /* free the allocated temporary scalar. */
+    hx_scalar_free(&hxscale);
   }
 
   /* check if all-point scaling was requested. */
   if (fscale != 1.0) {
-    /* set up the scalar value for whole-array multiplication. */
-    hxscale.x[0] = fscale;
-
-    /* allocate a temporary duplicate array for the scaling operation. */
-    if (!hx_array_copy(&atmp, &D->array))
-      throw("failed to allocate duplicate array");
-
-    /* zero the destination array for scaling. */
-    hx_array_zero(&D->array);
-
-    /* perform the scaling. */
-    if (!hx_array_mul_scalar(&atmp, &hxscale, &D->array))
+    /* scale the array contents by the real scalar. */
+    if (!hx_array_scale(&D->array, fscale, &D->array))
       throw("failed to scale by scalar value %f(0)", fscale);
-
-    /* free the allocated temporary array. */
-    hx_array_free(&atmp);
   }
-
-  /* free the allocated temporary scalar. */
-  hx_scalar_free(&hxscale);
 
   /* return success. */
   return 1;

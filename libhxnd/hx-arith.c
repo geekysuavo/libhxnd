@@ -553,6 +553,7 @@ int hx_array_mul_vector_cb (hx_array *x, hx_array *y,
 
 /* hx_array_mul_vector(): multiply each vector of an array @a along a given
  * (topological) dimension @kmul by a vector-shaped array @b.
+ *
  * @a: the structure pointer to the first (whole-array) operand.
  * @b: the structure pointer to the second (vector) operand.
  * @kmul: the dimension index along which to multiply.
@@ -565,6 +566,9 @@ int hx_array_mul_vector_cb (hx_array *x, hx_array *y,
  *   a: hypercomplex array, at least one-dimensional.
  *   b: hypercomplex array, must be one-dimensional.
  *   c: hypercomplex array, same dimensionality as @a.
+ *
+ * NOTE: the array pointers @a and @c are permitted to be the same value,
+ *       effectively allowing in-place multiplication of @a by @b.
  */
 int hx_array_mul_vector (hx_array *a, hx_array *b, int kmul, hx_array *c) {
   /* declare a required variable:
@@ -595,7 +599,8 @@ int hx_array_mul_vector (hx_array *a, hx_array *b, int kmul, hx_array *c) {
     throw("failed to allocate slice (%d, 1)-array", b->d);
 
   /* copy the array contents from the first operand to the destination. */
-  memcpy(c->x, a->x, a->len * sizeof(real));
+  if (a != c)
+    memcpy(c->x, a->x, a->len * sizeof(real));
 
   /* run the callback function over every vector along @kmul. */
   if (!hx_array_vector_op(c, kmul, &hx_array_mul_vector_cb, b, &ytmp))

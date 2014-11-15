@@ -359,13 +359,12 @@ int hx_array_fshift (hx_array *x, int k, real amount) {
   /* declare a few required variables:
    * @phi: scalar phasor entries in @ph.
    * @ph: linear phase adjustment array.
-   * @xtmp: temporary duplicate array.
    * @i: general-purpose loop counter.
    * @fi: fractional loop counter.
    * @n: shift dimension size.
    */
-  hx_array ph, xtmp;
   hx_scalar phi;
+  hx_array ph;
   int i, j, n;
   real fi;
 
@@ -403,24 +402,17 @@ int hx_array_fshift (hx_array *x, int k, real amount) {
     memcpy(ph.x + ph.n * j, phi.x, ph.n * sizeof(real));
   }
 
-  /* allocate a temporary duplicate array. */
-  if (!hx_array_copy(&xtmp, x))
-    throw("failed to allocate duplicate array");
-
   /* forward Fourier-transform the vectors. */
-  if (!hx_array_fft(&xtmp, k, k))
+  if (!hx_array_fft(x, k, k))
     throw("failed to apply forward fft");
 
   /* perform the scaling. */
-  if (!hx_array_mul_vector(&xtmp, &ph, k, x))
+  if (!hx_array_mul_vector(x, &ph, k, x))
     throw("failed to apply linear phase");
 
   /* inverse Fourier-transform the vectors. */
   if (!hx_array_ifft(x, k, k))
     throw("failed to apply inverse fft");
-
-  /* free the temporary duplicate array. */
-  hx_array_free(&xtmp);
 
   /* free the linear phase array. */
   hx_scalar_free(&phi);
