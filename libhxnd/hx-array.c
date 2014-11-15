@@ -991,7 +991,7 @@ int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper) {
  * @k: array dimension to slice along.
  * @loc: off-dimension slice origin.
  */
-int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int *loc) {
+int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int loc) {
   /* declare a few required variables:
    * @i: a loop counter used during slicing and index setup.
    * @n: size of the sliced dimension, length of the output array.
@@ -1011,10 +1011,6 @@ int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int *loc) {
   ncpy = x->n * sizeof(real);
   n = x->sz[k];
 
-  /* pack the off-dimension slice origin into a linear index. */
-  loc[k] = 0;
-  hx_array_index_pack(x->k, x->sz, loc, &idx);
-
   /* compute the stride for passing along the slice dimension. */
   for (i = 0, stride = 1; i < k; i++)
     stride *= x->sz[i];
@@ -1027,7 +1023,7 @@ int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int *loc) {
     throw("failed to allocate slice destination array");
 
   /* copy the scalar values into the (vector) output array. */
-  for (i = 0; i < n; i++, idx += stride)
+  for (i = 0, idx = loc; i < n; i++, idx += stride)
     memcpy(y->x + y->n * i, x->x + x->n * idx, ncpy);
 
   /* return success. */
@@ -1037,7 +1033,7 @@ int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int *loc) {
 /* hx_array_store_vector(): store a linear section from an array, essentially
  * the reverse operation of hx_array_slice_vector().
  */
-int hx_array_store_vector (hx_array *x, hx_array *y, int k, int *loc) {
+int hx_array_store_vector (hx_array *x, hx_array *y, int k, int loc) {
   /* declare a few required variables. */
   int i, n, ncpy, idx, stride;
 
@@ -1051,10 +1047,6 @@ int hx_array_store_vector (hx_array *x, hx_array *y, int k, int *loc) {
   ncpy = x->n * sizeof(real);
   n = x->sz[k];
 
-  /* pack the off-dimension slice origin into a linear index. */
-  loc[k] = 0;
-  hx_array_index_pack(x->k, x->sz, loc, &idx);
-
   /* compute the stride for passing along the slice dimension. */
   for (i = 0, stride = 1; i < k; i++)
     stride *= x->sz[i];
@@ -1064,7 +1056,7 @@ int hx_array_store_vector (hx_array *x, hx_array *y, int k, int *loc) {
     throw("source-destination array configuration mismatch");
 
   /* copy the scalar values into the (vector) output array. */
-  for (i = 0; i < n; i++, idx += stride)
+  for (i = 0, idx = loc; i < n; i++, idx += stride)
     memcpy(x->x + x->n * idx, y->x + y->n * i, ncpy);
 
   /* return success. */
@@ -1112,7 +1104,7 @@ int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
     hx_array_index_pack(x->k, x->sz, arr, &idx);
 
     /* slice the currently indexed vector from the array. */
-    if (!hx_array_slice_vector(x, &y, k, arr))
+    if (!hx_array_slice_vector(x, &y, k, idx))
       throw("failed to slice vector %d", slice);
 
     /* initialize the variable arguments list. */
@@ -1126,7 +1118,7 @@ int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
     va_end(vl);
 
     /* store the modified sliced vector back into the array. */
-    if (!hx_array_store_vector(x, &y, k, arr))
+    if (!hx_array_store_vector(x, &y, k, idx))
       throw("failed to store vector %d", slice);
 
     /* increment the slice index. */

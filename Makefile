@@ -1,7 +1,7 @@
 
 # CC, CFLAGS, LD: compilation and linkage flags.
 CC=gcc
-CFLAGS=-g -O2 -std=c99 -Wall -Wformat -I.
+CFLAGS=-g -O2 -std=c99 -Wall -Wformat -I. -fopenmp
 LIBS=-lm
 
 # LIBSRC: library source basenames.

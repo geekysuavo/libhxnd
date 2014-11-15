@@ -117,9 +117,9 @@ int hx_array_compact (hx_array *x);
 
 int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper);
 
-int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int *loc);
+int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int loc);
 
-int hx_array_store_vector (hx_array *x, hx_array *y, int k, int *loc);
+int hx_array_store_vector (hx_array *x, hx_array *y, int k, int loc);
 
 int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...);
 

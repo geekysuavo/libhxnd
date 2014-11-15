@@ -33,6 +33,9 @@
 #include <string.h>
 #include <math.h>
 
+/* include the openmp library header. */
+#include <omp.h>
+
 /* define 'pi' if needed. */
 #ifndef M_PI
 #define M_PI 3.1415926539

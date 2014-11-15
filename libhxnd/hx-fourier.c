@@ -77,20 +77,15 @@ unsigned int hx_nextpow2 (unsigned int value) {
 }
 
 /* hx_array_fft1d(): computes an in-place radix-2 fast fourier transform
- * of a hypercomplex one-dimensional array.
- *
- * args:
- *  see hx_array_vector_cb().
- *
- * varargs:
- *  @d: dimension to transform.
- *  @dir: direction of transformation.
- *  @w: preallocated hypercomplex scalar.
- *  @swp: preallocated hypercomplex scalar.
+ * of a hypercomplex one-dimensional (vector) array.
+ * @y: pointer to the array structure to transform.
+ * @d: dimension to transform.
+ * @dir: direction of transformation.
+ * @w: preallocated hypercomplex scalar.
+ * @swp: preallocated hypercomplex scalar.
  */
-int hx_array_fft1d (hx_array *x, hx_array *y,
-                    int *arr, int idx,
-                    va_list *vl) {
+int hx_array_fft1d (hx_array *y, int d, real dir,
+                    hx_scalar *w, hx_scalar *swp) {
   /* declare a few required variables:
    * @i, @j, @k, @m: loop counters.
    * @n: array (scalar) element count.
@@ -102,12 +97,6 @@ int hx_array_fft1d (hx_array *x, hx_array *y,
    */
   int i, j, k, m, n, ncpy, step;
   real phi, *pxxi, *pxxik;
-
-  /* extract the varargs. */
-  int d = va_arg(*vl, int);
-  real dir = (real) va_arg(*vl, double);
-  hx_scalar *w = va_arg(*vl, hx_scalar*);
-  hx_scalar *swp = va_arg(*vl, hx_scalar*);
 
   /* compute the number of bytes per scalar and the number of scalars. */
   ncpy = y->n * sizeof(real);
@@ -193,13 +182,11 @@ int hx_array_fft1d (hx_array *x, hx_array *y,
  */
 int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
   /* declare a few required variables:
-   * @w: temporary array of twiddle factors.
-   * @swp: temporary array of intermediate results, swapped values.
-   * @nk: size of the transformation dimension.
-   * @arr: index array used during iteration.
-   * @xv: temporary vector for transformations.
+   * @ja: small array stride for skipped iteration.
+   * @jb: large array stride for skipped iteration.
+   * @jmax: maximum loop control value.
    */
-  hx_scalar w, swp;
+  int ja, jb, jmax;
 
   /* check that the dimensions are in bounds. */
   if (d < 0 || d >= x->d)
@@ -213,18 +200,58 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
   if (!hx_ispow2(x->sz[k]))
     throw("dimension %d is not a power of two size (%d)", k, x->sz[k]);
 
-  /* allocate temporary scalars for use in every transformation. */
-  if (!hx_scalar_alloc(&w, x->d) ||
-      !hx_scalar_alloc(&swp, x->d))
-    throw("failed to allocate temporary %d-scalars", x->d);
+  /* initialize the skipped iteration control variables. */
+  hx_array_index_jump_init(x->k, x->sz, k, &ja, &jb, &jmax);
 
-  /* run the fft1d() callback function over every vector along @k */
-  if (!hx_array_vector_op(x, k, &hx_array_fft1d, d, dir, &w, &swp))
-    throw("failed to execute fft1d");
+  /* create a team of threads to execute multiple parallel transforms. */
+  #pragma omp parallel
+  {
+    /* declare a few required variables:
+     * @w: temporary array of twiddle factors.
+     * @swp: temporary array of intermediate results, swapped values.
+     */
+    hx_array xv;
+    hx_scalar w, swp;
+    int j, idx, tid, tnum;
 
-  /* free the temporary scalars. */
-  hx_scalar_free(&w);
-  hx_scalar_free(&swp);
+    /* gain a handle on the thread index and number of threads. */
+    tnum = omp_get_num_threads();
+    tid = omp_get_thread_num();
+
+    /* allocate temporary scalars for use in every transformation. */
+    if (!hx_scalar_alloc(&w, x->d) ||
+        !hx_scalar_alloc(&swp, x->d))
+      raise("failed to allocate temporary %d-scalars", x->d);
+
+    /* allocate the slice destination vector array. */
+    if (!hx_array_alloc(&xv, x->d, 1, &(x->sz[k])))
+      raise("failed to allocate temporary (%d,1)-array", x->d);
+
+    /* distribute tasks to the team of threads. */
+    for (j = tid; j < jmax; j += tnum) {
+      /* compute the linear array index of the current vector. */
+      idx = hx_array_index_jump(j, ja, jb);
+
+      /* slice the currently indexed vector from the array. */
+      if (!hx_array_slice_vector(x, &xv, k, idx))
+        raise("failed to slice vector %d", j);
+
+      /* fourier transform the sliced vector array. */
+      if (!hx_array_fft1d(&xv, d, dir, &w, &swp))
+        raise("failed to execute vector fft %d", j);
+
+      /* store the modified sliced vector back into the array. */
+      if (!hx_array_store_vector(x, &xv, k, idx))
+        raise("failed to store vector %d", j);
+    }
+
+    /* free the slice destination array. */
+    hx_array_free(&xv);
+
+    /* free the temporary scalars. */
+    hx_scalar_free(&w);
+    hx_scalar_free(&swp);
+  }
 
   /* return success. */
   return 1;
