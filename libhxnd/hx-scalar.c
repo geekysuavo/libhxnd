@@ -115,30 +115,3 @@ int hx_scalar_resize (hx_scalar *x, int d) {
   return 1;
 }
 
-/* hx_scalar_phasor(): stores the values of a phasor in a hypercomplex scalar.
- * @x: a pointer to the scalar to modify.
- * @d: the dimension index to act upon.
- * @phi: the phase angle, in [0, 2 pi].
- */
-int hx_scalar_phasor (hx_scalar *x, int d, real phi) {
-  /* declare a required variable. */
-  int n;
-
-  /* check that the dimension index is valid. */
-  if (d < 0 || d >= x->d)
-    throw("algebraic dimension %d out of bounds [0,%d)", d, x->d);
-
-  /* compute the coefficient index for phasing. */
-  n = 1 << d;
-
-  /* zero the values of the coefficient array. */
-  memset(x->x, 0, x->n * sizeof(real));
-
-  /* store the 'real' and 'imaginary' phase factors. */
-  x->x[0] = cos(phi);
-  x->x[n] = sin(phi);
-
-  /* return success. */
-  return 1;
-}
-

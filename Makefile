@@ -4,10 +4,18 @@ CC=gcc
 CFLAGS=-g -O2 -std=c99 -Wall -Wformat -I. -fopenmp
 LIBS=-lm
 
-# LIBSRC: library source basenames.
-LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-cmp hx-arith hx-fourier
-LIBSRC+= hx-window trace opts str bytes nmr-datum nmr-bruker nmr-varian
-LIBSRC+= nmr-pipe fn fn-abs fn-add fn-cut fn-fft fn-ht fn-ist fn-phase
+# LIBSRC: library source basenames: hypercomplex data structures.
+LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-cmp hx-arith hx-phasor
+LIBSRC+= hx-fourier hx-window
+
+# LIBSRC: library source basenames: auxiliary library routines.
+LIBSRC+= trace opts str bytes
+
+# LIBSRC: library source basenames: nmr data formats.
+LIBSRC+= nmr-datum nmr-bruker nmr-varian nmr-pipe
+
+# LIBSRC: library source basenames: processing functions.
+LIBSRC+= fn fn-abs fn-add fn-cut fn-fft fn-ht fn-ist fn-phase
 LIBSRC+= fn-resize fn-scale fn-shift fn-window fn-zerofill
 
 # LIBOBJ: library object filenames.

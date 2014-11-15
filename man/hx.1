@@ -228,7 +228,28 @@ datum in order to reconstruct the imaginary component along a given dimension
 FIXME
 
 .SS phase
-FIXME
+The \fBphase\fR command applies a zero-order and first-order phase correction
+to the current datum along a given dimension \fID\fR.
+.TP
+\fBph0\fR (float) [0.0]
+zero-order phase correction value, in degrees.
+.TP
+\fBph1\fR (float) [0.0]
+first-order phase correction value, in degrees.
+.TP
+\fBpivot\fR (float) [0.5]
+pivot location for first-order phase corrections. the pivot range depends on
+whether \fBppm\fR or \fBhz\fR are set. by default, the pivot is unitless and
+ranges from zero to one over the spectral width.
+.TP
+\fBppm\fR (boolean) [false]
+interprets the pivot location as a value in parts per million when set.
+.TP
+\fBhz\fR (boolean) [false]
+interprets the pivot location as a value in Hertz when set.
+.TP
+\fBinverse\fR (boolean) [false]
+negates the specified phase correction values when set.
 
 .SS resize
 The \fBresize\fR command resizes the current datum by truncation and/or
