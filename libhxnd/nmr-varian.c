@@ -586,6 +586,13 @@ int varian_fill_datum (const char *dname, datum *D) {
     free(ord);
   }
 
+  /* build the schedule filename. */
+  snprintf(fname_parm, n_fname, "%s/nls.hdr_3", dname);
+
+  /* read the schedule file, if one exists. */
+  if (bytes_fexist(fname_parm) && !datum_read_sched(D, fname_parm))
+    throw("failed to read varian schedule");
+
   /* free the allocated filename strings. */
   D->fname = fname_data;
   free(fname_parm);

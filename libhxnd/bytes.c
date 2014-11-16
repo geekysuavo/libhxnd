@@ -153,6 +153,32 @@ void bytes_swap_general (uint8_t *bytes, unsigned int n, unsigned int sz) {
   }
 }
 
+/* bytes_fexist(): return whether the regular file @fname exists.
+ * @fname: the filename to check.
+ */
+int bytes_fexist (const char *fname) {
+  /* declare a required variable. */
+  int ret = 0;
+  FILE *fh;
+
+  /* open the input file. */
+  fh = fopen(fname, "rb");
+
+  /* check if the file was opened. */
+  if (fh) {
+    /* close the file and raise the return value. */
+    fclose(fh);
+    ret = 1;
+  }
+  else {
+    /* clear the error number. */
+    traceback_clear();
+  }
+
+  /* return the result. */
+  return ret;
+}
+
 /* bytes_size(): read the number of bytes in a specified file.
  * @fname: the input filename.
  */

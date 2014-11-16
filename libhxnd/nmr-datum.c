@@ -23,6 +23,10 @@
 /* include the nmr data header. */
 #include <hxnd/nmr-datum.h>
 
+/* declare a buffer size for reading bruker/varian schedule files.
+ */
+#define N_BUF  256
+
 /* define the number of (u64) members in the header and dimension sections of
  * binary datum files.
  */
@@ -103,6 +107,11 @@ void datum_init (datum *D) {
   D->dims = NULL;
   D->nd = 0;
 
+  /* initialize the sampling schedule. */
+  D->sched = NULL;
+  D->d_sched = 0;
+  D->n_sched = 0;
+
   /* initialize the group delay value. */
   D->grpdelay = 0.0;
 
@@ -121,6 +130,10 @@ void datum_free (datum *D) {
   /* free the dimensions array. */
   if (D->dims)
     free(D->dims);
+
+  /* free the sampling schedule. */
+  if (D->sched)
+    free(D->sched);
 
   /* free the array data. */
   datum_free_array(D);
@@ -913,6 +926,37 @@ int datum_reorder_dims (datum *D, int *order) {
   return 1;
 }
 
+/* datum_infill_array(): internally zero-fills the core array structure of an
+ * NMR datum to reflect the final Nyquist grid. if no datum dimensions are
+ * nonuniformly sampled, this routine has no effect.
+ * @D: pointer to the datum to manipulate.
+ *
+ * NOTE: this routine requires that D->dims[0].sz matches D->array.sz[0].
+ */
+int datum_infill_array (datum *D) {
+  /* declare a few required variables:
+   */
+  int nnus;
+  unsigned int d;
+
+  /* determine the number of nonuniform dimensions. */
+  for (d = 0, nnus = 0; d < D->nd; d++)
+    nnus += (D->dims[d].nus ? 1 : 0);
+
+  /* return successfully if all dimensions are uniform. */
+  if (nnus == 0)
+    return 1;
+
+  /* check that the datum contains a schedule array. */
+  if (D->sched == NULL || D->d_sched < 1 || D->n_sched < 1)
+    throw("datum contains no schedule array");
+
+  /* FIXME: implement datum_infill_array() */
+
+  /* return success. */
+  return 1;
+}
+
 /* datum_refactor_array(): repacks, infills and deinterlaces the core array
  * structure of an NMR datum until it's dimensionality and complexity agree
  * with the dimension parameter values.
@@ -947,8 +991,98 @@ int datum_refactor_array (datum *D) {
         throw("failed to complex-promote dimension %d", d);
     }
 
-    /* FIXME: implement infilling of nonuniformly sampled dimensions. */
+    /* infill nonuniformly sampled indirect dimensions. */
+    if (d == 0 && !datum_infill_array(D))
+      throw("failed to infill nonuniformly sampled dimensions");
   }
+
+  /* return success. */
+  return 1;
+}
+
+/* datum_read_sched(): reads a bruker/varian schedule file into the schedule
+ * array of a datum structure.
+ * @D: pointer to the datum structure to manipulate.
+ * @fname: the input filename.
+ */
+int datum_read_sched (datum *D, const char *fname) {
+  /* declare required variables:
+   * @buf: character buffer for reading lines.
+   * @tokv: array of token strings.
+   * @tokc: number of strings in @tokc.
+   * @d: number of schedule columns.
+   * @n: number of schedule rows.
+   * @i: general purpose loop index.
+   * @sched: output schedule array.
+   * @fh: input file handle.
+   */
+  char buf[N_BUF], **tokv;
+  unsigned int toki, tokc;
+  int d, n, i, *sched;
+  FILE *fh;
+
+  /* initialize the results. */
+  sched = NULL;
+  d = n = 0;
+
+  /* open the input file. */
+  fh = fopen(fname, "rb");
+
+  /* check that the input file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
+  /* initialize the array index. */
+  i = 0;
+
+  /* loop until we've read the entire file. */
+  while (!feof(fh)) {
+    /* read a new line from the file. */
+    if (fgets(buf, N_BUF, fh)) {
+      /* split the read line into tokens. */
+      tokv = strsplit(buf, " ", &tokc);
+
+      /* check that the split was successful. */
+      if (!tokv || tokc < 1)
+        throw("failed to split string '%s'", buf);
+
+      /* trim the token strings. */
+      strvtrim(tokv, tokc);
+
+      /* store/check the number of array elements. */
+      if (i == 0)
+        d = tokc;
+      else if (tokc != d)
+        throw("unexpected token count %d", tokc);
+
+      /* increment the row count. */
+      n++;
+
+      /* reallocate the schedule array. */
+      sched = (int*) realloc(sched, d * n * sizeof(int));
+
+      /* check that the reallocation succeeded. */
+      if (!sched)
+        throw("failed to reallocate schedule array");
+
+      /* loop over the tokens. */
+      for (toki = 0; toki < tokc; toki++, i++)
+        sched[i] = atoi(tokv[toki]);
+
+      /* free the string array. */
+      strvfree(tokv, tokc);
+    }
+  }
+
+  /* close the input file. */
+  fclose(fh);
+
+  /* store the identified array parameters. */
+  D->d_sched = d;
+  D->n_sched = n;
+
+  /* store the constructed schedule array. */
+  D->sched = sched;
 
   /* return success. */
   return 1;

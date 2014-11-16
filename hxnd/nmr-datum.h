@@ -92,6 +92,13 @@ typedef struct {
   datum_dim *dims;
   unsigned int nd;
 
+  /* @sched: array of sampled indices generated from a nonuniform schedule.
+   * @d_sched: number of values per sampled index in @sched.
+   * @n_sched: number of sampled indices in @sched.
+   */
+  int d_sched, n_sched;
+  int *sched;
+
   /* @grpdelay: bruker group delay correction value.
    */
   real grpdelay;
@@ -144,6 +151,8 @@ int datum_set_dim_parameter (datum *D, const char *name, unsigned int d,
 int datum_reorder_dims (datum *D, int *order);
 
 int datum_refactor_array (datum *D);
+
+int datum_read_sched (datum *D, const char *fname);
 
 int datum_read_array (datum *D);
 
