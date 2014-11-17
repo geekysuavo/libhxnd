@@ -935,9 +935,22 @@ int datum_reorder_dims (datum *D, int *order) {
  */
 int datum_infill_array (datum *D) {
   /* declare a few required variables:
+   * @i: loop counter for sampling schedule rows.
+   * @j: loop counter for sampling schedule columns.
+   * @idxi: input array linear index.
+   * @idxo: output array linear index.
+   * @arr: output array unpacked indices.
+   * @nnus: number of nonuniform dimensions.
+   * @ncpy: number of array points per sampled trace.
+   * @nbytes: number of bytes per sampled trace.
+   * @sznew: output array point count.
+   * @tdnew: output array unpacked sizes.
+   * @d: datum dimension loop counter.
+   * @anew: output array structure.
    */
-  int nnus;
+  int i, j, idxi, idxo, nnus, ncpy, nbytes, sznew, *tdnew, *arr;
   unsigned int d;
+  hx_array anew;
 
   /* determine the number of nonuniform dimensions. */
   for (d = 0, nnus = 0; d < D->nd; d++)
@@ -951,7 +964,79 @@ int datum_infill_array (datum *D) {
   if (D->sched == NULL || D->d_sched < 1 || D->n_sched < 1)
     throw("datum contains no schedule array");
 
-  /* FIXME: implement datum_infill_array() */
+  /* allocate a new size array to build the new array. */
+  tdnew = hx_array_index_alloc(D->nd);
+
+  /* check that the size array was allocated. */
+  if (!tdnew)
+    throw("failed to allocate %u indices", D->nd);
+
+  /* initialize the calculated values. */
+  sznew = ncpy = D->dims[0].sz;
+  tdnew[0] = D->dims[0].td;
+
+  /* loop over the datum dimensions to build the new size array. */
+  for (d = 1; d < D->nd; d++) {
+    /* compute the new time-domain point count. */
+    tdnew[d] = (D->dims[d].nus ? D->dims[d].tdunif : D->dims[d].td);
+
+    /* compute the number of points to copy per trace. */
+    ncpy *= (D->dims[d].cx ? 2 : 1);
+
+    /* compute the array length. */
+    sznew *= tdnew[d];
+  }
+
+  /* compute the number of bytes to copy per trace. */
+  nbytes = ncpy * D->array.n * sizeof(real);
+
+  /* allocate a new array to store the infilled values. */
+  if (!hx_array_alloc(&anew, D->array.d, D->array.k, &sznew))
+    throw("failed to allocate new (%d, %d)-array", D->array.d, D->array.k);
+
+  /* allocate a new index array for traversal. */
+  arr = hx_array_index_alloc(D->nd);
+
+  /* check that allocation was successful. */
+  if (!arr)
+    throw("failed to allocate %u indices", D->nd);
+
+  /* loop over the indices in the schedule. */
+  for (i = 0; i < D->n_sched; i++) {
+    /* build the current unpacked index array. */
+    for (j = 0, arr[0] = 0; j < D->d_sched; j++)
+      arr[j + 1] = D->sched[i * D->d_sched + j];
+
+    /* compute the input array index. */
+    idxi = i * ncpy * D->array.n;
+
+    /* compute the output array index. */
+    hx_array_index_pack(D->nd, tdnew, arr, &idxo);
+    idxo *= anew.n;
+
+    /* copy the current trace into the new array. */
+    memcpy(anew.x + idxo, D->array.x + idxi, nbytes);
+  }
+
+  /* replaced the datum array with the local infilled array. */
+  hx_array_free(&D->array);
+  hx_array_copy(&D->array, &anew);
+  hx_array_free(&anew);
+
+  /* store the new sizes in the datum dimensions. */
+  for (d = 1; d < D->nd; d++) {
+    /* store the time-domain size and lower the nus flag. */
+    D->dims[d].sz = D->dims[d].td = tdnew[d];
+    D->dims[d].nus = 0;
+
+    /* check if the dimension is complex. */
+    if (D->dims[d].cx)
+      D->dims[d].sz /= 2;
+  }
+
+  /* free the allocated index arrays. */
+  free(tdnew);
+  free(arr);
 
   /* return success. */
   return 1;

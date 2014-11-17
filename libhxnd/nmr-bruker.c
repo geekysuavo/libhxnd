@@ -465,7 +465,7 @@ int bruker_fill_datum (const char *dname, datum *D) {
     D->dims[d].offset = acqus_offs;
 
     /* determine if the dimension is nonuniformly subsampled. */
-    if (D->dims[d].tdunif && D->dims[d].td < D->dims[d].tdunif)
+    if (D->dims[d].tdunif && D->dims[d].td != D->dims[d].tdunif)
       D->dims[d].nus = 1;
 
     /* determine if the dimension is complex or real. */

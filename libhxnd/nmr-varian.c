@@ -424,10 +424,12 @@ int varian_fill_datum (const char *dname, datum *D) {
   char dstr[8];
 
   /* declare variables for parsing dimension parameters:
+   * @parm_npmax: number of Nyquist points for NLS data.
+   * @parm_np: number of sampled points.
    * @parmstr: parameter string.
    */
   real parm_swh, parm_sfrq, parm_rfp;
-  int parm_np, parm_phase[8];
+  int parm_np, parm_npmax, parm_phase[8];
   char parmstr[N_BUF];
 
   /* declare variables for parsing dimension ordering:
@@ -478,6 +480,14 @@ int varian_fill_datum (const char *dname, datum *D) {
           VARIAN_PARMTYPE_INT, parmstr, &parm_np) != 1)
       throw("failed to get %s from '%s'", parmstr, fname_parm);
 
+    /* parse the maximum number of points. */
+    parm_npmax = 0;
+    snprintf(parmstr, N_BUF, "n%cmax%s",
+             d > 0 ? 'i' : 'p',
+             d > 1 ? dstr : "");
+    varian_read_parms(fname_parm, 1,
+      VARIAN_PARMTYPE_INT, parmstr, &parm_npmax);
+
     /* parse the carrier base frequency. */
     snprintf(parmstr, N_BUF, "%cfrq%s", d > 0 ? 'd' : 's', d > 1 ? dstr : "");
     if (varian_read_parms(fname_parm, 1,
@@ -504,6 +514,7 @@ int varian_fill_datum (const char *dname, datum *D) {
 
     /* store the read parameters in the datum structure. */
     D->dims[d].td = D->dims[d].sz = parm_np;
+    D->dims[d].tdunif = parm_npmax;
 
     /* determine complexity based on dimension. */
     if (d == 0) {
@@ -522,6 +533,8 @@ int varian_fill_datum (const char *dname, datum *D) {
       if (parm_phase[0] > 1) {
         /* the dimension is complex. */
         D->dims[d].cx = 1;
+        D->dims[d].td *= 2;
+        D->dims[d].tdunif *= 2;
       }
     }
 
@@ -529,6 +542,10 @@ int varian_fill_datum (const char *dname, datum *D) {
     D->dims[d].carrier = parm_sfrq;
     D->dims[d].width = parm_swh;
     D->dims[d].offset = parm_rfp;
+
+    /* determine if the dimension is nonuniformly subsampled. */
+    if (D->dims[d].tdunif && D->dims[d].td != D->dims[d].tdunif)
+      D->dims[d].nus = 1;
   }
 
   /* check the ordering of the indirect dimensions. */
