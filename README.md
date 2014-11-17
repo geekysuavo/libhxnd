@@ -20,15 +20,19 @@ multidimensional arrays in libhxnd, as follows...
 
 The algebraic dimensionality of an array (or scalar) refers to the number of
 basis _phases_ used to represent the hypercomplex number. For example, a real
-number is _zero_-dimensional, because it contains no complex basis phases. On
-the other hand, a _two_-dimensional hypercomplex number contains two bases,
+number is _zero_-dimensional, because it contains no complex basis phases. A
+complex number is _one_-dimensional and contains a single basis phase:
+
+> x = a + b **u1**
+
+On the other hand, a _two_-dimensional hypercomplex number contains two bases,
 **u1** and **u2**. A generic two-dimensional hypercomplex number must then
 be represented by _four_ real coefficients, like so:
 
 > x = a + b **u1** + c **u2** + d **u1** **u2**
 
-A generic three-dimensional hypercomplex number will then require _eight_
-real coefficients:
+A generic three-dimensional hypercomplex number contains three bases, **u1**,
+**u2** and **u3**, and will require _eight_ real coefficients:
 
 > x = a + b **u1** + c **u2** + d **u1** **u2** + e **u3** + f **u1** **u3** +
 g **u2** **u3** + h **u1** **u2** **u3**
@@ -58,7 +62,7 @@ one for each dimension, _e.g._:
 
 Of course, the size of any dimension may just as easily be **one**, making
 that dimension effectively meaningless in the array. For example, an array
-of size _(1,1,8)_ is effectively the same as an array of size _(8)_.
+of size _(1,1,2,1,8,1)_ is effectively the same as an array of size _(2,8)_.
 
 ### Configuration
 
@@ -68,6 +72,14 @@ of the array. Only arrays having identical configurations may be added or
 multiplied element-wise without modification. Arrays having identical
 lengths (total number of elements) may be reshaped for element-wise
 arithmetic.
+
+## Representation of NMR data
+
+Because the `hx_array` data structure natively describes NMR data of any
+dimensionality, its use in representing such data files requires relatively
+few extra pieces of information. Thus, the `datum` structure in libhxnd is
+a fairly thin wrapper around the `hx_array` structure, holding per-dimension
+metadata such as spectral width, offset and carrier.
 
 ## More information
 
