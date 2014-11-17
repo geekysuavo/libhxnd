@@ -30,8 +30,8 @@ be represented by _four_ real coefficients, like so:
 A generic three-dimensional hypercomplex number will then require _eight_
 real coefficients:
 
-> x = a + b **u1** + c **u2** + d **u1** **u2** + e **u3** + f **u1** **u3**
-> + g **u2** **u3** + h **u1** **u2** **u3**
+> x = a + b **u1** + c **u2** + d **u1** **u2** + e **u3** + f **u1** **u3** +
+g **u2** **u3** + h **u1** **u2** **u3**
 
 More generally, the number of coefficients required to express a given
 hypercomplex number in _d_ dimensions is two to the power _d_.
