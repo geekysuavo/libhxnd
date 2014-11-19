@@ -21,43 +21,13 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_HX_H__
-#define __HXND_HX_H__
+#ifndef __HXND_HX_IST_H__
+#define __HXND_HX_IST_H__
 
-/* include required standard c library headers. */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <string.h>
-#include <math.h>
+/* function declarations: */
 
-/* include the openmp library header. */
-#include <omp.h>
+int hx_array_ist (hx_array *x, int dsched, int nsched, int *sched,
+                  int niter, real thresh);
 
-/* define 'pi' if needed. */
-#ifndef M_PI
-#define M_PI 3.1415926539
-#endif
-
-/* real: type definition of a real scalar floating-point value.
- */
-typedef float real;
-
-/* include the traceback header. */
-#include <hxnd/trace.h>
-
-/* include all hypercomplex math headers. */
-#include <hxnd/hx-algebra.h>
-#include <hxnd/hx-scalar.h>
-#include <hxnd/hx-index.h>
-#include <hxnd/hx-array.h>
-#include <hxnd/hx-cmp.h>
-#include <hxnd/hx-arith.h>
-#include <hxnd/hx-phasor.h>
-#include <hxnd/hx-fourier.h>
-#include <hxnd/hx-ist.h>
-
-#endif /* __HXND_HX_H__ */
+#endif /* __HXND_HX_IST_H__ */
 

@@ -34,6 +34,8 @@ int hx_data_zero (real *x, int n);
 
 int hx_data_norm (real *x, int d, int n);
 
+real hx_data_real_norm (real *x, int d, int n);
+
 int hx_data_negate_basis (real *x, int d, int n, int dneg);
 
 int hx_data_reorder_bases (real *x, int d, int n, int *order);

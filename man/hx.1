@@ -225,7 +225,15 @@ datum in order to reconstruct the imaginary component along a given dimension
 \fID\fR. If the datum contains imaginary values, they will be replaced.
 
 .SS ist
-FIXME
+The \fBist\fR command reconstructs all nonuniformly subsampled dimensions in
+the current datum using Iterative Soft Thresholding (\fIIST\fR).
+.TP
+\fBthresh\fR (float) [0.9]
+relative magnitude to use for soft frequency-domain thresholding at each
+iteration.
+.TP
+\fBiters\fR (integer) [200]
+number of iterations to perform.
 
 .SS phase
 The \fBphase\fR command applies a zero-order and first-order phase correction

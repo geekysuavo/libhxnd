@@ -892,15 +892,18 @@ int hx_array_compact (hx_array *x) {
   return 1;
 }
 
-/* hx_array_slice(): slices a portion of an array based on @lower and @upper
+/* hx_array_slicer(): slices a portion of an array based on @lower and @upper
  * index boundaries. the operation returns its output in a new array @y,
  * which should not be allocated prior to the slice.
  * @x: pointer to the input array.
  * @y: pointer to the output array.
  * @lower: the lower index bounds.
  * @upper: the upper index bounds.
+ * @dir: either HX_ARRAY_SLICER_SLICE or HX_ARRAY_SLICER_STORE.
  */
-int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper) {
+int hx_array_slicer (hx_array *x, hx_array *y,
+                     int *lower, int *upper,
+                     int dir) {
   /* declare a few required variables:
    * @i: general-purpose loop counter.
    * @xycmp: set high if @y needs allocation.
@@ -965,9 +968,25 @@ int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper) {
       for (i = 0; i < x->k; i++)
         arro[i] = arri[i] - lower[i];
 
-      /* linearize the output indices and copy the coefficient memory. */
+      /* linearize the output indices. */
       hx_array_index_pack(x->k, sznew, arro, &idxo);
-      memcpy(y->x + n * idxo, x->x + n * idxi, ncpy);
+
+      /* copy the coefficient memory. */
+      switch (dir) {
+        /* slice: x ==> y */
+        case HX_ARRAY_SLICER_SLICE:
+          memcpy(y->x + n * idxo, x->x + n * idxi, ncpy);
+          break;
+
+        /* store: x <== y */
+        case HX_ARRAY_SLICER_STORE:
+          memcpy(x->x + n * idxi, y->x + n * idxo, ncpy);
+          break;
+
+        /* other: no-op. */
+        default:
+          break;
+      }
     }
 
     /* incremenet the input array linear index. */

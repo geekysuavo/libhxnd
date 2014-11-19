@@ -29,6 +29,11 @@
  */
 #define HX_ARRAY_MAGIC  0x59525241444e5848
 
+/* define constants for forward (slice) and reverse (store) slicer operations.
+ */
+#define HX_ARRAY_SLICER_SLICE 0
+#define HX_ARRAY_SLICER_STORE 1
+
 /* hx_array: data type for nD arrays of hypercomplex nD numbers.
  *
  * all the above information still applies to arrays, but an extra layer of
@@ -107,7 +112,7 @@ int hx_array_deinterlace (hx_array *x);
 int hx_array_resize (hx_array *x, int d, int k, int *sz);
 
 #define hx_array_real(x) \
-    hx_array_resize((x), 0, (x)->k, (x)->sz);
+  hx_array_resize((x), 0, (x)->k, (x)->sz)
 
 int hx_array_reshape (hx_array *x, int k, int *sz);
 
@@ -115,7 +120,15 @@ int hx_array_repack (hx_array *x, int ndiv);
 
 int hx_array_compact (hx_array *x);
 
-int hx_array_slice (hx_array *x, hx_array *y, int *lower, int *upper);
+int hx_array_slicer (hx_array *x, hx_array *y,
+                     int *lower, int *upper,
+                     int dir);
+
+#define hx_array_slice(x, y, l, u) \
+  hx_array_slicer(x, y, l, u, HX_ARRAY_SLICER_SLICE)
+
+#define hx_array_store(x, y, l, u) \
+  hx_array_slicer(x, y, l, u, HX_ARRAY_SLICER_STORE)
 
 int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int loc);
 

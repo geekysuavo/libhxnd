@@ -337,3 +337,90 @@ int hx_array_index_sort (int k, int *order) {
   return 1;
 }
 
+/* hx_array_index_scheduled(): returns a list of packed linear indices
+ * locating the sampled elements of an array based on a schedule.
+ */
+int *hx_array_index_scheduled (int k, int *sz, int dsched, int nsched,
+                               int *sched) {
+  /* declare a few required variables. */
+  int i, j, nidx, *idx, *arr;
+
+  /* get the number of scheduled elements. */
+  nidx = nsched;
+
+  /* allocate the array of indices and a temporary array. */
+  idx = hx_array_index_alloc(nidx);
+  arr = hx_array_index_alloc(k);
+
+  /* check that allocation was successful. */
+  if (!idx || !arr) {
+    /* raise an exception. */
+    raise("failed to allocate %d+%d indices", nidx, k);
+    return NULL;
+  }
+
+  /* build the array of sampled indices. */
+  for (i = 0; i < nidx; i++) {
+    /* build the unpacked index array. */
+    for (j = 0; j < k; j++)
+      arr[j] = sched[i * dsched + j];
+
+    /* pack the index array into a linear index. */
+    hx_array_index_pack(k, sz, arr, idx + i);
+  }
+
+  /* return the indices. */
+  return idx;
+}
+
+/* hx_array_index_unscheduled(): returns a list of packed linear indices
+ * located the non-sampled elements of an array based on a schedule.
+ */
+int *hx_array_index_unscheduled (int k, int *sz, int dsched, int nsched,
+                                 int *sched) {
+  /* declare a few required variables. */
+  int i, iadj, j, ntotal, nidx, *idx, *idxinv;
+
+  /* get the number of total elements. */
+  for (i = 0, ntotal = 1; i < k; i++)
+    ntotal *= sz[i];
+
+  /* get the number of unscheduled elements. */
+  nidx = ntotal - nsched;
+
+  /* allocate the array of indices and a temporary array. */
+  idx = hx_array_index_alloc(nidx);
+
+  /* build the array of scheduled indices. */
+  idxinv = hx_array_index_scheduled(k, sz, dsched, nsched, sched);
+
+  /* check that allocation was successful. */
+  if (!idx || !idxinv) {
+    /* raise an exception. */
+    raise("failed to allocate %d+%d indices", nidx, nsched);
+    return NULL;
+  }
+
+  /* build the array of unsampled indices. */
+  for (i = 0, iadj = 0; i < ntotal; i++) {
+    /* search for the index in the sampled array. */
+    for (j = 0; j < nsched; j++) {
+      /* break if we find the index. */
+      if (idxinv[j] == i)
+        break;
+    }
+
+    /* check if the index has not been sampled. */
+    if (j >= nsched) {
+      /* store the index and increment the counter. */
+      idx[iadj++] = i;
+    }
+  }
+
+  /* free the scheduled index array. */
+  free(idxinv);
+
+  /* return the indices. */
+  return idx;
+}
+

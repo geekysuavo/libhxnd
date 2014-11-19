@@ -1025,9 +1025,8 @@ int datum_infill_array (datum *D) {
 
   /* store the new sizes in the datum dimensions. */
   for (d = 1; d < D->nd; d++) {
-    /* store the time-domain size and lower the nus flag. */
+    /* store the time-domain size. */
     D->dims[d].sz = D->dims[d].td = tdnew[d];
-    D->dims[d].nus = 0;
 
     /* check if the dimension is complex. */
     if (D->dims[d].cx)

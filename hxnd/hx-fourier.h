@@ -37,6 +37,9 @@ unsigned int hx_prevpow2 (unsigned int value);
 
 unsigned int hx_nextpow2 (unsigned int value);
 
+int hx_array_fft1d (hx_array *y, int d, real dir,
+                    hx_scalar *w, hx_scalar *swp);
+
 int hx_array_fftfn (hx_array *x, int d, int k, float dir);
 
 #define hx_array_fft(x, d, k) \

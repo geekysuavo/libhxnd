@@ -6,7 +6,7 @@ LIBS=-lm
 
 # LIBSRC: library source basenames: hypercomplex data structures.
 LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-cmp hx-arith hx-phasor
-LIBSRC+= hx-fourier hx-window
+LIBSRC+= hx-fourier hx-window hx-ist
 
 # LIBSRC: library source basenames: auxiliary library routines.
 LIBSRC+= trace opts str bytes

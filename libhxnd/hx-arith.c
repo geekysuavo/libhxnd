@@ -158,6 +158,31 @@ int hx_data_norm (real *x, int d, int n) {
   return 1;
 }
 
+/* hx_data_real_norm(): compute the norm of the raw array elements of a
+ * hypercomplex value, and return the result as a real number.
+ * @x: the raw array data of the input operand.
+ * @d: the algebraic dimensionality of the operand.
+ * @n: the number of array elements of the operand.
+ *
+ * operation:
+ *   nrm <= ||x||
+ *
+ * operands:
+ *   x: hypercomplex scalar.
+ */
+real hx_data_real_norm (real *x, int d, int n) {
+  /* declare a few required variables. */
+  real nrm;
+  int i;
+
+  /* loop over the array elements. */
+  for (i = 0, nrm = 0.0; i < n; i++)
+    nrm += x[i] * x[i];
+
+  /* return the norm. */
+  return sqrt(nrm);
+}
+
 /* hx_data_negate_basis(): negates the specified basis element of the raw
  * array elements of a hypercomplex value.
  * @x: the raw array data of the input operand.

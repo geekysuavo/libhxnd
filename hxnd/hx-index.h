@@ -51,5 +51,11 @@ int hx_array_index_bounded (int k, int *arr, int *lower, int *upper);
 
 int hx_array_index_sort (int k, int *order);
 
+int *hx_array_index_scheduled (int k, int *sz, int dsched, int nsched,
+                               int *sched);
+
+int *hx_array_index_unscheduled (int k, int *sz, int dsched, int nsched,
+                                 int *sched);
+
 #endif /* __HXND_HX_INDEX_H__ */
 

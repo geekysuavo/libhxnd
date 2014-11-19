@@ -26,8 +26,8 @@
 /* fn_argdef_ist: define all accepted arguments for the 'ist' function.
  */
 static const fn_args fn_argdef_ist[] = {
-  { "thresh", FN_ARGTYPE_FLOAT, "0.98" },
-  { "iters",  FN_ARGTYPE_INT,   "500" },
+  { "thresh", FN_ARGTYPE_FLOAT, "0.9" },
+  { "iters",  FN_ARGTYPE_INT,   "200" },
   { NULL, '\0', NULL }
 };
 
@@ -38,20 +38,41 @@ static const fn_args fn_argdef_ist[] = {
  * @args: function argument string.
  */
 int fn_execute_ist (datum *D, const int dim, const char *argstr) {
-  /* declare variables to hold argument values.
-   */
+  /* declare variables to hold argument values. */
   real thresh;
   int iters;
+
+  /* declare a few required variables. */
+  unsigned int d;
+  int nnus;
 
   /* parse the function argument string. */
   if (!fn_scan_args(argstr, fn_argdef_ist, &thresh, &iters))
     throw("failed to parse ist arguments");
 
-  /* check the dimension index. */
-  if (dim < 0 || dim >= D->nd)
-    throw("dimension index %d out of bounds [0,%u)", dim, D->nd);
+  /* check that no dimension was specified. */
+  if (dim >= 0)
+    throw("dimension index specification not supported");
 
-  /* FIXME: implement fn_execute_ist() */
+  /* count the number of nonuniform dimensions. */
+  for (d = 0, nnus = 0; d < D->nd; d++)
+    nnus += (D->dims[d].nus ? 1 : 0);
+
+  /* check that the nonuniform dimension indices match expectations:
+   * a. first dimension is uniformly sampled.
+   * b. all other dimensions are subsampled.
+   */
+  if (D->dims[0].nus || nnus != D->nd - 1)
+    throw("unexpected initial conditions for nus reconstruction");
+
+  /* check that the nonuniform dimension count matches the schedule. */
+  if (nnus != D->d_sched)
+    throw("unexpected nus dimension count (%d != %d)", nnus, D->d_sched);
+
+  /* execute the reconstruction. */
+  if (!hx_array_ist(&D->array, D->d_sched, D->n_sched,
+                    D->sched, iters, thresh))
+    throw("failed to perform ist reconstruction");
 
   /* return success. */
   return 1;
