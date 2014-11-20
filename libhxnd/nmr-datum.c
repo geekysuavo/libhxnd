@@ -581,9 +581,7 @@ int datum_fread (datum *D, FILE *fh, int read_array) {
    */
   if (buf[0] != NMR_DATUM_MAGIC) {
     /* no match. swap the bytes of each word. */
-    bytes_swap_general((uint8_t*) buf,
-                       n_buf * sizeof(uint64_t),
-                       sizeof(uint64_t));
+    bytes_swap((uint8_t*) buf, n_buf, sizeof(uint64_t));
 
     /* now check the magic word. */
     if (buf[0] != NMR_DATUM_MAGIC)
@@ -626,9 +624,7 @@ int datum_fread (datum *D, FILE *fh, int read_array) {
 
     /* swap the bytes, if required. */
     if (swapping)
-      bytes_swap_general((uint8_t*) buf,
-                         n_buf * sizeof(uint64_t),
-                         sizeof(uint64_t));
+      bytes_swap((uint8_t*) buf, n_buf, sizeof(uint64_t));
 
     /* unpack the dimension size parameters. */
     i = 0;

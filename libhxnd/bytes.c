@@ -120,19 +120,18 @@ void bytes_swap_u64 (uint64_t *x) {
   *x = BYTES_U64(b7, b6, b5, b4, b3, b2, b1, b0);
 }
 
-/* bytes_swap_general(): swaps the bytes of an arbitrarily-sized array of
- * words.
+/* bytes_swap(): swaps the bytes of an arbitrarily-sized array of words.
  * @bytes: array of bytes to reorder.
- * @n: number of bytes in the array.
+ * @n: number of words in the array.
  * @sz: size of each word, in bytes.
  */
-void bytes_swap_general (uint8_t *bytes, unsigned int n, unsigned int sz) {
+void bytes_swap (uint8_t *bytes, unsigned int n, unsigned int sz) {
   /* declare a few required variables:
    * @i, @j: loop counters.
    * @jmax: the @j-loop boundary.
    * @swp: the swapped byte value.
    */
-  unsigned int i, j, jmax;
+  unsigned int i, j, jmax, nbytes;
   uint8_t swp;
 
   /* compute the inner loop boundary. this is just a really slick way of
@@ -141,8 +140,11 @@ void bytes_swap_general (uint8_t *bytes, unsigned int n, unsigned int sz) {
    */
   jmax = ((sz + 1) & ~0x01) / 2;
 
+  /* compute the total number of bytes in the array. */
+  nbytes = n * sz;
+
   /* loop over the words, in byte units. */
-  for (i = 0; i < n; i += sz) {
+  for (i = 0; i < nbytes; i += sz) {
     /* loop over the bytes of the word. */
     for (j = 0; j < jmax; j++) {
       /* swap bytes. */
@@ -540,7 +542,7 @@ int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
   /* check if byte swaps are required. */
   if (!bytes_native(endianness) && wordsz > 1) {
     /* swap the bytes of each word. */
-    bytes_swap_general(bytes, nbytes, wordsz);
+    bytes_swap(bytes, nwords, wordsz);
   }
 
   /* allocate memory for a linear, real output array. */

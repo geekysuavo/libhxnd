@@ -345,9 +345,7 @@ int hx_array_fread (hx_array *x, FILE *fh) {
    */
   if (wd0[0] != HX_ARRAY_MAGIC) {
     /* no match. swap the bytes of each word. */
-    bytes_swap_general((uint8_t*) wd0,
-                       6 * sizeof(uint64_t),
-                       sizeof(uint64_t));
+    bytes_swap((uint8_t*) wd0, 6, sizeof(uint64_t));
 
     /* now check the magic word. */
     if (wd0[0] != HX_ARRAY_MAGIC)
@@ -388,9 +386,7 @@ int hx_array_fread (hx_array *x, FILE *fh) {
 
   /* byte-swap, if required. */
   if (swapping)
-    bytes_swap_general((uint8_t*) wd1,
-                       x->k * sizeof(uint64_t),
-                       sizeof(uint64_t));
+    bytes_swap((uint8_t*) wd1, x->k, sizeof(uint64_t));
 
   /* allocate memory for the dimension sizes array. */
   x->sz = (int*) calloc(x->k, sizeof(int));
@@ -416,9 +412,7 @@ int hx_array_fread (hx_array *x, FILE *fh) {
 
   /* byte-swap, if required. */
   if (swapping)
-    bytes_swap_general((uint8_t*) x->x,
-                       x->len * sizeof(real),
-                       sizeof(real));
+    bytes_swap((uint8_t*) x->x, x->len, sizeof(real));
 
   /* ensure that the d-dimensional shared multiplication table has been
    * initialized, and return failure if not.

@@ -71,11 +71,12 @@ int pipe_read_header (const char *fname, enum byteorder *endianness,
                       struct pipe_header *hdr) {
   /* declare a few required variables:
    */
-  unsigned int n_bytes;
+  unsigned int n_bytes, n_words;
   uint8_t *bytes;
 
   /* read in the file header bytes. */
   n_bytes = sizeof(struct pipe_header);
+  n_words = n_bytes / sizeof(float);
   bytes = bytes_read_block(fname, 0, n_bytes);
 
   /* check that the bytes were read successfully. */
@@ -90,7 +91,7 @@ int pipe_read_header (const char *fname, enum byteorder *endianness,
    */
   if (hdr->order != 0.0 && hdr->order != (float) PIPE_MAGIC) {
     /* swap the bytes of each word. */
-    bytes_swap_general(bytes, n_bytes, sizeof(float));
+    bytes_swap(bytes, n_words, sizeof(float));
 
     /* re-copy the bytes onto the structure. */
     memcpy(hdr, bytes, n_bytes);
