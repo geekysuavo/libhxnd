@@ -38,6 +38,9 @@
 #define NMR_DATUM_S_COMPLEX  0x0000000000000001
 #define NMR_DATUM_S_NUS      0x0000000000000002
 #define NMR_DATUM_S_FFT      0x0000000000000004
+#define NMR_DATUM_S_ALT      0x0000000000000008
+#define NMR_DATUM_S_NEG      0x0000000000000010
+#define NMR_DATUM_S_GENH     0x0000000000000020
 
 /* datum_type_def: datum type definition structure for holding all available
  * datum type names and values.
@@ -80,16 +83,28 @@ static const struct datum_type_def datum_types[] = {
  * the names, types and offets of each datum dimension structure member .
  */
 static const datum_dim_desc datum_dim_parms[] = {
-  { "sz",      'u', offsetof(datum_dim, sz) },
-  { "td",      'u', offsetof(datum_dim, td) },
-  { "tdunif",  'u', offsetof(datum_dim, tdunif) },
-  { "complex", 'u', offsetof(datum_dim, cx) },
-  { "nus",     'u', offsetof(datum_dim, nus) },
-  { "ft",      'u', offsetof(datum_dim, ft) },
-  { "carrier", 'f', offsetof(datum_dim, carrier) },
-  { "width",   'f', offsetof(datum_dim, width) },
-  { "offset",  'f', offsetof(datum_dim, offset) },
-  { "name",    's', offsetof(datum_dim, nuc) },
+  /* size parameters. */
+  { "sz",        'u', offsetof(datum_dim, sz) },
+  { "td",        'u', offsetof(datum_dim, td) },
+  { "tdunif",    'u', offsetof(datum_dim, tdunif) },
+
+  /* status flags. */
+  { "complex",   'u', offsetof(datum_dim, cx) },
+  { "nus",       'u', offsetof(datum_dim, nus) },
+  { "ft",        'u', offsetof(datum_dim, ft) },
+  { "alternate", 'u', offsetof(datum_dim, alt) },
+  { "negate",    'u', offsetof(datum_dim, neg) },
+  { "gradient",  'u', offsetof(datum_dim, genh) },
+
+  /* spectral parameters. */
+  { "carrier",   'f', offsetof(datum_dim, carrier) },
+  { "width",     'f', offsetof(datum_dim, width) },
+  { "offset",    'f', offsetof(datum_dim, offset) },
+
+  /* nucleus string. */
+  { "name",      's', offsetof(datum_dim, nuc) },
+
+  /* null-terminator. */
   { NULL, 'c', 0 }
 };
 
@@ -515,9 +530,12 @@ int datum_fwrite (datum *D, FILE *fh) {
 
     /* build the status word. */
     status = 0;
-    status |= (D->dims[d].cx ?  NMR_DATUM_S_COMPLEX : 0);
-    status |= (D->dims[d].nus ? NMR_DATUM_S_NUS : 0);
-    status |= (D->dims[d].ft ?  NMR_DATUM_S_FFT : 0);
+    status |= (D->dims[d].cx ?   NMR_DATUM_S_COMPLEX : 0);
+    status |= (D->dims[d].nus ?  NMR_DATUM_S_NUS : 0);
+    status |= (D->dims[d].ft ?   NMR_DATUM_S_FFT : 0);
+    status |= (D->dims[d].alt ?  NMR_DATUM_S_ALT : 0);
+    status |= (D->dims[d].neg ?  NMR_DATUM_S_NEG : 0);
+    status |= (D->dims[d].genh ? NMR_DATUM_S_GENH : 0);
 
     /* store the status word. */
     buf[i++] = status;
@@ -637,6 +655,9 @@ int datum_fread (datum *D, FILE *fh, int read_array) {
     D->dims[d].cx = (status & NMR_DATUM_S_COMPLEX ? 1 : 0);
     D->dims[d].nus = (status & NMR_DATUM_S_NUS ? 1 : 0);
     D->dims[d].ft = (status & NMR_DATUM_S_FFT ? 1 : 0);
+    D->dims[d].alt = (status & NMR_DATUM_S_ALT ? 1 : 0);
+    D->dims[d].neg = (status & NMR_DATUM_S_NEG ? 1 : 0);
+    D->dims[d].genh = (status & NMR_DATUM_S_GENH ? 1 : 0);
 
     /* unpack the spectral parameters. */
     D->dims[d].carrier = bytes_u64_to_real(buf[i++]);

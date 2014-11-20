@@ -60,8 +60,11 @@ typedef struct {
    * @cx: complex (1) or real (0).
    * @nus: nonuniform (1) or uniform (0).
    * @ft: frequency (1) or time (0) domain.
+   * @alt: sign alternation required (1) or not (0).
+   * @neg: imaginary negation required (1) or not (0).
+   * @genh: gradient-enhanced (1) or not (0).
    */
-  unsigned int cx, nus, ft;
+  unsigned int cx, nus, ft, alt, neg, genh;
 
   /* spectral parameters:
    */
