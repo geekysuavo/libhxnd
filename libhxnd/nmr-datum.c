@@ -535,6 +535,8 @@ int datum_fwrite (datum *D, FILE *fh) {
       throw("failed to write dimension %u", d);
   }
 
+  /* FIXME: implement schedule writing in datum_fwrite() */
+
   /* free the allocated buffer. */
   free(buf);
 
@@ -648,6 +650,8 @@ int datum_fread (datum *D, FILE *fh, int read_array) {
     /* unpack the nucleus string. */
     memcpy(D->dims[d].nuc, buf + (i++), sizeof(uint64_t));
   }
+
+  /* FIXME: implement schedule reading in datum_fread() */
 
   /* free the allocated buffer. */
   free(buf);
@@ -1051,6 +1055,12 @@ int datum_refactor_array (datum *D) {
    * @d: dimension loop counter.
    */
   unsigned int d;
+
+  /* FIXME: handle cases requiring sign alternation. */
+
+  /* FIXME: handle cases requiring imaginary negation. */
+
+  /* FIXME: handle cases requiring gradient-enhanced arithmetic. */
 
   /* check that the array has been allocated. */
   if (!D->array_alloc)

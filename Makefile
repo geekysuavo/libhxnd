@@ -51,7 +51,8 @@ again: clean all
 
 fixme:
 	@echo " FIXME"
-	@grep -RHni fixme hxnd/*.h libhxnd/*.c bin/*.[ch] man/*.[0-9]
+	@grep -RHni fixme hxnd/*.h libhxnd/*.c bin/*.[ch] man/*.[0-9] || \
+	 echo " No statements found"
 
 linecount:
 	@echo " WC"
