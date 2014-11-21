@@ -26,6 +26,10 @@
 /* include the byte-level data header. */
 #include <hxnd/bytes.h>
 
+/* define the number of (u64) members in the header of binary array files.
+ */
+#define HX_ARRAY_FWRITE_SZ_HDR  6
+
 /* hx_array_alloc(): allocate a hypercomplex array structure for a given
  * dimensionality. a pointer to the array structure is required by this
  * function.
@@ -282,7 +286,7 @@ int hx_array_fwrite (hx_array *x, FILE *fh) {
   int i, k;
 
   /* allocate memory for the header bytes. */
-  n_wd = x->k + 6;
+  n_wd = HX_ARRAY_FWRITE_SZ_HDR + x->k;
   wd = (uint64_t*) calloc(n_wd, sizeof(uint64_t));
 
   /* check that the array was allocated. */
@@ -333,11 +337,12 @@ int hx_array_fread (hx_array *x, FILE *fh) {
    * @k: dimension index.
    */
   unsigned int swapping;
-  uint64_t *wd1, wd0[6];
-  int i, k;
+  uint64_t *wd1, wd0[HX_ARRAY_FWRITE_SZ_HDR];
+  int i, k, n_read;
 
   /* read the first six words from the file. */
-  if (fread(wd0, sizeof(uint64_t), 6, fh) != 6)
+  n_read = fread(wd0, sizeof(uint64_t), HX_ARRAY_FWRITE_SZ_HDR, fh);
+  if (n_read != HX_ARRAY_FWRITE_SZ_HDR)
     throw("failed to read initial header words");
 
   /* check the first word in the header. if it does not match, then
@@ -345,11 +350,11 @@ int hx_array_fread (hx_array *x, FILE *fh) {
    */
   if (wd0[0] != HX_ARRAY_MAGIC) {
     /* no match. swap the bytes of each word. */
-    bytes_swap((uint8_t*) wd0, 6, sizeof(uint64_t));
+    bytes_swap((uint8_t*) wd0, HX_ARRAY_FWRITE_SZ_HDR, sizeof(uint64_t));
 
     /* now check the magic word. */
     if (wd0[0] != HX_ARRAY_MAGIC)
-      throw("invalid magic number 0x%08x", wd0[0]);
+      throw("invalid magic number 0x%016lx", wd0[0]);
 
     /* set the swapping flag. */
     swapping = 1;

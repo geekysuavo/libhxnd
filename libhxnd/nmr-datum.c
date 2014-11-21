@@ -30,7 +30,7 @@
 /* define the number of (u64) members in the header and dimension sections of
  * binary datum files.
  */
-#define NMR_DATUM_FWRITE_SZ_HDR  4
+#define NMR_DATUM_FWRITE_SZ_HDR  6
 #define NMR_DATUM_FWRITE_SZ_DIM  8
 
 /* define bit field positions to store status flags in binary datum files.
@@ -487,11 +487,12 @@ int datum_fwrite (datum *D, FILE *fh) {
    * @buf: output header/dimension buffer.
    * @status: status word value.
    */
-  unsigned int i, d, n_buf;
+  unsigned int i, j, d, n_buf, n_sched;
   uint64_t *buf, status;
 
   /* allocate the header buffer. */
-  n_buf = NMR_DATUM_FWRITE_SZ_HDR;
+  n_sched = D->n_sched * D->d_sched;
+  n_buf = NMR_DATUM_FWRITE_SZ_HDR + n_sched;
   buf = (uint64_t*) calloc(n_buf, sizeof(uint64_t));
 
   /* check that allocation succeeded. */
@@ -504,6 +505,12 @@ int datum_fwrite (datum *D, FILE *fh) {
   buf[i++] = (uint64_t) D->endian;
   buf[i++] = (uint64_t) DATUM_TYPE_HXND;
   buf[i++] = (uint64_t) D->nd;
+  buf[i++] = (uint64_t) D->d_sched;
+  buf[i++] = (uint64_t) D->n_sched;
+
+  /* add the schedule values into the header. */
+  for (j = 0; j < n_sched; j++)
+    buf[i++] = (uint64_t) D->sched[j];
 
   /* write the file header. */
   if (fwrite(buf, sizeof(uint64_t), n_buf, fh) != n_buf)
@@ -553,8 +560,6 @@ int datum_fwrite (datum *D, FILE *fh) {
       throw("failed to write dimension %u", d);
   }
 
-  /* FIXME: implement schedule writing in datum_fwrite() */
-
   /* free the allocated buffer. */
   free(buf);
 
@@ -579,7 +584,7 @@ int datum_fread (datum *D, FILE *fh, int read_array) {
    * @buf: output header/dimension buffer.
    * @status: status word value.
    */
-  unsigned int i, d, n_buf, swapping;
+  unsigned int i, d, n_buf, n_sched, swapping;
   uint64_t *buf, status;
 
   /* allocate the header buffer. */
@@ -603,7 +608,7 @@ int datum_fread (datum *D, FILE *fh, int read_array) {
 
     /* now check the magic word. */
     if (buf[0] != NMR_DATUM_MAGIC)
-      throw("invalid magic word 0x%08x", buf[0]);
+      throw("invalid magic number 0x%016lx", buf[0]);
 
     /* set the swapping flag. */
     swapping = 1;
@@ -618,6 +623,43 @@ int datum_fread (datum *D, FILE *fh, int read_array) {
   D->endian = (enum byteorder) buf[i++];
   D->type = (enum datum_type) buf[i++];
   D->nd = (unsigned int) buf[i++];
+  D->d_sched = (int) buf[i++];
+  D->n_sched = (int) buf[i++];
+
+  /* check if any schedule was stored in the file. */
+  n_sched = D->n_sched * D->d_sched;
+  if (n_sched) {
+    /* allocate the schedule array. */
+    D->sched = hx_array_index_alloc(n_sched);
+
+    /* check that allocation succeeded. */
+    if (D->sched == NULL)
+      throw("failed to allocate %u schedule indices", n_sched);
+
+    /* reallocate the buffer to hold schedule values. */
+    n_buf = n_sched;
+    buf = (uint64_t*) realloc(buf, n_buf * sizeof(uint64_t));
+
+    /* check that allocation succeeded. */
+    if (!buf)
+      throw("failed to allocate schedule buffer");
+
+    /* read the schedule data. */
+    if (fread(buf, sizeof(uint64_t), n_buf, fh) != n_buf)
+      throw("failed to read schedule");
+
+    /* swap the bytes, if required. */
+    if (swapping)
+      bytes_swap((uint8_t*) buf, n_buf, sizeof(uint64_t));
+
+    /* unpack the schedule values. */
+    for (i = 0; i < n_sched; i++)
+      D->sched[i] = (int) buf[i];
+  }
+  else {
+    /* null the schedule. */
+    D->sched = NULL;
+  }
 
   /* allocate the dimension array. */
   D->dims = (datum_dim*) calloc(D->nd, sizeof(datum_dim));
@@ -667,8 +709,6 @@ int datum_fread (datum *D, FILE *fh, int read_array) {
     /* unpack the nucleus string. */
     memcpy(D->dims[d].nuc, buf + (i++), sizeof(uint64_t));
   }
-
-  /* FIXME: implement schedule reading in datum_fread() */
 
   /* free the allocated buffer. */
   free(buf);
@@ -1257,6 +1297,7 @@ int datum_read_array (datum *D) {
   else if (D->type == DATUM_TYPE_HXND) {
     /* compute the offset where the array begins. */
     offset = NMR_DATUM_FWRITE_SZ_HDR;
+    offset += D->d_sched * D->n_sched;
     offset += D->nd * NMR_DATUM_FWRITE_SZ_DIM;
     offset *= sizeof(uint64_t);
 
