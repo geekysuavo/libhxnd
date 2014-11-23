@@ -255,7 +255,7 @@ int pipe_read (const char *fname, unsigned int n, hx_array *x) {
 
 /* pipe_interlace(): pipe-format files do not store their individual traces
  * as interlaced R,I,R,I..., but instead interlaces entire real traces and
- * imaginary traces. this fixes pipe's mistake so hx_array_deinterlace()
+ * imaginary traces. this fixes pipe's mistake so hx_array_complexify()
  * can operate on pipe data just like any other data type.
  * @x: pointer to the array to interlace.
  * @n: number of *complex* points per trace.

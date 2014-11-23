@@ -85,7 +85,10 @@ int bruker_check_dir (const char *dname) {
   /* free the filename string. */
   free(fname);
 
-  /* return success. */
+  /* clear any errors that may have popped up. */
+  traceback_clear();
+
+  /* return the result. */
   return (have_acqus && (have_fid || have_ser));
 }
 

@@ -73,7 +73,10 @@ int varian_check_dir (const char *dname) {
   /* free the filename string. */
   free(fname);
 
-  /* return success. */
+  /* clear any errors that may have popped up. */
+  traceback_clear();
+
+  /* return the result. */
   return (have_procpar && have_fid);
 }
 /* varian_read_parms(): read any number of parameters from a varian

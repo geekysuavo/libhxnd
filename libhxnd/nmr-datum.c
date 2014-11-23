@@ -1113,12 +1113,6 @@ int datum_refactor_array (datum *D) {
    */
   unsigned int d;
 
-  /* FIXME: handle cases requiring sign alternation. */
-
-  /* FIXME: handle cases requiring imaginary negation. */
-
-  /* FIXME: handle cases requiring gradient-enhanced arithmetic. */
-
   /* check that the array has been allocated. */
   if (!D->array_alloc)
     throw("array is unallocated");
@@ -1131,9 +1125,9 @@ int datum_refactor_array (datum *D) {
 
     /* check if the current dimension is complex. */
     if (D->dims[d].cx) {
-      /* de-interlace this dimension. */
-      if (!hx_array_deinterlace(&D->array))
-        throw("failed to deinterlace complex dimension %d", d);
+      /* complexify this dimension. */
+      if (!hx_array_complexify(&D->array, D->dims[d].genh))
+        throw("failed to complexify dimension %d", d);
     }
     else {
       /* increment the dimensionality without de-interlacing. */
@@ -1145,6 +1139,17 @@ int datum_refactor_array (datum *D) {
     /* infill nonuniformly sampled indirect dimensions. */
     if (d == 0 && !datum_infill_array(D))
       throw("failed to infill nonuniformly sampled dimensions");
+  }
+
+  /* handle post-refactor array tweaking operations. */
+  for (d = 0; d < D->nd; d++) {
+    /* if necessary, apply sign alternation. */
+    if (D->dims[d].alt && !hx_array_alternate_sign(&D->array, d))
+      throw("failed to sign-alternate dimension %d", d);
+
+    /* if necessary, apply imaginary negation. */
+    if (D->dims[d].neg && !hx_array_negate_basis(&D->array, d))
+      throw("failed to negate imaginary dimension %d", d);
   }
 
   /* return success. */

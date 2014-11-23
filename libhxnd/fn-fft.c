@@ -52,7 +52,7 @@ int fn_execute_fft (datum *D, const int dim, const char *argstr) {
     throw("dimension index %d out of bounds [0,%u)", dim, D->nd);
 
   /* handle the 'alternate' option. */
-  if (alt && !hx_array_alternate_sign(&D->array))
+  if (alt && !hx_array_alternate_sign(&D->array, dim))
     throw("failed to apply alternating sign");
 
   /* handle the 'negate' option. */

@@ -74,7 +74,7 @@ int hx_array_zero (hx_array *a);
 
 int hx_array_norm (hx_array *a);
 
-int hx_array_alternate_sign (hx_array *a);
+int hx_array_alternate_sign (hx_array *x, int k);
 
 int hx_array_negate_basis (hx_array *x, int dneg);
 

@@ -540,7 +540,45 @@ int hx_array_is_cube (hx_array *x) {
   return (hx_array_nnzdims(x) == 3);
 }
 
-/* hx_array_deinterlace(): convert the largest dimension (the last index) of
+/* hx_array_interlace_block(): interlace the values from the first and second
+ * halves of a block of coefficients into alternating values from each block.
+ * @x: the coefficient array to interlace.
+ * @buf: preallocated array the same size as @x.
+ * @n: the number of hypercomplex scalars in the array.
+ * @w: the width of each hypercomplex scalar, in reals.
+ */
+int hx_array_interlace_block (real *x, real *buf, int n, int w) {
+  /* declare a few required variables:
+   * @nbytes: number of bytes per scalar.
+   */
+  int i, ibufR, ibufI, ixR, ixI, nbytes;
+
+  /* compute the number of bytes to copy per scalar value. */
+  nbytes = w * sizeof(real);
+
+  /* duplicate the block into the temporary buffer. */
+  memcpy(buf, x, n * nbytes);
+
+  /* loop over the array halves. */
+  for (i = 0; i < n / 2; i++) {
+    /* compute the source array indices. */
+    ibufR = w * i;
+    ibufI = w * (i + n / 2);
+
+    /* compute the destination array indices. */
+    ixR = w * (2 * i);
+    ixI = w * (2 * i + 1);
+
+    /* copy the coefficients. */
+    memcpy(x + ixR, buf + ibufR, nbytes);
+    memcpy(x + ixI, buf + ibufI, nbytes);
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_complexify(): convert the highest dimension (the last index) of
  * an array to the next level of algebraic dimensionality (i.e. x->d++). for
  * example, perform:
  *
@@ -564,19 +602,32 @@ int hx_array_is_cube (hx_array *x) {
  * contains the next set of coefficients for the extra algebraic dimensions
  * created by promotion to the next greatest dimensionality.
  */
-int hx_array_deinterlace (hx_array *x) {
+int hx_array_complexify (hx_array *x, int genh) {
   /* declare a few required variables:
    * @ktop: the (topmost) array dimension to act upon.
-   * @dnew: the new algebraic dimensionality of the array.
-   * @i: a general-purpose dim/coefficient loop counter.
-   * @di: coefficient index offset during reshuffling.
-   * @arri: the input index array.
-   * @arro: the output index array.
-   * @sznew: the new size array.
-   * @idxi: the input linear index.
-   * @idxo: the output linear index.
+   * @sztop: the size of the topmost array dimension.
+   * @nelem: the number of scalars in the array.
+   * @nblk: the number of blocks to complex-promote.
+   * @szblk: the number of scalar values per block.
+   * @i: the block loop counter.
+   * @j: the coefficient loop counter.
+   * @buf: temporary array for each block.
    */
-  int ktop, dnew, i, di, *arri, *arro, *sznew, idxi, idxo;
+  int ktop, sztop, nelem, nblk, szblk, i, j;
+  real *buf;
+
+  /* treat the one-dimensional (vector) array case here. in this sole
+   * instance, the coefficients are already in (r,i,r,i,...) order
+   */
+  if (x->k == 1) {
+    /* adjust the array configuration. */
+    x->d++;
+    x->n *= 2;
+    x->sz[0] /= 2;
+
+    /* return success. */
+    return 1;
+  }
 
   /* get the topmost array dimension. */
   ktop = x->k - 1;
@@ -585,85 +636,53 @@ int hx_array_deinterlace (hx_array *x) {
   if (ktop < 0)
     throw("topmost dimension %d is invalid", ktop);
 
+  /* get the size of the topmost array dimension. */
+  sztop = x->sz[ktop];
+
+  /* check that the topmost array dimension is large enough. */
+  if (sztop < 2)
+    throw("topmost dimension %d has insufficient size %d", ktop, sztop);
+
   /* check that the topmost array dimension size is divisible by two. */
-  if (x->sz[ktop] % 2)
-    throw("topmost dimension %d has odd size %d", ktop, x->sz[ktop]);
+  if (sztop % 2)
+    throw("topmost dimension %d has odd size %d", ktop, sztop);
 
-  /* allocate a new size array. */
-  sznew = hx_array_index_alloc(x->k);
+  /* get the number of blocks and the size of each block. */
+  nelem = x->len / x->n;
+  nblk = sztop / 2;
+  szblk = nelem / nblk;
 
-  /* check that allocation was successful. */
-  if (!sznew)
-    throw("failed to allocate %d indices", x->k);
+  /* allocate a temporary swap array for interlacing. */
+  buf = (real*) malloc(szblk * x->n * sizeof(real));
 
-  /* copy the current array sizes into the new size array. */
-  memcpy(sznew, x->sz, x->k * sizeof(int));
+  /* check that allocation succeeded. */
+  if (!buf)
+    throw("failed to allocate interlacing buffer");
 
-  /* get the new dimensionality of the array. */
-  dnew = x->d + 1;
+  /* loop over the blocks. */
+  for (i = 0, j = 0; i < nblk; i++, j += szblk * x->n) {
+    /* FIXME: handle gradient-enhanced arithmetic on a per-block basis. */
 
-  /* attempt to promote the array from real to complex. */
-  if (!hx_array_resize(x, dnew, x->k, sznew))
-    throw("failed to resize array to (%d, %d)", dnew, x->k);
+    /* interlace the block halves. */
+    if (!hx_array_interlace_block(x->x + j, buf, szblk, x->n))
+      throw("failed to interlace array block %d", i);
+  }
 
-  /* initialize a set of multidimensional index arrays. */
-  idxi = idxo = 0;
-  arri = hx_array_index_alloc(x->k);
-  arro = hx_array_index_alloc(x->k);
-  if (!arri || !arro)
-    throw("failed to allocate %d indices", x->k);
+  /* free the temporary swap array. */
+  free(buf);
 
-  /* iterate over the points of the array. */
-  do {
-    /* copy the relevant indices of the index array. */
-    for (i = 0; i < ktop; i++)
-      arro[i] = arri[i];
+  /* store the new dimensionality and coefficient count. */
+  x->d++;
+  x->n *= 2;
 
-    /* determine which set of coefficients we're on (i.e. 'odd' or 'even').
-     */
-    if (arri[ktop] % 2 == 0) {
-      /* even. this will copy the first half of the coefficients. */
-      arro[ktop] = arri[ktop] / 2;
-      di = 0;
-    }
-    else {
-      /* odd. this will copy the second half of the coefficients. */
-      arro[ktop] = (arri[ktop] - 1) / 2;
-      di = x->n / 2;
-    }
-
-    /* pack the destination index array into a linear index. */
-    hx_array_index_pack(x->k, sznew, arro, &idxo);
-
-    /* loop over the first half of the coefficients, copying their values
-     * into their final destinations.
-     */
-    for (i = 0; i < x->n / 2; i++)
-      x->x[i + di + x->n * idxo] = x->x[i + x->n * idxi];
-
-    /* increment the input linear index. */
-    idxi++;
-  } while (hx_array_index_incr(x->k, sznew, arri));
-
-  /* free the array indices. */
-  free(arri);
-  free(arro);
-
-  /* shrink the topmost array dimension by half. */
-  sznew[ktop] /= 2;
-
-  /* shrink the geometry of the array. */
-  if (!hx_array_resize(x, dnew, x->k, sznew))
-    throw("failed to resize array to (%d, %d)", dnew, x->k);
-
-  /* free the new size array. */
-  free(sznew);
+  /* store the new topmost size. */
+  x->sz[ktop] /= 2;
 
   /* return success. */
   return 1;
 }
 
-/* hx_array_resize(): change the dimensionality of a hypercomplex array.
+/* hx_array_resize(): change the configuration of a hypercomplex array.
  * @x: a pointer to the array to resize.
  * @d: the new algebraic dimensionality.
  * @k: the new topological dimensionality.

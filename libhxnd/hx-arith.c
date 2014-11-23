@@ -705,20 +705,45 @@ int hx_array_norm (hx_array *a) {
   return 1;
 }
 
-/* hx_array_alternate_sign(): negate every other scalar in a hypercomplex
- * array, in place.
- * @a: the structure pointer to the input operand.
+/* hx_array_alternate_sign_cb(): callback function for
+ * hx_array_alternate_sign().
+ *
+ * args:
+ *  see hx_array_vector_cb().
+ *
+ * varargs:
+ *  none.
  */
-int hx_array_alternate_sign (hx_array *a) {
+int hx_array_alternate_sign_cb (hx_array *x, hx_array *y,
+                                int *arr, int idx,
+                                va_list *vl) {
   /* declare a required variable. */
   int i;
 
   /* loop over the array elements. */
-  for (i = a->n; i < a->len; i += 2 * a->n) {
+  for (i = y->n; i < y->len; i += 2 * y->n) {
     /* perform the raw scalar data operation. */
-    if (!hx_data_add(NULL, a->x + i, a->x + i, -1.0, a->d, a->n))
+    if (!hx_data_add(NULL, y->x + i, y->x + i, -1.0, y->d, y->n))
       return 0;
   }
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_alternate_sign(): negate every other scalar in a hypercomplex
+ * array, in place, along a specified topological dimension.
+ * @x: the structure pointer to the input operand.
+ * @k: dimension along which alternation will be performed.
+ */
+int hx_array_alternate_sign (hx_array *x, int k) {
+  /* check that the shift dimension is in bounds. */
+  if (k < 0 || k >= x->k)
+    throw("alternation dimension %d out of bounds [0,%d)", k, x->k);
+
+  /* perform the per-vector sign alternation operation. */
+  if (!hx_array_vector_op(x, k, &hx_array_alternate_sign_cb))
+    throw("failed to perform alternation");
 
   /* return success. */
   return 1;

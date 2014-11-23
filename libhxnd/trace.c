@@ -69,18 +69,15 @@ void traceback_print (void) {
   /* loop over the traceback elements. */
   for (i = 0; i < n_tb; i++) {
     /* print the traceback line header. */
-    fprintf(stderr, "[%d] %s:%u:", i, tb[i].file, tb[i].line);
+    fprintf(stderr, "[%d] %s:%u:\n", i, tb[i].file, tb[i].line);
 
     /* check if a custom message was set at the time of the error. */
     if (tb[i].msg)
-      fprintf(stderr, " %s", tb[i].msg);
+      fprintf(stderr, "  %s\n", tb[i].msg);
 
     /* check if an error was set at the time of the error. */
     if (tb[i].num)
-      fprintf(stderr, " (%s)", strerror(tb[i].num));
-
-    /* print a newline. */
-    fprintf(stderr, "\n");
+      fprintf(stderr, "  (%s)\n", strerror(tb[i].num));
   }
 }
 
