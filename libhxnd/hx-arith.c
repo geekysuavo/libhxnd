@@ -113,6 +113,52 @@ int hx_data_mul (real *xa, real *xb, real *xc, int d, int n, hx_algebra tbl) {
   return 1;
 }
 
+/* hx_data_shuf(): shuffle the raw array elements of two hypercomplex values
+ * in order to extract true hypercomplex information from existing gradient-
+ * enhanced information.
+ * @xa: the raw array data of the first input operand.
+ * @xb: the raw array data of the second input operand.
+ * @xc: the raw array data of the first output operand.
+ * @xd: the raw array data of the second output operand.
+ * @xph: the raw array data of a temporary phasor.
+ *
+ * operation:
+ *   c <= (b + a)
+ *   d <= (b - a) * u_k
+ *
+ * operands:
+ *   a: hypercomplex scalar.
+ *   b: hypercomplex scalar.
+ *   c: hypercomplex scalar.
+ *   d: hypercomplex scalar.
+ *   ph: hypercomplex scalar.
+ *
+ * NOTE: this function may not be used to perform in-place shuffling.
+ */
+int hx_data_shuf (real *xa, real *xb, real *xc, real *xd,
+                  real *xph, real *xtmp, int d, int n,
+                  hx_algebra tbl) {
+  /* compute the sum. */
+  if (!hx_data_add(xb, xa, xc, 1.0, d, n))
+    return 0;
+
+  /* compute the difference. */
+  if (!hx_data_add(xb, xa, xtmp, -1.0, d, n))
+    return 0;
+
+  /* explicitly compute the phasor array values. */
+  hx_data_zero(xph, n);
+  xph[1 << (d - 1)] = 1.0;
+
+  /* phase-shift the difference. */
+  hx_data_zero(xd, n);
+  if (!hx_data_mul(xtmp, xph, xd, d, n, tbl))
+    return 0;
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_data_zero(): sets the raw coefficients of a hypercomplex value to zero.
  * @x: the raw array data of the input operand.
  * @n: the number of array elements of the operand.

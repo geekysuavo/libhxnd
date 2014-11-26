@@ -45,6 +45,7 @@
 #define FN_NAME_HT        "ht"
 #define FN_NAME_IST       "ist"
 #define FN_NAME_PHASE     "phase"
+#define FN_NAME_REAL      "real"
 #define FN_NAME_RESIZE    "resize"
 #define FN_NAME_SCALE     "scale"
 #define FN_NAME_SHIFT     "shift"

@@ -540,6 +540,55 @@ int hx_array_is_cube (hx_array *x) {
   return (hx_array_nnzdims(x) == 3);
 }
 
+/* hx_array_shuffle_block(): shuffle the values from the first and second
+ * havles of a block of coefficients to yield hypercomplex data from gradient
+ * enhanced data.
+ * @x: the coefficient array to shuffle.
+ * @buf: preallocated array the same size as @x.
+ * @d: the algebraic dimensionality of the array.
+ * @n: the width of each hypercomplex scalar, in reals.
+ * @len: the number of hypercomplex scalars in the array.
+ * @tbl: the hypercomplex multiplication table.
+ */
+int hx_array_shuffle_block (real *x, real *buf, int d, int n, int len,
+                            hx_algebra tbl) {
+  /* declare a few required variables:
+   * @i: main scalar element loop counter.
+   * @idxR: first-half array index.
+   * @idxI: second-half array index.
+   * @tmp, @ph: temporary scalars.
+   */
+  int i, idxR, idxI;
+  hx_scalar ph, tmp;
+
+  /* allocate the temporary scalars. */
+  if (!hx_scalar_alloc(&ph, d) ||
+      !hx_scalar_alloc(&tmp, d))
+    throw("failed to allocate temporary scalars");
+
+  /* duplicate the block into the temporary buffer. */
+  memcpy(buf, x, len * n * sizeof(real));
+
+  /* loop over the array halves. */
+  for (i = 0; i < len / 2; i++) {
+    /* compute the array indices. */
+    idxR = n * i;
+    idxI = n * (i + len / 2);
+
+    /* perform the raw scalar data shuffle operation. */
+    if (!hx_data_shuf(buf + idxR, buf + idxI, x + idxR, x + idxI,
+                      ph.x, tmp.x, d, n, tbl))
+      throw("failed to perform shuffle %d", i);
+  }
+
+  /* free the temporary scalars. */
+  hx_scalar_free(&ph);
+  hx_scalar_free(&tmp);
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_array_interlace_block(): interlace the values from the first and second
  * halves of a block of coefficients into alternating values from each block.
  * @x: the coefficient array to interlace.
@@ -549,6 +598,11 @@ int hx_array_is_cube (hx_array *x) {
  */
 int hx_array_interlace_block (real *x, real *buf, int n, int w) {
   /* declare a few required variables:
+   * @i: main scalar element loop counter.
+   * @ibufR: first-half buffer (input) index.
+   * @ibufI: second-half buffer (input) index.
+   * @ixR: first-half output index.
+   * @ixI: second-half output index.
    * @nbytes: number of bytes per scalar.
    */
   int i, ibufR, ibufI, ixR, ixI, nbytes;
@@ -625,6 +679,12 @@ int hx_array_complexify (hx_array *x, int genh) {
     x->n *= 2;
     x->sz[0] /= 2;
 
+    /* ensure that the d-dimensional shared multiplication table has been
+     * initialized, and return failure if not.
+     */
+    if (!(x->tbl = hx_algebras_get(x->d)))
+      throw("failed to retrieve %d-algebra", x->d);
+
     /* return success. */
     return 1;
   }
@@ -661,7 +721,12 @@ int hx_array_complexify (hx_array *x, int genh) {
 
   /* loop over the blocks. */
   for (i = 0, j = 0; i < nblk; i++, j += szblk * x->n) {
-    /* FIXME: handle gradient-enhanced arithmetic on a per-block basis. */
+    /* check if gradient-enhanced arithmetic is required. */
+    if (genh) {
+      /* perform gradient-enhanced arithmetic on the block. */
+      if (!hx_array_shuffle_block(x->x + j, buf, x->d, x->n, szblk, x->tbl))
+        throw("failed to shuffle array block %d", i);
+    }
 
     /* interlace the block halves. */
     if (!hx_array_interlace_block(x->x + j, buf, szblk, x->n))
@@ -677,6 +742,12 @@ int hx_array_complexify (hx_array *x, int genh) {
 
   /* store the new topmost size. */
   x->sz[ktop] /= 2;
+
+  /* ensure that the d-dimensional shared multiplication table has been
+   * initialized, and return failure if not.
+   */
+  if (!(x->tbl = hx_algebras_get(x->d)))
+    throw("failed to retrieve %d-algebra", x->d);
 
   /* return success. */
   return 1;

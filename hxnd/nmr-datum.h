@@ -49,6 +49,11 @@ enum datum_type {
 /* datum_dim: single dimension of parameters for acquired NMR data.
  */
 typedef struct {
+  /* array-datum correspondence parameters:
+   * @d: array algebraic dimension, or -1 for none.
+   */
+  int d;
+
   /* size parameters:
    * @sz: array of (actual) dimension sizes.
    * @td: array of (time-domain) dimension sizes.

@@ -23,28 +23,27 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_execute_abs(): compute the magnitude of the array of a datum structure.
+/* fn_argdef_real: define all accepted arguments for the 'real' function.
+ */
+static const fn_args fn_argdef_real[] = {
+  { NULL, '\0', NULL }
+};
+
+/* fn_execute_real(): drop imaginaries from the array of a datum structure.
  * @D: pointer to the datum to manipulate (in-place).
  * @dim: dimension of function application.
  * @args: function argument string.
  */
-int fn_execute_abs (datum *D, const int dim, const char *argstr) {
-  /* declare a required variable:
-   * @d: local copy of the dimension index.
-   */
-  unsigned int d;
-
-  /* check that no dimension was specified. */
-  if (dim >= 0)
-    throw("dimension index specification not supported");
-
-  /* compute the absolute value of the datum array. */
-  if (!hx_array_norm(&D->array))
-    throw("failed to compute absolute value");
-
-  /* loop over the dimensions, converting their status to real. */
-  for (d = 0; d < D->nd; d++)
-    D->dims[d].cx = 0;
+int fn_execute_real (datum *D, const int dim, const char *argstr) {
+  /* base function behaviour on the dimension index. */
+  if (dim < 0) {
+    /* FIXME: implement complete real compression. */
+  }
+  else if (dim < D->nd) {
+    /* FIXME: implement partial real compression. */
+  }
+  else
+    throw("dimension index %d out of bounds [0,%u)", dim, D->nd);
 
   /* return success. */
   return 1;

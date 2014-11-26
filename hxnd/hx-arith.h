@@ -30,6 +30,10 @@ int hx_data_add (real *xa, real *xb, real *xc, real s, int d, int n);
 
 int hx_data_mul (real *xa, real *xb, real *xc, int d, int n, hx_algebra tbl);
 
+int hx_data_shuf (real *xa, real *xb, real *xc, real *xd,
+                  real *xph, real *xtmp, int d, int n,
+                  hx_algebra tbl);
+
 int hx_data_zero (real *x, int n);
 
 int hx_data_norm (real *x, int d, int n);
