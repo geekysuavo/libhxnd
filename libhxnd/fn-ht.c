@@ -34,7 +34,7 @@ int fn_execute_ht (datum *D, const int dim, const char *argstr) {
     throw("dimension index %d out of bounds [0,%u)", dim, D->nd);
 
   /* execute the hilbert transform. */
-  if (!hx_array_ht(&D->array, dim, dim))
+  if (!hx_array_ht(&D->array, D->dims[dim].d, D->dims[dim].k))
     throw("failed to execute hilbert transform");
 
   /* return success. */

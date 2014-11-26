@@ -103,12 +103,12 @@ int fn_execute_shift (datum *D, const int dim, const char *argstr) {
     iamt = (int) famt;
 
     /* perform the integer shift. */
-    if (!hx_array_shift(&D->array, dim, iamt))
+    if (!hx_array_shift(&D->array, D->dims[dim].k, iamt))
       throw("failed to perform integer shift");
   }
   else {
     /* perform the fractional shift. */
-    if (!hx_array_fshift(&D->array, dim, famt))
+    if (!hx_array_fshift(&D->array, D->dims[dim].k, famt))
       throw("failed to perform fractional shift");
   }
 

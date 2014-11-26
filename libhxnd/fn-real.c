@@ -35,9 +35,18 @@ static const fn_args fn_argdef_real[] = {
  * @args: function argument string.
  */
 int fn_execute_real (datum *D, const int dim, const char *argstr) {
+  /* declare a required variable. */
+  unsigned int d;
+
   /* base function behaviour on the dimension index. */
   if (dim < 0) {
-    /* FIXME: implement complete real compression. */
+    /* drop all imaginary components from the array. */
+    if (!hx_array_real(&D->array))
+      throw("failed to drop imaginaries");
+
+    /* invalidate the algebraic dimension indices. */
+    for (d = 0; d < D->nd; d++)
+      D->dims[d].d = DATUM_DIM_INVALID;
   }
   else if (dim < D->nd) {
     /* FIXME: implement partial real compression. */

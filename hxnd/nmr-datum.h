@@ -35,6 +35,11 @@
  */
 #define NMR_DATUM_MAGIC  0x41544144444e5848
 
+/* define a value for datum core array dimension indices that indicates no
+ * corresponding array dimension exists.
+ */
+#define DATUM_DIM_INVALID  (-1)
+
 /* datum_type: enumerated type for datum raw byte data types.
  */
 enum datum_type {
@@ -51,8 +56,9 @@ enum datum_type {
 typedef struct {
   /* array-datum correspondence parameters:
    * @d: array algebraic dimension, or -1 for none.
+   * @k: array topological dimension. must be valid.
    */
-  int d;
+  int d, k;
 
   /* size parameters:
    * @sz: array of (actual) dimension sizes.

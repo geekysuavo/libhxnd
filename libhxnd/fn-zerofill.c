@@ -42,8 +42,9 @@ int fn_execute_zerofill (datum *D, const int dim, const char *argstr) {
    * @szv: new size values (with array count) for reshapes.
    * @szd: new size value for single-dimension operations.
    * @i: loop counter.
+   * @k: topological dimension index.
    */
-  int *sznew, nzf, i;
+  int *sznew, nzf, i, k;
   unsigned int n, nx;
 
   /* parse the function argument string. */
@@ -74,16 +75,23 @@ int fn_execute_zerofill (datum *D, const int dim, const char *argstr) {
     }
   }
   else if (dim < D->nd) {
+    /* get the topological dimension index. */
+    k = D->dims[dim].k;
+
+    /* check that the index is in bounds. */
+    if (k < 0 || k >= D->array.k)
+      throw("topological dimension %d out of bounds [0,%d)", k, D->array.k);
+
     /* copy the sizes from the current array. */
     for (i = 0; i < D->array.k; i++)
       sznew[i] = D->array.sz[i];
 
     /* compute the zero-filled value of the indexed dimension. */
-    n = sznew[dim];
+    n = sznew[k];
     n = (hx_ispow2(n) ? n : hx_nextpow2(n));
 
     /* set the new value. */
-    sznew[dim] = n * nx;
+    sznew[k] = n * nx;
   }
   else
     throw("dimension index %d out of bounds [0,%u)", dim, D->nd);

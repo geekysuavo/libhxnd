@@ -64,6 +64,10 @@ int hx_array_alloc (hx_array *x, int d, int k, int *sz) {
 
   /* store the values in the size array locally. */
   for (i = 0, len = x->n; i < x->k; i++) {
+    /* check that the size is valid. */
+    if (sz[i] < 1)
+      throw("dimension size %d (#%d) out of bounds [1,inf)", sz[i], i);
+
     /* store the size and multiply it into the total array length. */
     x->sz[i] = sz[i];
     len *= x->sz[i];
@@ -549,6 +553,8 @@ int hx_array_is_cube (hx_array *x) {
  * @n: the width of each hypercomplex scalar, in reals.
  * @len: the number of hypercomplex scalars in the array.
  * @tbl: the hypercomplex multiplication table.
+ *
+ * NOTE: this should only be called from hx_array_complexify().
  */
 int hx_array_shuffle_block (real *x, real *buf, int d, int n, int len,
                             hx_algebra tbl) {
@@ -595,6 +601,8 @@ int hx_array_shuffle_block (real *x, real *buf, int d, int n, int len,
  * @buf: preallocated array the same size as @x.
  * @n: the number of hypercomplex scalars in the array.
  * @w: the width of each hypercomplex scalar, in reals.
+ *
+ * NOTE: this should only be called from hx_array_complexify().
  */
 int hx_array_interlace_block (real *x, real *buf, int n, int w) {
   /* declare a few required variables:
@@ -655,6 +663,10 @@ int hx_array_interlace_block (real *x, real *buf, int n, int w) {
  * it is assumed that each alternating point in the topmost array dimension
  * contains the next set of coefficients for the extra algebraic dimensions
  * created by promotion to the next greatest dimensionality.
+ *
+ * arguments:
+ *  @x: pointer to the array to complexify, in-place.
+ *  @genh: whether to apply gradient-enhanced arithmetic.
  */
 int hx_array_complexify (hx_array *x, int genh) {
   /* declare a few required variables:
@@ -767,7 +779,7 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
 
   /* check if the specified dimensionalities are supported. */
   if (d < 0 || k < 1)
-    throw("dimensions (%d, %d) are invalid", d, k);
+    throw("dimensionalities (%d, %d) are invalid", d, k);
 
   /* compute the new number of coefficients. */
   n = 1 << d;
@@ -785,8 +797,14 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
     throw("failed to allocate %d indices", kmax);
 
   /* compute the final size of the new coefficients array. */
-  for (i = 0, len = n; i < k; i++)
+  for (i = 0, len = n; i < k; i++) {
+    /* check that the size is in bounds. */
+    if (sz[i] < 1)
+      throw("dimension size %d (#%d) out of bounds [1,inf)", sz[i], i);
+
+    /* multiply the size into the total length. */
     len *= sz[i];
+  }
 
   /* reallocate a brand new coefficients array. */
   xnew = (real*) calloc(len, sizeof(real));
@@ -871,9 +889,19 @@ int hx_array_reshape (hx_array *x, int k, int *sz) {
    */
   int i, newlen;
 
+  /* check that the dimensionality is in bounds. */
+  if (k < 1)
+    throw("invalid dimensionality %d", k);
+
   /* compute the new data array length. */
-  for (i = 0, newlen = x->n; i < k; i++)
+  for (i = 0, newlen = x->n; i < k; i++) {
+    /* check that the size is in bounds. */
+    if (sz[i] < 1)
+      throw("dimension size %d (#%d) out of bounds [1,inf)", sz[i], i);
+
+    /* multiply the size into the new total length. */
     newlen *= sz[i];
+  }
 
   /* check that the new length matches the old length. */
   if (newlen != x->len)
@@ -916,6 +944,10 @@ int hx_array_repack (hx_array *x, int ndiv) {
   /* check that the source dimension is tangible. */
   if (ksrc < 0)
     throw("source dimension %d is invalid", ksrc);
+
+  /* check that the target size is valid. */
+  if (ndiv < 1)
+    throw("target dimension size %d out of bounds [1,inf)", ndiv);
 
   /* check that the source dimension size is divisible by the number of
    * destination dimension points.

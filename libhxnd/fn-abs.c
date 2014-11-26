@@ -42,9 +42,18 @@ int fn_execute_abs (datum *D, const int dim, const char *argstr) {
   if (!hx_array_norm(&D->array))
     throw("failed to compute absolute value");
 
+  /* drop the imaginary datum array coefficients. */
+  if (!hx_array_real(&D->array))
+    throw("failed to drop imaginaries");
+
   /* loop over the dimensions, converting their status to real. */
-  for (d = 0; d < D->nd; d++)
+  for (d = 0; d < D->nd; d++) {
+    /* convert the dimension to real. */
     D->dims[d].cx = 0;
+
+    /* invalidate the array algebraic dimension. */
+    D->dims[d].d = DATUM_DIM_INVALID;
+  }
 
   /* return success. */
   return 1;

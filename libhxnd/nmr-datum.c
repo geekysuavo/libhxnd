@@ -30,8 +30,8 @@
 /* define the number of (u64) members in the header and dimension sections of
  * binary datum files.
  */
-#define NMR_DATUM_FWRITE_SZ_HDR  6
-#define NMR_DATUM_FWRITE_SZ_DIM  8
+#define NMR_DATUM_FWRITE_SZ_HDR   6
+#define NMR_DATUM_FWRITE_SZ_DIM  10
 
 /* define bit field positions to store status flags in binary datum files.
  */
@@ -521,8 +521,12 @@ int datum_fwrite (datum *D, FILE *fh) {
     /* zero the buffer memory. */
     memset(buf, 0, n_buf * sizeof(uint64_t));
 
-    /* store the size parameters. */
+    /* store the array dimension indices. */
     i = 0;
+    buf[i++] = (uint64_t) *((unsigned int*) &D->dims[d].d);
+    buf[i++] = (uint64_t) *((unsigned int*) &D->dims[d].k);
+
+    /* store the size parameters. */
     buf[i++] = (uint64_t) D->dims[d].sz;
     buf[i++] = (uint64_t) D->dims[d].td;
     buf[i++] = (uint64_t) D->dims[d].tdunif;
@@ -678,8 +682,12 @@ int datum_fread (datum *D, FILE *fh, int read_array) {
     if (swapping)
       bytes_swap((uint8_t*) buf, n_buf, sizeof(uint64_t));
 
-    /* unpack the dimension size parameters. */
+    /* unpack the array dimension indices. */
     i = 0;
+    D->dims[d].d = *((int*) (buf + (i++)));
+    D->dims[d].k = *((int*) (buf + (i++)));
+
+    /* unpack the dimension size parameters. */
     D->dims[d].sz = (unsigned int) buf[i++];
     D->dims[d].td = (unsigned int) buf[i++];
     D->dims[d].tdunif = (unsigned int) buf[i++];
@@ -1120,28 +1128,38 @@ int datum_refactor_array (datum *D) {
       /* complexify this dimension. */
       if (!hx_array_complexify(&D->array, D->dims[d].genh))
         throw("failed to complexify dimension %d", d);
+
+      /* set the algebraic dimension index. */
+      D->dims[d].d = D->array.d - 1;
     }
     else {
-      /* increment the dimensionality without de-interlacing. */
-      if (!hx_array_resize(&D->array,
-            D->array.d + 1, D->array.k, D->array.sz))
-        throw("failed to complex-promote dimension %d", d);
+      /* set /no/ algebraic dimension index. */
+      D->dims[d].d = DATUM_DIM_INVALID;
     }
 
     /* infill nonuniformly sampled indirect dimensions. */
     if (d == 0 && !datum_infill_array(D))
       throw("failed to infill nonuniformly sampled dimensions");
+
+    /* set the topological dimension index. */
+    D->dims[d].k = (int) d;
   }
 
   /* handle post-refactor array tweaking operations. */
   for (d = 0; d < D->nd; d++) {
-    /* if necessary, apply sign alternation. */
-    if (D->dims[d].alt && !hx_array_alternate_sign(&D->array, d))
-      throw("failed to sign-alternate dimension %d", d);
+    /* check if sign alternation is needed. */
+    if (D->dims[d].alt) {
+      /* apply sign alternation. */
+      if (!hx_array_alternate_sign(&D->array, D->dims[d].k))
+        throw("failed to sign-alternate dimension %d", D->dims[d].k);
+    }
 
-    /* if necessary, apply imaginary negation. */
-    if (D->dims[d].neg && !hx_array_negate_basis(&D->array, d))
-      throw("failed to negate imaginary dimension %d", d);
+    /* check if imaginary negation is needed. */
+    if (D->dims[d].neg) {
+      /* apply imaginary negation. */
+      if (!hx_array_negate_basis(&D->array, D->dims[d].d))
+        throw("failed to negate imaginary dimension %d", D->dims[d].d);
+    }
   }
 
   /* return success. */

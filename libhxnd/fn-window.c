@@ -156,7 +156,7 @@ int fn_execute_window (datum *D, const int dim, const char *argstr) {
     throw("failed to construct %s window", stype);
 
   /* perform a trace-wise multiplication by the window. */
-  if (!hx_array_mul_vector(&D->array, &wnd, ldim, &D->array))
+  if (!hx_array_mul_vector(&D->array, &wnd, D->dims[ldim].k, &D->array))
     throw("failed to perform window multiplication");
 
   /* free the allocated array. */

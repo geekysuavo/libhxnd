@@ -419,6 +419,10 @@ int hx_scalar_norm (hx_scalar *a) {
  * @dneg: the algebraic dimension to negate.
  */
 int hx_scalar_negate_basis (hx_scalar *x, int dneg) {
+  /* check that the algebraic dimension is in bounds. */
+  if (dneg < 0 || dneg >= x->d)
+    throw("algebraic dimension %d out of bounds [0,%d)", dneg, x->d);
+
   /* perform the raw data operation. */
   return hx_data_negate_basis(x->x, x->d, x->n, dneg);
 }
@@ -803,6 +807,10 @@ int hx_array_alternate_sign (hx_array *x, int k) {
 int hx_array_negate_basis (hx_array *x, int dneg) {
   /* declare a required variable. */
   int i;
+
+  /* check that the algebraic dimension is in bounds. */
+  if (dneg < 0 || dneg >= x->d)
+    throw("algebraic dimension %d out of bounds [0,%d)", dneg, x->d);
 
   /* loop over the array elements. */
   for (i = 0; i < x->len; i += x->n) {

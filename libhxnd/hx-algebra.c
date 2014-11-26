@@ -51,6 +51,10 @@ int hx_algebras_add (int d) {
   /* declare a few required variables. */
   int tij, i, j, k, n, nn, n_algebras_prev;
 
+  /* check that the dimensionality is in bounds. */
+  if (d < 0)
+    throw("dimensionality %d out of bounds [0,inf)", d);
+
   /* check if the algebras array is large enough. */
   if (n_algebras < d + 1) {
     /* not large enough. we need to expand it. */

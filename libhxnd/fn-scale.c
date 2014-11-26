@@ -104,7 +104,8 @@ int fn_execute_scale (datum *D, const int dim, const char *argstr) {
     hxscale.x[0] = f0;
 
     /* perform the first-point scaling. */
-    if (!hx_array_vector_op(&D->array, d, &fn_scale_first, &hxscale))
+    if (!hx_array_vector_op(&D->array, D->dims[d].k,
+                            &fn_scale_first, &hxscale))
       throw("failed to execute first-point scaling");
 
     /* free the allocated temporary scalar. */

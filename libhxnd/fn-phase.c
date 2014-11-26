@@ -50,7 +50,7 @@ int fn_execute_phase (datum *D, const int dim, const char *argstr) {
    * @szk: size of phase correction array dimension.
    */
   hx_array ph;
-  int szk;
+  int k, szk;
 
   /* parse the function argument string. */
   if (!fn_scan_args(argstr, fn_argdef_phase,
@@ -64,6 +64,10 @@ int fn_execute_phase (datum *D, const int dim, const char *argstr) {
   /* check that the dimension is frequency-domain. */
   if (!D->dims[dim].ft)
     throw("dimension %d is not frequency-domain", dim);
+
+  /* check that the dimension is complex. */
+  if (!D->dims[dim].cx)
+    throw("dimension %d is not complex", dim);
 
   /* check that no more than one unit was specified. */
   if (ppm && hz)
@@ -93,16 +97,17 @@ int fn_execute_phase (datum *D, const int dim, const char *argstr) {
   ph1 *= (M_PI / 180.0);
 
   /* allocate a temporary phase correction vector. */
-  szk = D->array.sz[dim];
+  k = D->dims[dim].k;
+  szk = D->array.sz[k];
   if (!hx_array_alloc(&ph, D->array.d, 1, &szk))
     throw("failed to allocate phasor array");
 
   /* compute the phase correction values. */
-  if (!hx_array_phasor(&ph, dim, ph0, ph1, piv))
+  if (!hx_array_phasor(&ph, D->dims[dim].d, ph0, ph1, piv))
     throw("failed to compute phasor array");
 
   /* perform the phase correction operation. */
-  if (!hx_array_mul_vector(&D->array, &ph, dim, &D->array))
+  if (!hx_array_mul_vector(&D->array, &ph, k, &D->array))
     throw("failed to execute phase correction");
 
   /* free the temporary arrays. */

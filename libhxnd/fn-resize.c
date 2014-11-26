@@ -92,8 +92,15 @@ int fn_execute_resize (datum *D, const int dim, const char *argstr) {
     for (i = 0; i < D->array.k; i++)
       sznew[i] = D->array.sz[i];
 
+    /* get the topological dimension index. */
+    i = D->dims[dim].k;
+
+    /* check that the index is in bounds. */
+    if (i < 0 || i >= D->array.k)
+      throw("topological index %d out of bounds [0,%d)", i, D->array.k);
+
     /* set the modified size. */
-    sznew[dim] = szd;
+    sznew[i] = szd;
   }
   else
     throw("dimension index %d out of bounds [0,%u)", dim, D->nd);
