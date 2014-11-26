@@ -46,6 +46,21 @@
 #define PIPE_HDRSTR_SZ_COMMENT  160
 #define PIPE_HDRSTR_SZ_TITLE     60
 
+/* define values that the @quad header variables may take in pipe files.
+ */
+#define PIPE_QUAD_COMPLEX  0
+#define PIPE_QUAD_REAL     1
+#define PIPE_QUAD_PSEUDO   2
+#define PIPE_QUAD_SE       3
+#define PIPE_QUAD_GE       4
+
+/* define values that the @aqsgn header variables may take in pipe files.
+ */
+#define PIPE_AQSGN_NONE  0
+#define PIPE_AQSGN_SEQ   1
+#define PIPE_AQSGN_ALT   2
+#define PIPE_AQSGN_NEG  16
+
 /* pipe_header: properly padded header of data contained in a pipe-format file.
  * pipe file headers are packed as 512 32-bit floating point numbers, some of
  * which are, in fact, characters.

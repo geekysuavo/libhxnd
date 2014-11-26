@@ -478,6 +478,8 @@ int bruker_fill_datum (const char *dname, datum *D) {
       D->dims[d].cx = 1;
       D->dims[d].sz /= 2;
     }
+
+    /* FIXME: set @alt, @neg and @genh from @acqus_aqmod, @acqus_fnmode */
   }
 
   /* check if the indirect dimensions were acquired in reverse order. */

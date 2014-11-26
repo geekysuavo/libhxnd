@@ -353,11 +353,29 @@ int pipe_fill_datum (const char *fname, datum *D) {
   for (d = 0; d < PIPE_MAXDIM; d++)
     ord[d] = hdr.dimorder[d] - 1;
 
-  /* store the quadrature flags. */
-  D->dims[ord[0]].cx = ((int) hdr.quad_f1 != 1);
-  D->dims[ord[1]].cx = ((int) hdr.quad_f2 != 1);
-  D->dims[ord[2]].cx = ((int) hdr.quad_f3 != 1);
-  D->dims[ord[3]].cx = ((int) hdr.quad_f4 != 1);
+  /* store the complex states from the quadrature flags. */
+  D->dims[ord[0]].cx = ((int) hdr.quad_f1 != PIPE_QUAD_REAL);
+  D->dims[ord[1]].cx = ((int) hdr.quad_f2 != PIPE_QUAD_REAL);
+  D->dims[ord[2]].cx = ((int) hdr.quad_f3 != PIPE_QUAD_REAL);
+  D->dims[ord[3]].cx = ((int) hdr.quad_f4 != PIPE_QUAD_REAL);
+
+  /* store the alternation states from the sign flags. */
+  D->dims[ord[0]].alt = ((int) hdr.aqsgn_f1 & PIPE_AQSGN_ALT ? 1 : 0);
+  D->dims[ord[1]].alt = ((int) hdr.aqsgn_f2 & PIPE_AQSGN_ALT ? 1 : 0);
+  D->dims[ord[2]].alt = ((int) hdr.aqsgn_f3 & PIPE_AQSGN_ALT ? 1 : 0);
+  D->dims[ord[3]].alt = ((int) hdr.aqsgn_f4 & PIPE_AQSGN_ALT ? 1 : 0);
+
+  /* store the negation states from the sign flags. */
+  D->dims[ord[0]].neg = ((int) hdr.aqsgn_f1 & PIPE_AQSGN_NEG ? 1 : 0);
+  D->dims[ord[1]].neg = ((int) hdr.aqsgn_f2 & PIPE_AQSGN_NEG ? 1 : 0);
+  D->dims[ord[2]].neg = ((int) hdr.aqsgn_f3 & PIPE_AQSGN_NEG ? 1 : 0);
+  D->dims[ord[3]].neg = ((int) hdr.aqsgn_f4 & PIPE_AQSGN_NEG ? 1 : 0);
+
+  /* store the gradient-enhanced states from the quadrature flags. */
+  D->dims[ord[0]].genh = ((int) hdr.quad_f1 == PIPE_QUAD_GE);
+  D->dims[ord[1]].genh = ((int) hdr.quad_f2 == PIPE_QUAD_GE);
+  D->dims[ord[2]].genh = ((int) hdr.quad_f3 == PIPE_QUAD_GE);
+  D->dims[ord[3]].genh = ((int) hdr.quad_f4 == PIPE_QUAD_GE);
 
   /* store the fourier-transform flags. */
   D->dims[ord[0]].ft = (unsigned int) hdr.ftflag_f1;

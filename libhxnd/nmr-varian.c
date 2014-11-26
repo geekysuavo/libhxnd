@@ -549,6 +549,8 @@ int varian_fill_datum (const char *dname, datum *D) {
     /* determine if the dimension is nonuniformly subsampled. */
     if (D->dims[d].tdunif && D->dims[d].td != D->dims[d].tdunif)
       D->dims[d].nus = 1;
+
+    /* FIXME: set @alt, @neg and @genh */
   }
 
   /* check the ordering of the indirect dimensions. */
