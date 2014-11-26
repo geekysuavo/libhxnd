@@ -539,6 +539,10 @@ int varian_fill_datum (const char *dname, datum *D) {
         D->dims[d].td *= 2;
         D->dims[d].tdunif *= 2;
       }
+      else if (parm_phase[0] == 1 && parm_phase[1] == 3) {
+        /* the dimension requires sign alternation. */
+        D->dims[d].alt = 1;
+      }
     }
 
     /* store the read spectral parameters in the datum structure. */
@@ -549,8 +553,6 @@ int varian_fill_datum (const char *dname, datum *D) {
     /* determine if the dimension is nonuniformly subsampled. */
     if (D->dims[d].tdunif && D->dims[d].td != D->dims[d].tdunif)
       D->dims[d].nus = 1;
-
-    /* FIXME: set @alt, @neg and @genh */
   }
 
   /* check the ordering of the indirect dimensions. */

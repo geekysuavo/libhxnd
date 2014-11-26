@@ -479,7 +479,16 @@ int bruker_fill_datum (const char *dname, datum *D) {
       D->dims[d].sz /= 2;
     }
 
-    /* FIXME: set @alt, @neg and @genh from @acqus_aqmod, @acqus_fnmode */
+    /* determine if the dimension requires sign alternation. */
+    if (d > 0 &&
+        (acqus_fnmode == BRUKER_FNMODE_QSEQ ||
+         acqus_fnmode == BRUKER_FNMODE_TPPI ||
+         acqus_fnmode == BRUKER_FNMODE_STATESTPPI))
+      D->dims[d].alt = 1;
+
+    /* determine if the dimension requires gradient arithmetic. */
+    if (d > 0 && acqus_fnmode == BRUKER_FNMODE_GRADIENT)
+      D->dims[d].genh = 1;
   }
 
   /* check if the indirect dimensions were acquired in reverse order. */
