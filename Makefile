@@ -15,7 +15,7 @@ LIBSRC+= trace opts str bytes
 LIBSRC+= nmr-datum nmr-bruker nmr-varian nmr-pipe
 
 # LIBSRC: library source basenames: processing functions.
-LIBSRC+= fn fn-abs fn-add fn-cut fn-fft fn-ht fn-ist fn-phase
+LIBSRC+= fn fn-abs fn-add fn-cut fn-fft fn-ht fn-ist fn-phase fn-real
 LIBSRC+= fn-resize fn-scale fn-shift fn-window fn-zerofill
 
 # LIBOBJ: library object filenames.

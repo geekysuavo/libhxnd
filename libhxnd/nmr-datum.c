@@ -276,14 +276,6 @@ int datum_print (datum *D, const char *fname) {
   /* print a newline. */
   fprintf(fh, "\n");
 
-  /* print the points count. */
-  fprintf(fh, "Total:    ");
-  for (d = 0; d < D->nd; d++)
-    fprintf(fh, "%15u", D->dims[d].td);
-
-  /* print a newline. */
-  fprintf(fh, "\n");
-
   /* print the carrier frequencies. */
   fprintf(fh, "Obs (MHz):");
   for (d = 0; d < D->nd; d++)

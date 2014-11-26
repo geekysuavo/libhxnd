@@ -90,6 +90,8 @@ int fn_execute_ist (datum *D, const int dim, const char *argstr);
 
 int fn_execute_phase (datum *D, const int dim, const char *argstr);
 
+int fn_execute_real (datum *D, const int dim, const char *argstr);
+
 int fn_execute_resize (datum *D, const int dim, const char *argstr);
 
 int fn_execute_scale (datum *D, const int dim, const char *argstr);
