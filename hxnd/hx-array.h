@@ -111,8 +111,7 @@ int hx_array_complexify (hx_array *x, int genh);
 
 int hx_array_resize (hx_array *x, int d, int k, int *sz);
 
-#define hx_array_real(x) \
-  hx_array_resize((x), 0, (x)->k, (x)->sz)
+int hx_array_real (hx_array *x, int d);
 
 int hx_array_reshape (hx_array *x, int k, int *sz);
 

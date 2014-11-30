@@ -876,7 +876,61 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
   return 1;
 }
 
-/* hx_array_reshape(): completely reshapes an array into a new dimensionality
+/* hx_array_real(): reduce the algebraic dimensionality of an array by
+ * removing either one or all imaginary basis elements from the coefficients.
+ * @x: pointer to the array to realify.
+ * @d: dimension index to remove, or negative for all.
+ */
+int hx_array_real (hx_array *x, int d) {
+  /* declare a few required variables:
+   * @i: general-purpose loop counter.
+   * @ord: new dimension ordering.
+   */
+  int i, *ord;
+
+  /* check if all dimensions are to be realified. */
+  if (d < 0) {
+    /* yes. remove all imaginary coefficients. */
+    return hx_array_resize(x, 0, x->k, x->sz);
+  }
+
+  /* check that the dimension index is in bounds. */
+  if (d >= x->d)
+    throw("dimension index %d out of bounds (-inf,%d)", x->d);
+
+  /* allocate a dimension ordering array. */
+  ord = hx_array_index_alloc(x->d);
+
+  /* check that allocation succeeded. */
+  if (!ord)
+    throw("failed to allocate %d indices", x->d);
+
+  /* build the ordering array. */
+  for (i = 0; i < x->d; i++)
+    ord[i] = i;
+
+  /* store an unsortable value in the dimension to be removed. */
+  ord[d] = x->d;
+
+  /* sort the ordering array into a valid index list. */
+  hx_array_index_sort(x->d, ord);
+
+  /* reorder the array basis elements. */
+  if (!hx_array_reorder_bases(x, ord))
+    throw("failed to reorder basis elements");
+
+  /* reduce the dimensionality of the array. */
+  if (!hx_array_resize(x, x->d - 1, x->k, x->sz))
+    throw("failed to resize array");
+
+  /* free the ordering array. */
+  free(ord);
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_reshape(): completely reshape an array into a new dimensionality
  * @k and size set @sz.
  * @x: pointer to the array to reshape.
  * @k: the new array dimensionality.
