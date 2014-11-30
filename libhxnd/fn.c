@@ -146,17 +146,7 @@ int fn_parse_arg_bool (char **v, int c) {
   }
   else if (c == 2) {
     /* check for acceptable values for 'true'. */
-    if (strcmp(v[1], "true") == 0 ||
-        strcmp(v[1], "True") == 0 ||
-        strcmp(v[1], "TRUE") == 0 ||
-        strcmp(v[1], "yes") == 0 ||
-        strcmp(v[1], "Yes") == 0 ||
-        strcmp(v[1], "YES") == 0 ||
-        strcmp(v[1], "y") == 0 ||
-        strcmp(v[1], "Y") == 0)
-      return 1;
-    else
-      return 0;
+    return strbool(v[1]);
   }
   else
     throw("unsupported argument syntax for boolean parsing");

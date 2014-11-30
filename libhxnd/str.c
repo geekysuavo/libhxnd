@@ -134,7 +134,36 @@ void strnltrim (char *s) {
     s[n - 1] = '\0';
 }
 
-/* strsplit(): splits a string @s1 into a string array by @s2 tokens.
+/* strbool(): read any rational string name for a boolean value and return
+ * an integer representation.
+ * @s: the string to parse.
+ */
+int strbool (const char *s) {
+  /* check that the string is allocated. */
+  if (!s || strlen(s) < 1)
+    return 0;
+
+  /* check the acceptable values for truth. */
+  if (strcmp(s, "true") == 0 ||
+      strcmp(s, "True") == 0 ||
+      strcmp(s, "TRUE") == 0 ||
+      strcmp(s, "yes") == 0 ||
+      strcmp(s, "Yes") == 0 ||
+      strcmp(s, "YES") == 0 ||
+      strcmp(s, "t") == 0 ||
+      strcmp(s, "T") == 0 ||
+      strcmp(s, "y") == 0 ||
+      strcmp(s, "Y") == 0 ||
+      strcmp(s, "1") == 0) {
+    /* an acceptable value was identified. return 'true'. */
+    return 1;
+  }
+
+  /* return 'false' if no 'true' value was identified. */
+  return 0;
+}
+
+/* strsplit(): split a string @s1 into a string array by @s2 tokens.
  * @s1: the string to split.
  * @s2: the token string.
  * @ntok: pointer to the output token count.

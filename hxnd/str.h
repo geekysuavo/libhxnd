@@ -39,6 +39,8 @@ void strrtrim (char *s);
 
 void strnltrim (char *s);
 
+int strbool (const char *s);
+
 char **strsplit (const char *s1, const char *s2, unsigned int *ntok);
 
 void strvtrim (char **strv, unsigned int n);

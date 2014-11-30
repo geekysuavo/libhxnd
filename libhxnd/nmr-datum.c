@@ -89,12 +89,12 @@ static const datum_dim_desc datum_dim_parms[] = {
   { "tdunif",    'u', offsetof(datum_dim, tdunif) },
 
   /* status flags. */
-  { "complex",   'u', offsetof(datum_dim, cx) },
-  { "nus",       'u', offsetof(datum_dim, nus) },
-  { "ft",        'u', offsetof(datum_dim, ft) },
-  { "alternate", 'u', offsetof(datum_dim, alt) },
-  { "negate",    'u', offsetof(datum_dim, neg) },
-  { "gradient",  'u', offsetof(datum_dim, genh) },
+  { "complex",   'b', offsetof(datum_dim, cx) },
+  { "nus",       'b', offsetof(datum_dim, nus) },
+  { "ft",        'b', offsetof(datum_dim, ft) },
+  { "alternate", 'b', offsetof(datum_dim, alt) },
+  { "negate",    'b', offsetof(datum_dim, neg) },
+  { "gradient",  'b', offsetof(datum_dim, genh) },
 
   /* spectral parameters. */
   { "carrier",   'f', offsetof(datum_dim, carrier) },
@@ -836,8 +836,9 @@ int datum_get_dim_parameter (datum *D, const char *name, unsigned int d,
           *((int*) parm) = *dptr;
           return 1;
 
-        /* unsigned int */
+        /* unsigned int (also boolean) */
         case 'u':
+        case 'b':
           uptr = (unsigned int*) (base + datum_dim_parms[i].off);
           *((unsigned int*) parm) = *uptr;
           return 1;
@@ -907,6 +908,12 @@ int datum_set_dim_parameter (datum *D, const char *name, unsigned int d,
         case 'u':
           uptr = (unsigned int*) (base + datum_dim_parms[i].off);
           *uptr = (unsigned int) atol(parm);
+          return 1;
+
+        /* boolean (stored as unsigned int) */
+        case 'b':
+          uptr = (unsigned int*) (base + datum_dim_parms[i].off);
+          *uptr = (unsigned int) strbool(parm);
           return 1;
 
         /* real */

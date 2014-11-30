@@ -373,7 +373,7 @@ number of (valid) complex points.
 \fBtd\fR (integer)
 total number of sampled time-domain points.
 .TP
-\fBtdunis\fR (integer)
+\fBtdunif\fR (integer)
 total number of uniform time-domain points, for cases when \fBnus\fR (below)
 is \fItrue\fR.
 .TP
@@ -386,6 +386,9 @@ carrier offset frequency for transmit.
 \fBwidth\fR (float, Hz)
 spectral width around offset carrier.
 .TP
+\fBname\fR (string)
+human-readable short description of the dimension, usually a nucleus.
+.TP
 \fBcomplex\fR (boolean)
 whether the dimension contains real (\fIfalse\fR) or complex (\fItrue\fR)
 points.
@@ -397,6 +400,16 @@ sampled (\fItrue\fR).
 \fBft\fR (boolean)
 whether the dimension is time-domain (\fIfalse\fR) or frequency-domain
 (\fItrue\fR).
+.TP
+\fBalternate\fR (boolean)
+whether the dimension requires sign alternation during array refactoring.
+.TP
+\fBnegate\fR (boolean)
+whether the dimension requires imaginary negation during array refactoring.
+.TP
+\fBgradient\fR (boolean)
+whether the dimension is gradient-enhanced, thus requiring a bit of arithmetic
+during array refactoring.
 
 .SH EXAMPLES
 .PP
