@@ -388,6 +388,10 @@ int datum_check_magic (const char *fname) {
 int datum_fwrite_formatted (datum *D, FILE *fh, enum datum_type fmt) {
   /* determine which write routine to utilize. */
   switch (fmt) {
+    /* pipe format. */
+    case DATUM_TYPE_PIPE:
+      return pipe_fwrite_datum(D, fh);
+
     /* hx native format. */
     case DATUM_TYPE_HXND:
       return datum_fwrite(D, fh);

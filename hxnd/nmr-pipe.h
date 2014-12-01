@@ -46,6 +46,10 @@
 #define PIPE_HDRSTR_SZ_COMMENT  160
 #define PIPE_HDRSTR_SZ_TITLE     60
 
+/* define the value of the @phase2d header for writing pipe files.
+ */
+#define PIPE_2D_STATES  2
+
 /* define values that the @quad header variables may take in pipe files.
  */
 #define PIPE_QUAD_COMPLEX  0
@@ -526,6 +530,8 @@ int pipe_read (const char *fname, unsigned int n, hx_array *x);
 int pipe_interlace (hx_array *x, unsigned int n);
 
 int pipe_fill_datum (const char *fname, datum *D);
+
+int pipe_fwrite_datum (datum *D, FILE *fh);
 
 #endif /* __HXND_NMR_PIPE_H__ */
 

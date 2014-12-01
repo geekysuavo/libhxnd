@@ -47,8 +47,10 @@ int fn_execute_real (datum *D, const int dim, const char *argstr) {
       throw("failed to drop imaginaries");
 
     /* invalidate the algebraic dimension indices. */
-    for (d = 0; d < D->nd; d++)
+    for (d = 0; d < D->nd; d++) {
       D->dims[d].d = DATUM_DIM_INVALID;
+      D->dims[d].cx = 0;
+    }
   }
   else if (dim < D->nd) {
     /* drop the specified imaginary component from the array. */

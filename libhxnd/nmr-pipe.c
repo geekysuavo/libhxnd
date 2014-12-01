@@ -269,7 +269,7 @@ int pipe_interlace (hx_array *x, unsigned int n) {
    * @kim: imag trace start index.
    * @xtmp: temporary duplicate coefficient array.
    */
-  unsigned int i, j, ntraces, kre, kim;
+  unsigned int i, j, ntraces, isrc_re, isrc_im, idest_re, idest_im;
   real *xtmp;
 
   /* check that the trace size evenly divides the array elements. */
@@ -290,14 +290,18 @@ int pipe_interlace (hx_array *x, unsigned int n) {
   /* loop over each trace in the linear real array. */
   for (i = 0; i < ntraces; i++) {
     /* compute the real and imaginary trace starting indices. */
-    kre = (2 * i) * n;
-    kim = (2 * i + 1) * n;
+    isrc_re = (2 * i) * n;
+    isrc_im = (2 * i + 1) * n;
 
     /* loop over the points of the trace. */
     for (j = 0; j < n; j++) {
+      /* compute the output indices. */
+      idest_re = i * (2 * n) + 2 * j;
+      idest_im = i * (2 * n) + 2 * j + 1;
+
       /* shuffle the points around. */
-      x->x[i * n + 2 * j] = xtmp[kre + j];
-      x->x[i * n + 2 * j + 1] = xtmp[kim + j];
+      x->x[idest_re] = xtmp[isrc_re + j];
+      x->x[idest_im] = xtmp[isrc_im + j];
     }
   }
 
@@ -449,6 +453,255 @@ int pipe_fill_datum (const char *fname, datum *D) {
   /* store the datum type. */
   D->type = DATUM_TYPE_PIPE;
   D->endian = endianness;
+
+  /* return success. */
+  return 1;
+}
+
+/* pipe_fwrite_dim(): convert the contents of a datum core array into an
+ * array of pipe-format coefficients. recursively drop from cubes, to
+ * planes, to traces, and finally to points.
+ * @D: pointer to the source datum structure.
+ * @dim: current datum dimension in the recursion.
+ * @n0: current coefficient offset in the recursion.
+ * @arr: index array for looping through the datum core array.
+ * @buf: output float buffer.
+ * @ibuf: float buffer index.
+ */
+int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr,
+                     float *buf, int *ibuf) {
+  /* declare a few required variables. */
+  int d, k, n, num, idx;
+
+  /* determine the array dimension indices. */
+  d = D->dims[dim].d;
+  k = D->dims[dim].k;
+
+  /* determine the coefficient index. */
+  n = (d == DATUM_DIM_INVALID ? 0 : 1 << d);
+
+  /* compute the number of points in the dimension. */
+  num = D->array.sz[k];
+
+  /* check if we've reached the lowest dimension. */
+  if (dim == 0) {
+    /* store the real points of the current trace. */
+    for (arr[dim] = 0; arr[dim] < num; arr[dim]++) {
+      /* pack the linear index and store the coefficient. */
+      hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
+      buf[(*ibuf)++] = (float) D->array.x[D->array.n * idx + n0];
+    }
+
+    /* check if the trace is complex. */
+    if (D->dims[dim].cx) {
+      /* store the imaginary points of the current trace. */
+      for (arr[dim] = 0; arr[dim] < num; arr[dim]++) {
+        /* pack the linear index and store the coefficient. */
+        hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
+        buf[(*ibuf)++] = (float) D->array.x[D->array.n * idx + n0 + n];
+      }
+    }
+  }
+  else {
+    /* recurse into the lower dimensions. */
+    for (arr[dim] = 0; arr[dim] < num; arr[dim]++) {
+      /* recurse the real component. */
+      pipe_fwrite_dim(D, dim - 1, n0, arr, buf, ibuf);
+
+      /* recurse the imaginary component. */
+      if (D->dims[dim].cx)
+        pipe_fwrite_dim(D, dim - 1, n0 + n, arr, buf, ibuf);
+    }
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* pipe_fwrite_datum(): writes an NMR datum structure in pipe-format to
+ * an opened file stream.
+ * @D: pointer to the source structure.
+ * @fh: the output file stream.
+ */
+int pipe_fwrite_datum (datum *D, FILE *fh) {
+  /* declare variables required to output pipe-format files:
+   * @ord: dimension ordering array.
+   * @hdr: the pipe file header structure.
+   * @fhdr: array of float values in the header.
+   * @fdata: array of float values in the raw data.
+   * @nhdr: number of floats in @fhdr.
+   * @ndata: number of floats in @fdata.
+   */
+  int ord[PIPE_MAXDIM], arr[PIPE_MAXDIM];
+  int i, n, ifdata, nhdr, ndata;
+  struct pipe_header hdr;
+  float *fhdr, *fdata;
+
+  /* check that the datum will fit in a pipe-format file. */
+  if (D->nd > PIPE_MAXDIM)
+    throw("datum contains too many dimensions for pipe format");
+
+  /* initialize the values in the header. */
+  memset(&hdr, 0, sizeof(struct pipe_header));
+
+  /* set the magic numbers. */
+  hdr.magic = 0.0;
+  hdr.format = (float) 0xeeeeeeee;
+  hdr.order = (float) PIPE_MAGIC;
+
+  /* set the number of dimensions and the plane mode. */
+  hdr.ndims = (float) D->nd;
+  hdr.phase2d = PIPE_2D_STATES;
+
+  /* set the master quadrature flag. */
+  hdr.quad = (float) PIPE_QUAD_REAL;
+  for (i = 0; i < D->nd; i++) {
+    /* having even one complex dimension sets the complex flag. */
+    if (D->dims[i].cx || (int) hdr.quad == PIPE_QUAD_COMPLEX)
+      hdr.quad = PIPE_QUAD_COMPLEX;
+  }
+
+  /* set the dimension order (YXZA). */
+  for (i = 0; i < PIPE_MAXDIM; i++)
+    hdr.dimorder[i] = (float) (ord[i] = i + 1);
+
+  /* if necessary, write the first-dimension header information. */
+  if (D->nd >= 1) {
+    /* set quadrature information. */
+    hdr.quad_f1 = (D->dims[0].cx ? PIPE_QUAD_COMPLEX : PIPE_QUAD_REAL);
+    hdr.aqsgn_f1 = PIPE_AQSGN_NONE;
+    hdr.ftflag_f1 = (float) D->dims[0].ft;
+
+    /* set nucleus information. */
+    strncpy(hdr.label_f1, D->dims[0].nuc, PIPE_HDRSTR_SZ_LABEL);
+
+    /* set size information. */
+    hdr.tdsz_f1 = (float) D->dims[0].td;
+    hdr.ftsz_f1 = (float) D->dims[0].sz;
+    hdr.apod_f1 = (float) D->dims[0].sz;
+    hdr.sz = (float) D->dims[0].sz;
+
+    /* set spectral width, offset and carrier. */
+    hdr.sw_f1 = (float) D->dims[0].width;
+    hdr.obs_f1 = (float) D->dims[0].carrier;
+    hdr.orig_f1 = (float) D->dims[0].offset;
+  }
+
+  /* if necessary, write the second-dimension header information. */
+  if (D->nd >= 2) {
+    /* set quadrature information. */
+    hdr.quad_f2 = (D->dims[1].cx ? PIPE_QUAD_COMPLEX : PIPE_QUAD_REAL);
+    hdr.aqsgn_f2 = PIPE_AQSGN_NONE;
+    hdr.ftflag_f2 = (float) D->dims[1].ft;
+
+    /* set nucleus information. */
+    strncpy(hdr.label_f2, D->dims[1].nuc, PIPE_HDRSTR_SZ_LABEL);
+
+    /* set size information. */
+    hdr.tdsz_f2 = (float) D->dims[1].td;
+    hdr.ftsz_f2 = (float) D->dims[1].sz;
+    hdr.apod_f2 = (float) D->dims[1].sz;
+    hdr.specnum = (float) D->dims[1].sz;
+    if (D->dims[1].cx) hdr.specnum *= 2.0;
+
+    /* set spectral width, offset and carrier. */
+    hdr.sw_f2 = (float) D->dims[1].width;
+    hdr.obs_f2 = (float) D->dims[1].carrier;
+    hdr.orig_f2 = (float) D->dims[1].offset -  hdr.sw_f2 / 2.0;
+  }
+
+  /* if necessary, write the third-dimension header information. */
+  if (D->nd >= 3) {
+    /* set the pipe flag. */
+    hdr.pipe = 1;
+
+    /* set quadrature information. */
+    hdr.quad_f3 = (D->dims[2].cx ? PIPE_QUAD_COMPLEX : PIPE_QUAD_REAL);
+    hdr.aqsgn_f3 = PIPE_AQSGN_NONE;
+    hdr.ftflag_f3 = (float) D->dims[2].ft;
+
+    /* set nucleus information. */
+    strncpy(hdr.label_f3, D->dims[2].nuc, PIPE_HDRSTR_SZ_LABEL);
+
+    /* set size information. */
+    hdr.tdsz_f3 = (float) D->dims[2].td;
+    hdr.ftsz_f3 = (float) D->dims[2].sz;
+    hdr.apod_f3 = (float) D->dims[2].sz;
+    hdr.size_f3 = (float) D->dims[2].sz;
+    if (D->dims[2].cx) hdr.size_f3 *= 2.0;
+
+    /* set spectral width, offset and carrier. */
+    hdr.sw_f3 = (float) D->dims[2].width;
+    hdr.obs_f3 = (float) D->dims[2].carrier;
+    hdr.orig_f3 = (float) D->dims[2].offset -  hdr.sw_f3 / 2.0;
+  }
+
+  /* if necessary, write the fourth-dimension header information. */
+  if (D->nd >= 4) {
+    /* set quadrature information. */
+    hdr.quad_f4 = (D->dims[3].cx ? PIPE_QUAD_COMPLEX : PIPE_QUAD_REAL);
+    hdr.aqsgn_f4 = PIPE_AQSGN_NONE;
+    hdr.ftflag_f4 = (float) D->dims[3].ft;
+
+    /* set nucleus information. */
+    strncpy(hdr.label_f4, D->dims[3].nuc, PIPE_HDRSTR_SZ_LABEL);
+
+    /* set size information. */
+    hdr.tdsz_f4 = (float) D->dims[3].td;
+    hdr.ftsz_f4 = (float) D->dims[3].sz;
+    hdr.apod_f4 = (float) D->dims[3].sz;
+    hdr.size_f4 = (float) D->dims[3].sz;
+    if (D->dims[3].cx) hdr.size_f4 *= 2.0;
+
+    /* set spectral width, offset and carrier. */
+    hdr.sw_f4 = (float) D->dims[3].width;
+    hdr.obs_f4 = (float) D->dims[3].carrier;
+    hdr.orig_f4 = (float) D->dims[3].offset -  hdr.sw_f4 / 2.0;
+  }
+
+  /* compute the size of the header buffer. */
+  nhdr = sizeof(struct pipe_header) / sizeof(float);
+
+  /* allocate the header float buffer. */
+  fhdr = (float*) calloc(nhdr, sizeof(float));
+
+  /* check that the header buffer was allocated. */
+  if (!fhdr)
+    throw("failed to allocate %d header values", nhdr);
+
+  /* copy the header values into the header buffer. */
+  memcpy(fhdr, &hdr, nhdr * sizeof(float));
+
+  /* compute the size of the data buffer. */
+  ndata = D->array.len;
+
+  /* allocate the data float buffer. */
+  fdata = (float*) calloc(ndata, sizeof(float));
+
+  /* check that the data buffer was allocated. */
+  if (!fdata)
+    throw("failed to allocate %d array values", ndata);
+
+  /* initialize the data buffer index. */
+  arr[0] = arr[1] = arr[2] = arr[3] = 0;
+  ifdata = 0;
+  n = 0;
+
+  /* fill the data buffer from the datum core array. */
+  if (!pipe_fwrite_dim(D, D->nd - 1, n, arr, fdata, &ifdata))
+    throw("failed to convert core array to pipe format");
+
+  /* write the header to the output stream. */
+  if (fwrite(fhdr, sizeof(float), nhdr, fh) != nhdr)
+    throw("failed to write %d header values", nhdr);
+
+  /* write the array data to the output stream. */
+  if (fwrite(fdata, sizeof(float), ndata, fh) != ndata)
+    throw("failed to write %d array values", ndata);
+
+  /* free the allocated buffers. */
+  free(fhdr);
+  free(fdata);
 
   /* return success. */
   return 1;
