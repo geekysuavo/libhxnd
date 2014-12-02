@@ -291,17 +291,11 @@ int varian_read_hdr_file (const char *fname, enum byteorder *endianness,
     bytes_swap_u32(&hdr->nheaders);
 
     /* opposite endianness. */
-    if (bytes_native(BYTES_ENDIAN_BIG))
-      *endianness = BYTES_ENDIAN_LITTLE;
-    else
-      *endianness = BYTES_ENDIAN_BIG;
+    *endianness = bytes_get_nonnative();
   }
   else {
     /* same endianness. */
-    if (bytes_native(BYTES_ENDIAN_BIG))
-      *endianness = BYTES_ENDIAN_BIG;
-    else
-      *endianness = BYTES_ENDIAN_LITTLE;
+    *endianness = bytes_get_native();
   }
 
   /* free the read bytes. */

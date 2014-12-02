@@ -73,6 +73,29 @@ int bytes_native (enum byteorder endianness) {
   return (endianness == bytes_native_endianness);
 }
 
+/* bytes_get_native(): returns the native byte ordering.
+ */
+enum byteorder bytes_get_native (void) {
+  /* ensure that the native endianness has been determined. */
+  bytes_init();
+
+  /* return the native endianness. */
+  return bytes_native_endianness;
+}
+
+/* bytes_get_nonnative(): returns the opposite of native byte ordering.
+ */
+enum byteorder bytes_get_nonnative (void) {
+  /* ensure that the native endianness has been determined. */
+  bytes_init();
+
+  /* return the non-native endianness. */
+  if (bytes_native_endianness == BYTES_ENDIAN_BIG)
+    return BYTES_ENDIAN_LITTLE;
+  else
+    return BYTES_ENDIAN_BIG;
+}
+
 /* bytes_swap_u16(): swaps the bytes of a two-byte word.
  * @x: pointer to the word to swap in-place.
  */

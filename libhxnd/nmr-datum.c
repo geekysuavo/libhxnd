@@ -74,6 +74,7 @@ static const struct datum_type_def datum_types[] = {
   { "bruker", DATUM_TYPE_BRUKER },
   { "varian", DATUM_TYPE_VARIAN },
   { "pipe",   DATUM_TYPE_PIPE },
+  { "ucsf",   DATUM_TYPE_UCSF },
   { "hx",     DATUM_TYPE_HXND },
   { "text",   DATUM_TYPE_TEXT },
   { NULL, DATUM_TYPE_UNDEFINED }
@@ -190,6 +191,12 @@ enum datum_type datum_guess_type (const char *fname) {
   /* check if the file is a pipe-format file. */
   if (pipe_check_magic(fname))
     return DATUM_TYPE_PIPE;
+  else
+    traceback_clear();
+
+  /* check if the file is a ucsf-format file. */
+  if (ucsf_check_magic(fname))
+    return DATUM_TYPE_UCSF;
   else
     traceback_clear();
 
@@ -391,6 +398,10 @@ int datum_fwrite_formatted (datum *D, FILE *fh, enum datum_type fmt) {
     /* pipe format. */
     case DATUM_TYPE_PIPE:
       return pipe_fwrite_datum(D, fh);
+
+    /* ucsf format. */
+    case DATUM_TYPE_UCSF:
+      return ucsf_fwrite_datum(D, fh);
 
     /* hx native format. */
     case DATUM_TYPE_HXND:
@@ -1320,6 +1331,11 @@ int datum_read_array (datum *D) {
     if (D->dims[0].cx && !pipe_interlace(&D->array, D->dims[0].sz))
       throw("failed to interlace complex traces");
   }
+  else if (D->type == DATUM_TYPE_UCSF) {
+    /* load the raw data from the ucsf file. */
+    if (!ucsf_read(D->fname, &D->array))
+      throw("failed to read ucsf data from '%s'", D->fname);
+  }
   else if (D->type == DATUM_TYPE_HXND) {
     /* compute the offset where the array begins. */
     offset = NMR_DATUM_FWRITE_SZ_HDR;
@@ -1555,6 +1571,15 @@ int datum_fill (datum *D, const char *fname) {
       /* attempt to fill from a pipe-format file. */
       if (!pipe_fill_datum(fname, D))
         throw("failed to parse pipe parameters");
+
+      /* break out. */
+      break;
+
+    /* ucsf. */
+    case DATUM_TYPE_UCSF:
+      /* attempt to fill from a ucsf-format file. */
+      if (!ucsf_fill_datum(fname, D))
+        throw("failed to parse ucsf parameters");
 
       /* break out. */
       break;

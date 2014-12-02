@@ -97,17 +97,11 @@ int pipe_read_header (const char *fname, enum byteorder *endianness,
     memcpy(hdr, bytes, n_bytes);
 
     /* opposite endianness. */
-    if (bytes_native(BYTES_ENDIAN_BIG))
-      *endianness = BYTES_ENDIAN_LITTLE;
-    else
-      *endianness = BYTES_ENDIAN_BIG;
+    *endianness = bytes_get_nonnative();
   }
   else {
     /* same endianness. */
-    if (bytes_native(BYTES_ENDIAN_BIG))
-      *endianness = BYTES_ENDIAN_BIG;
-    else
-      *endianness = BYTES_ENDIAN_LITTLE;
+    *endianness = bytes_get_native();
   }
 
   /* free the read bytes. */

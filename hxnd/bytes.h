@@ -69,6 +69,10 @@ void bytes_init (void);
 
 int bytes_native (enum byteorder endianness);
 
+enum byteorder bytes_get_native (void);
+
+enum byteorder bytes_get_nonnative (void);
+
 void bytes_swap_u16 (uint16_t *x);
 
 void bytes_swap_u32 (uint32_t *x);

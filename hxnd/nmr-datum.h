@@ -47,6 +47,7 @@ enum datum_type {
   DATUM_TYPE_BRUKER,
   DATUM_TYPE_VARIAN,
   DATUM_TYPE_PIPE,
+  DATUM_TYPE_UCSF,
   DATUM_TYPE_HXND,
   DATUM_TYPE_TEXT
 };
@@ -129,6 +130,7 @@ datum;
 #include <hxnd/nmr-bruker.h>
 #include <hxnd/nmr-varian.h>
 #include <hxnd/nmr-pipe.h>
+#include <hxnd/nmr-ucsf.h>
 
 /* function declarations: */
 
