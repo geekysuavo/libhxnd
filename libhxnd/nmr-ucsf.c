@@ -280,7 +280,7 @@ int ucsf_fill_datum (const char *fname, datum *D) {
     /* store the spectral parameters. */
     D->dims[d].carrier = (real) dhdr[d].carrier;
     D->dims[d].width = (real) dhdr[d].width;
-    D->dims[d].offset = (real) dhdr[d].center;
+    D->dims[d].offset = ((real) dhdr[d].center) * D->dims[d].carrier;
 
     /* store the nucleus string. */
     strncpy(D->dims[d].nuc, dhdr[d].nuc, 6);
