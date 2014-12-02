@@ -168,7 +168,85 @@ int ucsf_read_header (const char *fname, enum byteorder *endianness,
 int ucsf_linearize (hx_array *x,
                     struct ucsf_file_header *fhdr,
                     struct ucsf_dim_header *dhdr) {
-  /* FIXME: implement ucsf_linearize() */
+  /* declare a few required variables:
+   * @i: general purpose loop counter.
+   * @k: number of dimensions.
+   * @idxi: input array linear index.
+   * @idxo: output array linear index.
+   * @sz: array of tile sizes.
+   * @szt: array of tile counts.
+   * @arr: multidimensional point index array.
+   * @arrt: multidimensional tile index array.
+   * @xcpy: temporary tile array.
+   */
+  int i, k, n, ncpy, idxi, idxo, *sz, *szt, *arr, *arrt;
+  hx_array xcpy;
+
+  /* gain a handle on the dimensionality of the array data. */
+  k = (int) fhdr->ndims;
+
+  /* allocate the size index arrays. */
+  sz = hx_array_index_alloc(k);
+  szt = hx_array_index_alloc(k);
+
+  /* allocate the loop index arrays. */
+  arr = hx_array_index_alloc(k);
+  arrt = hx_array_index_alloc(k);
+
+  /* check that all index allocations were successful. */
+  if (!sz || !szt || !arr || !arrt)
+    throw("failed to allocate four sets of %d indices", k);
+
+  /* initialize the size arrays. */
+  for (i = 0; i < k; i++) {
+    /* check that the point count is evenly divided by the tile size. */
+    if (dhdr[i].npts % dhdr[i].sztile)
+      throw("tile size %u does not evenly divide point count %u",
+            dhdr[i].sztile, dhdr[i].npts);
+
+    /* set the tile point count. */
+    sz[i] = dhdr[i].sztile;
+
+    /* set the tile count. */
+    szt[i] = dhdr[i].npts / dhdr[i].sztile;
+  }
+
+  /* allocate a temporary array for storing tile data. */
+  if (!hx_array_copy(&xcpy, x))
+    throw("failed to allocate tile array");
+
+/*FIXME*/hx_array_print(&xcpy, "xcpy.dat");
+  /* compute the coefficient count and byte count per scalar.
+   */
+  n = x->n;
+  ncpy = n * sizeof(real);
+
+/*FIXME*/hx_array_index_print(k, sz);hx_array_index_print(k, szt);
+  /* loop over the data tiles. initialize the input linear index. */
+  idxi = 0;
+  do {
+    /* loop over the tile points. */
+    do {
+      /* pack the tiled indices into a linear index. */
+      hx_array_index_pack_tiled(k, szt, sz, arr, arrt, &idxo);
+
+      /* copy coefficients from the tiled array into the linear array. */
+      memcpy(x->x + idxo * n, xcpy.x + idxi * n, ncpy);
+
+      /* increment the tile linear index. */
+      idxi++;
+    } while (hx_array_index_incr_rev(k, sz, arr));
+  } while (hx_array_index_incr_rev(k, szt, arrt));
+/*FIXME*/hx_array_print(x, "x.dat");
+
+  /* free the allocated tile array. */
+  hx_array_free(&xcpy);
+
+  /* free the allocated index arrays. */
+  free(sz);
+  free(szt);
+  free(arr);
+  free(arrt);
 
   /* return success. */
   return 1;

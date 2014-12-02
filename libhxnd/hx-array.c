@@ -1317,8 +1317,7 @@ int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
 
     /* increment the slice index. */
     slice++;
-  }
-  while (hx_array_index_skip(x->k, x->sz, arr, k));
+  } while (hx_array_index_skip(x->k, x->sz, arr, k));
 
   /* free the temporary array. */
   hx_array_free(&y);

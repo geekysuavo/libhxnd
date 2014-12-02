@@ -78,7 +78,7 @@ int hx_array_index_init (int *arr, int k) {
  * @arr: the input array of unpacked indices.
  * @pidx: pointer to the output packed linear index.
  */
-int hx_array_index_pack (int k, int *sz, int *arr, int *pidx) {
+void hx_array_index_pack (int k, int *sz, int *arr, int *pidx) {
   /* define a few required variables. */
   int ki, stride;
 
@@ -88,9 +88,6 @@ int hx_array_index_pack (int k, int *sz, int *arr, int *pidx) {
     *pidx += arr[ki] * stride;
     stride *= sz[ki];
   }
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_array_index_unpack(): unpacks a linear index into an array of separate
@@ -100,7 +97,7 @@ int hx_array_index_pack (int k, int *sz, int *arr, int *pidx) {
  * @arr: the output array of unpacked indices.
  * @idx: the input packed linear index.
  */
-int hx_array_index_unpack (int k, int *sz, int *arr, int idx) {
+void hx_array_index_unpack (int k, int *sz, int *arr, int idx) {
   /* define a few required variables. */
   int ki, redidx;
 
@@ -112,9 +109,35 @@ int hx_array_index_unpack (int k, int *sz, int *arr, int idx) {
     /* reduce the index by the current stride. */
     redidx = (redidx - arr[ki]) / sz[ki];
   }
+}
 
-  /* return success. */
-  return 1;
+/* hx_array_index_pack_tiled(): packs a multidimensional tile index and a
+ * multidimensional point index into a linear index based on tile size
+ * and count.
+ * @k: the size of the arrays.
+ * @ntile: array of tile counts along each dimension.
+ * @sztile: array of tile sizes along each dimension.
+ * @arr: input array of point indices inside the tile.
+ * @arrt: input array of tile indices.
+ * @pidx: pointer to the output packed linear index.
+ */
+void hx_array_index_pack_tiled (int k, int *ntile, int *sztile,
+                                int *arr, int *arrt, int *pidx) {
+  /* define a few required variables. */
+  int ki, idxp, idxt;
+
+  /* pack the tile linear index. */
+  hx_array_index_pack(k, ntile, arrt, &idxt);
+
+  /* pack the point linear index. */
+  hx_array_index_pack(k, sztile, arr, &idxp);
+
+  /* multiply the tile linear index by its point count. */
+  for (ki = 0; ki < k; ki++)
+    idxt *= sztile[ki];
+
+  /* compute the final linear point index. */
+  *pidx = idxt + idxp;
 }
 
 /* hx_array_index_incr(): increments a multidimensional index. the function

@@ -36,9 +36,12 @@ int *hx_array_index_build (int k, ...);
 
 int hx_array_index_init (int *arr, int k);
 
-int hx_array_index_pack (int k, int *sz, int *arr, int *pidx);
+void hx_array_index_pack (int k, int *sz, int *arr, int *pidx);
 
-int hx_array_index_unpack (int k, int *sz, int *arr, int idx);
+void hx_array_index_unpack (int k, int *sz, int *arr, int idx);
+
+void hx_array_index_pack_tiled (int k, int *ntile, int *sztile,
+                               int *arr, int *arrt, int *pidx);
 
 int hx_array_index_incr (int k, int *sz, int *arr);
 
