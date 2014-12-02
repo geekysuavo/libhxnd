@@ -120,6 +120,10 @@ int hx_array_index_unpack (int k, int *sz, int *arr, int idx) {
 /* hx_array_index_incr(): increments a multidimensional index. the function
  * returns '1' except when the increment operation causes all indices to
  * roll over to zero at once (i.e. at the array end).
+ *
+ * this function is meant to be used as the condition inside
+ * a do{}while() loop.
+ *
  * @k: the size of the array.
  * @sz: the sizes of each array dimension.
  * @arr: the array of unpacked indices to increment.
@@ -154,8 +158,152 @@ int hx_array_index_incr (int k, int *sz, int *arr) {
       roundtrip = 1;
   }
 
-  /* return success. */
+  /* return whether more indices are available. */
   return !roundtrip;
+}
+
+/* hx_array_index_decr(): decrements a multidimensional index. the function
+ * returns '1' except when the decrement operation causes all indices to
+ * roll over past zero at once (i.e. at the array start).
+ *
+ * calling this function with an all-zero index will initialize its contents
+ * to the array end. this function is meant to be used as the condition inside
+ * a do{}while() loop.
+ *
+ * @k: the size of the array.
+ * @sz: the sizes of each array dimension.
+ * @arr: the array of unpacked indices to decrement.
+ */
+int hx_array_index_decr (int k, int *sz, int *arr) {
+  /* declare a few required variables:
+   * @ki: the dimension loop counter.
+   * @allzero: whether we've made it back to (0,0,0,...)
+   */
+  int ki, allzero;
+
+  /* loop over the dimensions to check if the index is all zeros. */
+  for (ki = 0, allzero = 1; ki < k; ki++) {
+    /* exit if we encounter a nonzero element. */
+    if (arr[ki]) {
+      allzero = 0;
+      break;
+    }
+  }
+
+  /* check if the index is all zeros. */
+  if (allzero) {
+    /* initialize the index to the array end. */
+    for (ki = 0; ki < k; ki++)
+      arr[ki] = sz[ki] - 1;
+
+    /* return. */
+    return 0;
+  }
+
+  /* loop over the dimensions of the array. */
+  for (ki = 0; ki < k; ki++) {
+    /* decrement the current index. */
+    arr[ki]--;
+
+    /* check if the current index has underflowed. */
+    if (arr[ki] < 0) {
+      /* reset the index. */
+      arr[ki] = sz[ki] - 1;
+    }
+    else {
+      /* break the loop. */
+      break;
+    }
+  }
+
+  /* return whether more indices are available. */
+  return 1;
+}
+
+/* hx_array_index_incr_rev(): increments a multidimensional index, in the
+ * opposite sense as hx_array_index_incr().
+ */
+int hx_array_index_incr_rev (int k, int *sz, int *arr) {
+  /* declare a few required variables:
+   * @ki: the dimension loop counter.
+   * @roundtrip: whether we've made it back to (0,0,0,...)
+   */
+  int ki, roundtrip;
+
+  /* initialize the round trip indicator. */
+  roundtrip = 0;
+
+  /* loop over the dimensions of the array. */
+  for (ki = k - 1; ki >= 0; ki--) {
+    /* increment the current index. */
+    arr[ki]++;
+
+    /* check if the current index has overflowed. */
+    if (arr[ki] >= sz[ki]) {
+      /* reset the index. */
+      arr[ki] = 0;
+    }
+    else {
+      /* break the loop. */
+      break;
+    }
+
+    /* check if a round trip was made. */
+    if (ki == 0)
+      roundtrip = 1;
+  }
+
+  /* return whether more indices are available. */
+  return !roundtrip;
+}
+
+/* hx_array_index_decr_rev(): decrements a multidimensional index, in the
+ * opposite sense as hx_array_index_decr().
+ */
+int hx_array_index_decr_rev (int k, int *sz, int *arr) {
+  /* declare a few required variables:
+   * @ki: the dimension loop counter.
+   * @allzero: whether we've made it back to (0,0,0,...)
+   */
+  int ki, allzero;
+
+  /* loop over the dimensions to check if the index is all zeros. */
+  for (ki = 0, allzero = 1; ki < k; ki++) {
+    /* exit if we encounter a nonzero element. */
+    if (arr[ki]) {
+      allzero = 0;
+      break;
+    }
+  }
+
+  /* check if the index is all zeros. */
+  if (allzero) {
+    /* initialize the index to the array end. */
+    for (ki = 0; ki < k; ki++)
+      arr[ki] = sz[ki] - 1;
+
+    /* return. */
+    return 0;
+  }
+
+  /* loop over the dimensions of the array. */
+  for (ki = k - 1; ki >= 0; ki--) {
+    /* decrement the current index. */
+    arr[ki]--;
+
+    /* check if the current index has underflowed. */
+    if (arr[ki] < 0) {
+      /* reset the index. */
+      arr[ki] = sz[ki] - 1;
+    }
+    else {
+      /* break the loop. */
+      break;
+    }
+  }
+
+  /* return whether more indices are available. */
+  return 1;
 }
 
 /* hx_array_index_skip(): increments a multidimensional index in a similar
@@ -422,5 +570,33 @@ int *hx_array_index_unscheduled (int k, int *sz, int dsched, int nsched,
 
   /* return the indices. */
   return idx;
+}
+
+/* hx_array_index_printfn(): core function used by hx_array_print() to write
+ * the contents of a multidimensional index to standard error.
+ * @k: the array size.
+ * @arr: the array of indices.
+ * @s: the array variable name.
+ */
+void hx_array_index_printfn (int k, int *arr, const char *s) {
+  /* declare a required variable. */
+  int ki;
+
+  /* print the variable name. */
+  fprintf(stderr, "%s[%d] = (", s, k);
+
+  /* loop over the array elements. */
+  for (ki = 0; ki < k; ki++) {
+    /* print the index value. */
+    fprintf(stderr, "%d", arr[ki]);
+
+    /* print commas to separate values. */
+    if (ki < k - 1)
+      fprintf(stderr, ", ");
+  }
+
+  /* end the line. */
+  fprintf(stderr, ")\n");
+  fflush(stderr);
 }
 

@@ -24,6 +24,10 @@
 #ifndef __HXND_HX_INDEX_H__
 #define __HXND_HX_INDEX_H__
 
+/* define a print macro that writes the variable name. */
+#define hx_array_index_print(k, arr) \
+  hx_array_index_printfn(k, arr, #arr)
+
 /* function declarations: */
 
 int *hx_array_index_alloc (int k);
@@ -37,6 +41,12 @@ int hx_array_index_pack (int k, int *sz, int *arr, int *pidx);
 int hx_array_index_unpack (int k, int *sz, int *arr, int idx);
 
 int hx_array_index_incr (int k, int *sz, int *arr);
+
+int hx_array_index_decr (int k, int *sz, int *arr);
+
+int hx_array_index_incr_rev (int k, int *sz, int *arr);
+
+int hx_array_index_decr_rev (int k, int *sz, int *arr);
 
 int hx_array_index_skip (int k, int *sz, int *arr, int kskip);
 
@@ -56,6 +66,8 @@ int *hx_array_index_scheduled (int k, int *sz, int dsched, int nsched,
 
 int *hx_array_index_unscheduled (int k, int *sz, int dsched, int nsched,
                                  int *sched);
+
+void hx_array_index_printfn (int k, int *arr, const char *s);
 
 #endif /* __HXND_HX_INDEX_H__ */
 
