@@ -124,20 +124,17 @@ void hx_array_index_unpack (int k, int *sz, int *arr, int idx) {
 void hx_array_index_pack_tiled (int k, int *ntile, int *sztile,
                                 int *arr, int *arrt, int *pidx) {
   /* define a few required variables. */
-  int ki, idxp, idxt;
+  int ki, arrki, stride;
 
-  /* pack the tile linear index. */
-  hx_array_index_pack(k, ntile, arrt, &idxt);
+  /* loop over the dimensions of the array. */
+  for (ki = 0, *pidx = 0, stride = 1; ki < k; ki++) {
+    /* add the next index into the linear index. */
+    arrki = arr[ki] + arrt[ki] * sztile[ki];
+    *pidx += arrki * stride;
 
-  /* pack the point linear index. */
-  hx_array_index_pack(k, sztile, arr, &idxp);
-
-  /* multiply the tile linear index by its point count. */
-  for (ki = 0; ki < k; ki++)
-    idxt *= sztile[ki];
-
-  /* compute the final linear point index. */
-  *pidx = idxt + idxp;
+    /* scale the stride for the next dimension offset. */
+    stride *= ntile[ki] * sztile[ki];
+  }
 }
 
 /* hx_array_index_incr(): increments a multidimensional index. the function

@@ -23,6 +23,11 @@
 /* include the ucsf header. */
 #include <hxnd/nmr-ucsf.h>
 
+/* define constants which determine the behavior of ucsf_map_tiles().
+ */
+#define UCSF_TILEMAP_FORWARD  (+1)
+#define UCSF_TILEMAP_REVERSE  (-1)
+
 /* ucsf_check_magic(): checks the first "magic" bytes of a file and
  * returns whether they match the ucsf-format file magic number.
  * @fname: the input filename.
@@ -159,15 +164,18 @@ int ucsf_read_header (const char *fname, enum byteorder *endianness,
   return 1;
 }
 
-/* ucsf_linearize(): undoes the tiling inherent in ucsf-format files,
- * producing a real linear array suitable for datum_refactor_array().
+/* ucsf_map_tiles(): redoes or undoes the tiling inherent in ucsf-format
+ * files, effectively mapping between tiled array data and a real linear
+ * array suitable for datum_refactor_array().
  * @x: pointer to the array to linearize.
  * @fhdr: pointer to the file header.
  * @dhdr: array of dimension headers.
+ * @dir: direction, either +1 (linearize) or -1 (tileize).
  */
-int ucsf_linearize (hx_array *x,
+int ucsf_map_tiles (hx_array *x,
                     struct ucsf_file_header *fhdr,
-                    struct ucsf_dim_header *dhdr) {
+                    struct ucsf_dim_header *dhdr,
+                    int dir) {
   /* declare a few required variables:
    * @i: general purpose loop counter.
    * @k: number of dimensions.
@@ -215,13 +223,11 @@ int ucsf_linearize (hx_array *x,
   if (!hx_array_copy(&xcpy, x))
     throw("failed to allocate tile array");
 
-/*FIXME*/hx_array_print(&xcpy, "xcpy.dat");
   /* compute the coefficient count and byte count per scalar.
    */
   n = x->n;
   ncpy = n * sizeof(real);
 
-/*FIXME*/hx_array_index_print(k, sz);hx_array_index_print(k, szt);
   /* loop over the data tiles. initialize the input linear index. */
   idxi = 0;
   do {
@@ -230,14 +236,25 @@ int ucsf_linearize (hx_array *x,
       /* pack the tiled indices into a linear index. */
       hx_array_index_pack_tiled(k, szt, sz, arr, arrt, &idxo);
 
-      /* copy coefficients from the tiled array into the linear array. */
-      memcpy(x->x + idxo * n, xcpy.x + idxi * n, ncpy);
+      /* determine the copy direction. */
+      switch (dir) {
+        /* forward: tiles -> linear. */
+        case UCSF_TILEMAP_FORWARD:
+          /* copy coefficients from the tiled array into the linear array. */
+          memcpy(x->x + idxo * n, xcpy.x + idxi * n, ncpy);
+          break;
+
+        /* reverse: linear -> tiles. */
+        case UCSF_TILEMAP_REVERSE:
+          /* copy coefficients from the linear array into the tiled array. */
+          memcpy(x->x + idxi * n, xcpy.x + idxo * n, ncpy);
+          break;
+      }
 
       /* increment the tile linear index. */
       idxi++;
     } while (hx_array_index_incr_rev(k, sz, arr));
   } while (hx_array_index_incr_rev(k, szt, arrt));
-/*FIXME*/hx_array_print(x, "x.dat");
 
   /* free the allocated tile array. */
   hx_array_free(&xcpy);
@@ -251,6 +268,16 @@ int ucsf_linearize (hx_array *x,
   /* return success. */
   return 1;
 }
+
+/* ucsf_linearize(): maps tiles to linear array data.
+ */
+#define ucsf_linearize(x, fhdr, dhdr) \
+  ucsf_map_tiles(x, fhdr, dhdr, UCSF_TILEMAP_FORWARD)
+
+/* ucsf_delinearize(): maps linear array data to tiles.
+ */
+#define ucsf_delinearize(x, fhdr, dhdr) \
+  ucsf_map_tiles(x, fhdr, dhdr, UCSF_TILEMAP_REVERSE)
 
 /* ucsf_read(): reads a ucsf-format data file into a real linear array.
  * @fname: the input data filename.
@@ -387,8 +414,105 @@ int ucsf_fill_datum (const char *fname, datum *D) {
  * @fh: the output file stream.
  */
 int ucsf_fwrite_datum (datum *D, FILE *fh) {
-  /* FIXME: implement ucsf_fwrite_datum() */
-  throw("not yet implemented!");
+  /* declare variables required for header output.
+   * @fhdr: output file header.
+   * @dhdr: array of dimension headers.
+   * @i_div: current dimension to subdivide.
+   * @n_tile: number of bytes per tile.
+   */
+  struct ucsf_file_header fhdr;
+  struct ucsf_dim_header *dhdr;
+  unsigned int i_div, n_tile;
+
+  /* declare a dimension loop counter. */
+  unsigned int d;
+
+  /* allocate an array of dimension headers. */
+  dhdr = (struct ucsf_dim_header*)
+    calloc(D->nd, sizeof(struct ucsf_dim_header));
+
+  /* check that allocation succeeded. */
+  if (!dhdr)
+    throw("failed to allocate %u dimension headers", D->nd);
+
+  /* initialize the file header. */
+  memset(&fhdr, 0, sizeof(struct ucsf_file_header));
+
+  /* set the fields of the file header. */
+  strcpy(fhdr.ftype, UCSF_MAGIC);
+  fhdr.ndims = (uint8_t) D->nd;
+  fhdr.ncomp = 1;
+  fhdr.fmtver = 2;
+
+  /* configure each dimension header. */
+  for (d = 0; d < D->nd; d++) {
+    /* set the nucleus string of the dimension header. */
+    strcpy(dhdr[d].nuc, D->dims[d].nuc);
+
+    /* set the point count of the dimension header. */
+    dhdr[d].npts = (uint32_t) D->dims[d].sz;
+    dhdr[d].sztile = dhdr[d].npts;
+
+    /* set the spectral parameters of the dimension header. */
+    dhdr[d].carrier = (float) D->dims[d].carrier;
+    dhdr[d].width = (float) D->dims[d].width;
+    dhdr[d].center = (float) D->dims[d].offset / dhdr[d].carrier;
+  }
+
+  /* check for zero-size dimensions. */
+  for (d = 0; d < D->nd; d++) {
+    /* fail if the dimension has zero size. */
+    if (dhdr[d].npts == 0)
+      throw("dimension %u has zero size", d);
+  }
+
+  /* determine the tile size of each dimension. */
+  i_div = 0;
+  do {
+    /* do not attempt to subdivide odd tile sizes further. */
+    while (dhdr[i_div].sztile % 2 && i_div < D->nd)
+      i_div++;
+
+    /* check that we found an index to subdivide. */
+    if (i_div >= D->nd)
+      throw("failed to identify suitable tile sizes");
+
+    /* divide tile size of the currently indexed dimension. */
+    dhdr[i_div].sztile /= 2;
+
+    /* increment the dimension index. */
+    if (++i_div >= D->nd)
+      i_div = 0;
+
+    /* compute the new tile size. */
+    for (d = 0, n_tile = sizeof(float); d < D->nd; d++)
+      n_tile *= dhdr[d].sztile;
+  } while (n_tile > 32768);
+
+  /* map the linear datum array back into tiles. */
+  if (!ucsf_delinearize(&D->array, &fhdr, dhdr))
+    throw("failed to delinearize array into tiles");
+
+  /* write the file header. */
+  if (fwrite(&fhdr, sizeof(struct ucsf_file_header), 1, fh) != 1)
+    throw("failed to write file header");
+
+  /* write the dimension headers. */
+  if (fwrite(dhdr, sizeof(struct ucsf_dim_header), D->nd, fh) != D->nd)
+    throw("failed to write %u dimension headers", D->nd);
+
+  /* write the array data. */
+  if (fwrite(D->array.x, sizeof(real), D->array.len, fh) != D->array.len)
+    throw("failed to write core array data");
+
+  /* map the tiled array back into the proper format, just in case it
+   * needs to be used again.
+   */
+  if (!ucsf_linearize(&D->array, &fhdr, dhdr))
+    throw("failed to re-linearize tiled array");
+
+  /* free the dimension header array. */
+  free(dhdr);
 
   /* return success. */
   return 1;
