@@ -35,29 +35,39 @@ OBJ=$(LIBOBJ)
 # all: global, default compilation rule.
 all: $(OBJ) $(BINBIN)
 
+# bin/hx: binary linkage target for command-line hx multi-tool.
 bin/hx: $(OBJ) bin/hx.o
 	@echo " LD $@"
 	@$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
 
+# .c.o: general compilation target for C source files.
 .c.o:
 	@echo " CC $^"
 	@$(CC) $(CFLAGS) -c $^ -o $@
 
+# clean: remove all generated object code and binaries.
 clean:
 	@echo " CLEAN"
 	@rm -rf $(OBJ) $(BINOBJ) $(BINBIN)
 
+# again: quick full recompilation target.
 again: clean all
 
+# fixme: target to search all source files for 'fix me' statements.
 fixme:
 	@echo " FIXME"
-	@grep -RHni fixme hxnd/*.h libhxnd/*.c bin/*.[ch] man/*.[0-9] || \
+	@grep \
+	   --recursive --with-filename \
+	   --line-number --ignore-case --color \
+	 fixme hxnd/*.h libhxnd/*.c bin/*.[ch] man/*.[0-9] || \
 	 echo " No statements found"
 
+# linecount: target to count lines of all C source files and headers.
 linecount:
 	@echo " WC"
 	@wc -l hxnd/*.h libhxnd/*.c bin/*.[ch]
 
+# dist: target to generate a source tarball.
 dist: clean
 	@isodate=$$(date +%Y%m%d) && \
 	 projdir=$$(pwd) && \
@@ -68,4 +78,11 @@ dist: clean
 	 tar cf $${projdir}-$${isodate}.tar $${projdir}/ && \
 	 gzip -9 $${projdir}-$${isodate}.tar && \
 	 cd $${projdir} >/dev/null
+
+# git: target to commit and push all changes to github.
+git: clean
+	@echo " GIT commit"
+	@git commit -a
+	@echo " GIT push"
+	@git push
 
