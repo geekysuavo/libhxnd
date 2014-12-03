@@ -23,6 +23,85 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
+/* hx_array_resize_d(): change the algebraic dimensionality of a
+ * hypercomplex array. this function performs the resize operation
+ * in-place.
+ * @x: a pointer to the array to resize.
+ * @d: the new algebraic dimensionality.
+ */
+int hx_array_resize_d (hx_array *x, int d) {
+  /* declare a few required variables:
+   * @is: scalar array index.
+   * @ns: scalar array count.
+   * @n: new number of coefficients.
+   * @ncpy: number of bytes per scalar.
+   */
+  int is, ns, n, nmin, ncpy;
+  hx_scalar xs;
+
+  /* check that the specified dimensionality is supported. */
+  if (d < 0)
+    throw("algebraic dimensionality %d is invalid", d);
+
+  /* compute the new number of coefficients. */
+  n = 1 << d;
+
+  /* compute the new number of bytes per scalar. */
+  nmin = (n < x->n ? n : x->n);
+  ncpy = nmin * sizeof(real);
+
+  /* compute the number of scalars in the array. */
+  ns = x->len / x->n;
+
+  /* allocate a temporary scalar. */
+  if (!hx_scalar_alloc(&xs, d))
+    throw("failed to allocate temporary %d-scalar", d);
+
+  /* determine whether a shrink or a grow is required. */
+  if (d < x->d) {
+    /* shrink: loop forward through the scalar values of the array. */
+    for (is = 0; is < ns; is++) {
+      /* copy the scalar value from the old location to the new one. */
+      memcpy(xs.x, x->x + is * x->n, ncpy);
+      memcpy(x->x + is * n, xs.x, ncpy);
+    }
+
+    /* resize the coefficient array in place. */
+    x->x = (real*) realloc(x->x, ns * n * sizeof(real));
+
+    /* check that reallocation succeeded. */
+    if (x->x == NULL)
+      throw("failed to reallocate coefficient array");
+  }
+  else if (d > x->d) {
+    /* resize the coefficient array in place. */
+    x->x = (real*) realloc(x->x, ns * n * sizeof(real));
+
+    /* check that reallocation succeeded. */
+    if (x->x == NULL)
+      throw("failed to reallocate coefficient array");
+
+    /* grow: loop backward through the scalar values of the array. */
+    for (is = ns - 1; is >= 0; is--) {
+      /* copy the scalar value from the old location to the new one. */
+      memcpy(xs.x, x->x + is * x->n, ncpy);
+      memset(x->x + is * n, 0, n * sizeof(real));
+      memcpy(x->x + is * n, xs.x, ncpy);
+    }
+  }
+
+  /* store the new array dimensionality and length. */
+  x->d = d;
+  x->n = n;
+  x->len = ns * n;
+
+  /* free the temporary scalar. */
+  hx_scalar_free(&xs);
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_array_resize(): change the configuration of a hypercomplex array.
  * @x: a pointer to the array to resize.
  * @d: the new algebraic dimensionality.
@@ -30,10 +109,29 @@
  * @sz: the new size array.
  */
 int hx_array_resize (hx_array *x, int d, int k, int *sz) {
-  /* define a required variable. */
+  /* define a few required variables:
+   * @arr: array of indices for iteration.
+   * @idx: new linear iteration index.
+   * @idxprev: old linear iteration index.
+   * @i: general-purpose loop counter.
+   * @n: new number of coefficients.
+   * @len: new array length.
+   * @ok: whether to copy a coefficient.
+   * @nmin: smaller of new and old @n.
+   * @kmax: larger of new and old @k.
+   * @xnew: new coefficient array.
+   */
   int *arr, idx, idxprev, i, n, len, ok;
   int nmin, kmax;
   real *xnew;
+
+  /* check if the array needs no resizing. */
+  if (d == x->d && k == x->k && hx_array_index_cmp(k, sz, x->sz) == 0)
+    return 1;
+
+  /* check if only algebraic dimensionality is to be changed. */
+  if (k == x->k && hx_array_index_cmp(k, sz, x->sz) == 0)
+    return hx_array_resize_d(x, d);
 
   /* check if the specified dimensionalities are supported. */
   if (d < 0 || k < 1)

@@ -427,6 +427,8 @@ int ucsf_fwrite_datum (datum *D, FILE *fh) {
   /* declare a dimension loop counter. */
   unsigned int d;
 
+  /* FIXME: handle writing of complex datum arrays. */
+
   /* allocate an array of dimension headers. */
   dhdr = (struct ucsf_dim_header*)
     calloc(D->nd, sizeof(struct ucsf_dim_header));
