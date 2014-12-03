@@ -36,9 +36,10 @@ static const fn_args fn_argdef_real[] = {
  */
 int fn_execute_real (datum *D, const int dim, const char *argstr) {
   /* declare a required variable:
+   * @drm: array algebraic dimension to be removed.
    * @d: dimension loop counter.
    */
-  unsigned int d;
+  unsigned int d, drm;
 
   /* base function behaviour on the dimension index. */
   if (dim < 0) {
@@ -53,9 +54,16 @@ int fn_execute_real (datum *D, const int dim, const char *argstr) {
     }
   }
   else if (dim < D->nd) {
+    /* check that the dimension is not already real. */
+    if (!D->dims[dim].cx || D->dims[dim].d == DATUM_DIM_INVALID)
+      return 1;
+
+    /* store the array dimension to be removed. */
+    drm = D->dims[dim].d;
+
     /* drop the specified imaginary component from the array. */
-    if (!hx_array_real(&D->array, D->dims[dim].d))
-      throw("failed to drop imaginary #%d", dim);
+    if (!hx_array_real(&D->array, drm))
+      throw("failed to drop imaginaries in dimension %d", dim);
 
     /* loop over the datum dimensions. */
     for (d = 0; d < D->nd; d++) {
@@ -64,12 +72,12 @@ int fn_execute_real (datum *D, const int dim, const char *argstr) {
         continue;
 
       /* check if the dimension metadata needs adjustment. */
-      if (d == dim) {
+      if (D->dims[d].d == drm) {
         /* invalidate the specified dimension index. */
         D->dims[d].d = DATUM_DIM_INVALID;
         D->dims[d].cx = 0;
       }
-      else if (d > dim) {
+      else if (D->dims[d].d > drm) {
         /* reduce the array algebraic dimension index. */
         D->dims[d].d--;
       }

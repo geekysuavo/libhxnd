@@ -40,6 +40,7 @@
  */
 #define FN_NAME_ABS       "abs"
 #define FN_NAME_ADD       "add"
+#define FN_NAME_COMPLEX   "complex"
 #define FN_NAME_CUT       "cut"
 #define FN_NAME_FFT       "fft"
 #define FN_NAME_HT        "ht"
@@ -79,6 +80,8 @@ int fn_execute (datum *D, const char *name, const int dim, const char *argstr);
 int fn_execute_abs (datum *D, const int dim, const char *argstr);
 
 int fn_execute_add (datum *D, const int dim, const char *argstr);
+
+int fn_execute_complex (datum *D, const int dim, const char *argstr);
 
 int fn_execute_cut (datum *D, const int dim, const char *argstr);
 
