@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 /* function declarations: */
 
@@ -38,6 +39,10 @@ void strltrim (char *s);
 void strrtrim (char *s);
 
 void strnltrim (char *s);
+
+void strtolower (char *s);
+
+void strtoupper (char *s);
 
 int strbool (const char *s);
 

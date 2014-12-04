@@ -134,6 +134,38 @@ void strnltrim (char *s) {
     s[n - 1] = '\0';
 }
 
+/* strtolower(): convert a string to all lowercase characters.
+ * @s: the string to case-fold.
+ */
+void strtolower (char *s) {
+  /* declare a few required variables. */
+  int i;
+
+  /* check that the string is non-null. */
+  if (!s)
+    return;
+
+  /* loop over the characters of the string. */
+  for (i = 0; i < strlen(s); i++)
+    s[i] = tolower(s[i]);
+}
+
+/* strtoupper(): convert a string to all uppercase characters.
+ * @s: the string to case-fold.
+ */
+void strtoupper (char *s) {
+  /* declare a few required variables. */
+  int i;
+
+  /* check that the string is non-null. */
+  if (!s)
+    return;
+
+  /* loop over the characters of the string. */
+  for (i = 0; i < strlen(s); i++)
+    s[i] = toupper(s[i]);
+}
+
 /* strbool(): read any rational string name for a boolean value and return
  * an integer representation.
  * @s: the string to parse.
