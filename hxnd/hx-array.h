@@ -77,15 +77,33 @@ typedef int (*hx_array_vector_cb) (hx_array *x, hx_array *y,
                                    int *arr, int idx,
                                    va_list *vl);
 
-/* function declarations: */
+/* function declarations (hx-array.c): */
+
+int hx_array_set_coeff (hx_array *x, int di, real value, ...);
+
+int hx_array_complexify (hx_array *x, int genh);
+
+int hx_array_real (hx_array *x, int d);
+
+int hx_array_reshape (hx_array *x, int k, int *sz);
+
+int hx_array_repack (hx_array *x, int ndiv);
+
+int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...);
+
+int hx_array_shift (hx_array *x, int k, int amount);
+
+/* function declarations (hx-array-mem.c): */
 
 int hx_array_alloc (hx_array *x, int d, int k, int *sz);
 
 int hx_array_copy (hx_array *dst, hx_array *src);
 
+int hx_array_copy_real (hx_array *dst, hx_array *src);
+
 void hx_array_free (hx_array *x);
 
-int hx_array_set_coeff (hx_array *x, int di, real value, ...);
+/* function declarations (hx-array-io.c): */
 
 int hx_array_print (hx_array *x, const char *fname);
 
@@ -99,6 +117,8 @@ int hx_array_save (hx_array *x, const char *fname);
 
 int hx_array_load (hx_array *x, const char *fname);
 
+/* function declarations (hx-array-topo.c): */
+
 int hx_array_nnzdims (hx_array *x);
 
 int hx_array_is_vector (hx_array *x);
@@ -107,17 +127,13 @@ int hx_array_is_matrix (hx_array *x);
 
 int hx_array_is_cube (hx_array *x);
 
-int hx_array_complexify (hx_array *x, int genh);
+int hx_array_compact (hx_array *x);
+
+/* function declarations (hx-array-resize.c): */
 
 int hx_array_resize (hx_array *x, int d, int k, int *sz);
 
-int hx_array_real (hx_array *x, int d);
-
-int hx_array_reshape (hx_array *x, int k, int *sz);
-
-int hx_array_repack (hx_array *x, int ndiv);
-
-int hx_array_compact (hx_array *x);
+/* function declarations (hx-array-slice.c): */
 
 int hx_array_slicer (hx_array *x, hx_array *y,
                      int *lower, int *upper,
@@ -132,10 +148,6 @@ int hx_array_slicer (hx_array *x, hx_array *y,
 int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int loc);
 
 int hx_array_store_vector (hx_array *x, hx_array *y, int k, int loc);
-
-int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...);
-
-int hx_array_shift (hx_array *x, int k, int amount);
 
 #endif /* __HXND_HX_ARRAY_H__ */
 

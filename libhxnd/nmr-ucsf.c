@@ -427,7 +427,8 @@ int ucsf_fwrite_datum (datum *D, FILE *fh) {
   /* declare a dimension loop counter. */
   unsigned int d;
 
-  /* FIXME: handle writing of complex datum arrays. */
+  /* declare an array structure to use for writing. */
+  hx_array xout;
 
   /* allocate an array of dimension headers. */
   dhdr = (struct ucsf_dim_header*)
@@ -491,8 +492,19 @@ int ucsf_fwrite_datum (datum *D, FILE *fh) {
       n_tile *= dhdr[d].sztile;
   } while (n_tile > 32768);
 
+  /* check if the datum array is real. */
+  if (D->array.d == 0) {
+    /* just use the datum array. */
+    xout = D->array;
+  }
+  else {
+    /* copy the real component of the datum array. */
+    if (!hx_array_copy_real(&xout, &D->array))
+      throw("failed to copy real component of core array");
+  }
+
   /* map the linear datum array back into tiles. */
-  if (!ucsf_delinearize(&D->array, &fhdr, dhdr))
+  if (!ucsf_delinearize(&xout, &fhdr, dhdr))
     throw("failed to delinearize array into tiles");
 
   /* write the file header. */
@@ -504,14 +516,21 @@ int ucsf_fwrite_datum (datum *D, FILE *fh) {
     throw("failed to write %u dimension headers", D->nd);
 
   /* write the array data. */
-  if (fwrite(D->array.x, sizeof(real), D->array.len, fh) != D->array.len)
+  if (fwrite(xout.x, sizeof(real), xout.len, fh) != xout.len)
     throw("failed to write core array data");
 
-  /* map the tiled array back into the proper format, just in case it
-   * needs to be used again.
-   */
-  if (!ucsf_linearize(&D->array, &fhdr, dhdr))
-    throw("failed to re-linearize tiled array");
+  /* check if the datum array was used directly. */
+  if (D->array.d == 0) {
+    /* map the tiled array back into the proper format, just in case it
+     * needs to be used again.
+     */
+    if (!ucsf_linearize(&xout, &fhdr, dhdr))
+      throw("failed to re-linearize tiled array");
+  }
+  else {
+    /* throw away the real copy of the datum array. */
+    hx_array_free(&xout);
+  }
 
   /* free the dimension header array. */
   free(dhdr);

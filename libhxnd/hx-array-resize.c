@@ -34,7 +34,7 @@ int hx_array_resize_d (hx_array *x, int d) {
    * @is: scalar array index.
    * @ns: scalar array count.
    * @n: new number of coefficients.
-   * @ncpy: number of bytes per scalar.
+   * @ncpy: number of bytes to copy per scalar.
    */
   int is, ns, n, nmin, ncpy;
   hx_scalar xs;

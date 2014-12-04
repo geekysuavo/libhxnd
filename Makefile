@@ -5,8 +5,9 @@ CFLAGS=-g -O2 -std=c99 -Wall -Wformat -I. -fopenmp
 LIBS=-lm
 
 # LIBSRC: library source basenames: hypercomplex data structures.
-LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-array-io hx-array-mem
-LIBSRC+= hx-array-resize hx-cmp hx-arith hx-phasor hx-fourier hx-window hx-ist
+LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-array-mem hx-array-io
+LIBSRC+= hx-array-topo hx-array-resize hx-array-slice hx-cmp hx-arith
+LIBSRC+= hx-phasor hx-fourier hx-window hx-ist
 
 # LIBSRC: library source basenames: auxiliary library routines.
 LIBSRC+= trace opts str bytes

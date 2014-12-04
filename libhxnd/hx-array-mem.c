@@ -78,8 +78,10 @@ int hx_array_alloc (hx_array *x, int d, int k, int *sz) {
   return 1;
 }
 
-/* hx_array_copy(): duplicates the contents of a hypercomplex array structure
+/* hx_array_copy(): duplicate the contents of a hypercomplex array structure
  * into another structure.
+ * @dst: destination array structure pointer.
+ * @src: source array structure pointer.
  */
 int hx_array_copy (hx_array *dst, hx_array *src) {
   /* allocate the destination array. */
@@ -89,6 +91,37 @@ int hx_array_copy (hx_array *dst, hx_array *src) {
   /* copy the coefficients from the source array into the destination array.
    */
   memcpy(dst->x, src->x, src->len * sizeof(real));
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_copy_real(): duplicate the real contents of a hypercomplex array
+ * structure into another structure.
+ * @dst: destination array structure pointer.
+ * @src: source array structure pointer.
+ */
+int hx_array_copy_real (hx_array *dst, hx_array *src) {
+  /* declare a few required variables:
+   * @i: scalar array index.
+   * @n: scalar array count.
+   */
+  int i, n;
+
+  /* check if the source array is real. */
+  if (src->d == 0)
+    return hx_array_copy(dst, src);
+
+  /* allocate the destination array. */
+  if (!hx_array_alloc(dst, 0, src->k, src->sz))
+    throw("failed to allocate destination array");
+
+  /* compute the number of scalars in the source array. */
+  n = dst->len;
+
+  /* copy the real coefficients from the source array. */
+  for (i = 0; i < n; i++)
+    memcpy(dst->x + i, src->x + i * src->n, sizeof(real));
 
   /* return success. */
   return 1;
