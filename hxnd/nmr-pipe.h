@@ -48,7 +48,7 @@
 
 /* define the value of the @phase2d header for writing pipe files.
  */
-#define PIPE_2D_STATES  2
+#define PIPE_PHASE2D_STATES  2
 
 /* define values that the @quad header variables may take in pipe files.
  */

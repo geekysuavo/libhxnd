@@ -545,7 +545,7 @@ int pipe_fwrite_datum (datum *D, FILE *fh) {
 
   /* set the number of dimensions and the plane mode. */
   hdr.ndims = (float) D->nd;
-  hdr.phase2d = PIPE_2D_STATES;
+  hdr.phase2d = PIPE_PHASE2D_STATES;
 
   /* set the master quadrature flag. */
   hdr.quad = (float) PIPE_QUAD_REAL;

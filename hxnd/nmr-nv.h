@@ -32,7 +32,17 @@
 #include <hxnd/bytes.h>
 
 /* define a magic string used to check existence of nmrview files. */
-#define NV_MAGIC      0
+#define NV_MAGIC      0x3418abcd
+
+/* define the maximum number of dimensions that may be stored in an nmrview
+ * format file.
+ */
+#define NV_MAXDIM  8
+
+/* define sizes of the string struct members of the nmrview header. */
+#define NV_HDRSTR_SZ_SEQUENCE  32
+#define NV_HDRSTR_SZ_COMMENT  160
+#define NV_HDRSTR_SZ_LABEL     16
 
 /* nv_dim_header: dimension header of data contains in an nmrview
  * format file.
@@ -70,10 +80,10 @@ struct nv_dim_header {
   float foldup;
   float folddown;
 
-  /* (13..28) @label: dimension label string. */
-  char label[16];
+  /* (13..16) @label: dimension label string. */
+  char label[NV_HDRSTR_SZ_LABEL];
 
-  /* (29..43) @pad_end */
+  /* (17..31) @pad_end */
   int32_t pad_end[15];
 };
 
@@ -88,11 +98,11 @@ struct nv_file_header {
    * (5) @blkelem: FIXME
    * (6) @ndims: FIXME
    * (7) @temp: collection temperature.
-   * (8..39) @sequence: pulse sequence string.
-   * (40..199) @comment: comment string.
-   * (200) @month: collection month.
-   * (201) @day: collection day of month.
-   * (202) @year: collection year.
+   * (8..15) @sequence: pulse sequence string.
+   * (16..55) @comment: comment string.
+   * (56) @month: collection month.
+   * (57) @day: collection day of month.
+   * (58) @year: collection year.
    */
   int32_t magic;
   int32_t pad0[2];
@@ -101,17 +111,17 @@ struct nv_file_header {
   int32_t blkelem;
   int32_t ndims;
   float temp;
-  char sequence[32];
-  char comment[160];
+  char sequence[NV_HDRSTR_SZ_SEQUENCE];
+  char comment[NV_HDRSTR_SZ_COMMENT];
   int32_t month;
   int32_t day;
   int32_t year;
 
-  /* (203..399) @pad1 */
+  /* (59..255) @pad1 */
   int32_t pad1[197];
 
-  /* (400..end) @dims: dimension fields. */
-  struct nv_dim_header dims[8];
+  /* (256..end) @dims: dimension fields. */
+  struct nv_dim_header dims[NV_MAXDIM];
 };
 
 /* function declarations: */
