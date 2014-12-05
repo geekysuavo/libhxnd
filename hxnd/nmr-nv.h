@@ -99,9 +99,9 @@ struct nv_dim_header {
 struct nv_file_header {
   /* (0) @magic: magic number.
    * (1..2) @pad0
-   * (3) @fhdrsz: FIXME
-   * (4) @bhdrsz: FIXME
-   * (5) @blkelem: FIXME
+   * (3) @fhdrsz: file header size, in bytes.
+   * (4) @bhdrsz: block header size, in bytes.
+   * (5) @blkelem: number of block elements.
    * (6) @ndims: number of dimensions.
    * (7) @temp: collection temperature.
    * (8..15) @sequence: pulse sequence string.
