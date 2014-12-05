@@ -138,18 +138,37 @@ int nv_read (const char *fname, hx_array *x) {
  * @D: pointer to the datum struct to fill.
  */
 int nv_fill_datum (const char *fname, datum *D) {
-  /* declare variables required to determine byte ordering:
+  /* declare variables required to read header information:
    * @endianness: the byte ordering of the data file.
    * @hdr: the nmrview file header structure.
+   * @d: dimension loop counter.
    */
   enum byteorder endianness = BYTES_ENDIAN_AUTO;
   struct nv_file_header hdr;
+  unsigned int d;
 
   /* read the header information from the data file. */
   if (!nv_read_header(fname, &endianness, &hdr))
     throw("failed to read header of '%s'", fname);
 
-  /* FIXME: implement nv_fill_datum() */
+  /* store the dimension count. */
+  D->nd = (unsigned int) hdr.ndims;
+
+  /* check the dimension count. */
+  if (D->nd < 1 || D->nd > NV_MAXDIM)
+    throw("invalid dimensionality %d", hdr.ndims);
+
+  /* allocate the dimension parameter array. */
+  D->dims = (datum_dim*) calloc(D->nd, sizeof(datum_dim));
+
+  /* check that the dimension parameter array was allocated. */
+  if (D->dims == NULL)
+    throw("failed to allocate %u datum dimensions", D->nd);
+
+  /* store the dimension information. */
+  for (d = 0; d < D->nd; d++) {
+    /* FIXME: implement nv_fill_datum() */
+  }
 
   /* store the filename string. */
   D->fname = (char*) malloc((strlen(fname) + 1) * sizeof(char));

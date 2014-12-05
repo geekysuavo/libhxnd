@@ -345,7 +345,11 @@ int ucsf_read (const char *fname, hx_array *x) {
  * @D: pointer to the datum struct to fill.
  */
 int ucsf_fill_datum (const char *fname, datum *D) {
-  /* declare variables required to read headers:
+  /* declare variables required to read header information:
+   * @endianness: the byte ordering of the data file.
+   * @fhdr: the ucsf file header structure.
+   * @dhdr: an array of ucsf dimension header structures.
+   * @d: dimension loop counter.
    */
   enum byteorder endianness = BYTES_ENDIAN_AUTO;
   struct ucsf_file_header fhdr;
