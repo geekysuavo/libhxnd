@@ -38,6 +38,7 @@
 \n\
  Options:\n\
    -h, --help             Display this help message\n\
+   -n, --new              Create a new datum, do not read input\n\
    -i, --input FIN        Specify an input filename [stdin]\n\
    -o, --output FOUT      Specify an output filename [stdout]\n\
    -F, --format FMT       Specify an output format [hx]\n\
@@ -68,6 +69,12 @@ struct parsed_arg {
   char *rstr;
 };
 
+/* function declarations: */
+
+int main_apply_procs (datum *D, struct parsed_arg *lst, unsigned int n);
+
+int main_apply_corrs (datum *D, struct parsed_arg *lst, unsigned int n);
+
 /* main(): application entry point.
  * @argc: argument count.
  * @argv: argument array.
@@ -80,6 +87,7 @@ int main (int argc, char **argv) {
    */
   const opts_def long_options[] = {
     { "help",     0, 'h' },
+    { "new",      1, 'n' },
     { "input",    1, 'i' },
     { "output",   1, 'o' },
     { "format",   1, 'F' },
@@ -108,9 +116,13 @@ int main (int argc, char **argv) {
   FILE *fh;
 
   /* declare variables for behavior determination:
+   * @ndnew: number of dimensions to create if @mknew is raised.
    * @pretend: whether to continue writing to @fh or print header info.
+   * @mknew: whether to create a new datum or read from the input file.
    */
+  unsigned int ndnew = 0;
   int pretend = 0;
+  int mknew = 0;
 
   /* declare variables for function execution:
    * @procs: array of processing functions.
@@ -134,9 +146,6 @@ int main (int argc, char **argv) {
   char *lval, *rval;
   int dval;
 
-  /* declare a general loop counter. */
-  unsigned int i;
-
   /* loop until the arguments are exhausted. */
   while ((c = opts_get(argc, argv, long_options, &argi)) != -1) {
     /* determine which option was specified. */
@@ -145,6 +154,12 @@ int main (int argc, char **argv) {
       case 'h':
         fprintf(stdout, HX_HELPSTRING);
         return 0;
+
+      /* n: new mode. */
+      case 'n':
+        ndnew = atoi(argv[argi - 1]);
+        mknew = 1;
+        break;
 
       /* i: input filename. */
       case 'i':
@@ -253,8 +268,40 @@ int main (int argc, char **argv) {
   /* initialize the datum structure. */
   datum_init(&D);
 
-  /* determine how to read data in. */
-  if (fname_in) {
+  /* determine whether and how to read data in. */
+  if (mknew) {
+    /* initialize the datum main fields. */
+    D.type = DATUM_TYPE_HXND;
+    D.nd = ndnew;
+
+    /* allocate the required datum dimensions. */
+    D.dims = (datum_dim*) calloc(D.nd, sizeof(datum_dim));
+
+    /* check that allocation succeeded. */
+    if (D.dims == NULL) {
+      /* raise an error and end execution. */
+      raise("failed to allocate datum dimensions");
+      traceback_print();
+      return 1;
+    }
+
+    /* apply parameter corrections. */
+    if (!main_apply_corrs(&D, corrs, n_corrs)) {
+      /* raise an error and end execution. */
+      raise("failed to apply parameter corrections");
+      traceback_print();
+      return 1;
+    }
+
+    /* allocate the array to match the datum parameters. */
+    if (!datum_alloc_array(&D)) {
+      /* raise an error and end execution. */
+      raise("failed to allocate new datum array");
+      traceback_print();
+      return 1;
+    }
+  }
+  else if (fname_in) {
     /* determine the type of input data. */
     D.type = datum_guess_type(fname_in);
 
@@ -275,30 +322,11 @@ int main (int argc, char **argv) {
     }
 
     /* apply parameter corrections at this point. */
-    for (i = 0; i < n_corrs; i++) {
-      /* apply the currently indexed correction. */
-      if (!datum_set_dim_parameter(&D, corrs[i].lstr,
-                                   corrs[i].d - 1,
-                                   corrs[i].rstr)) {
-        /* raise an exception. */
-        raise("failed to correct %s[%u] to '%s'",
-              corrs[i].lstr, corrs[i].d, corrs[i].rstr);
-
-        /* end execution. */
-        traceback_print();
-        return 1;
-      }
-
-      /* free the allocated correction strings. */
-      free(corrs[i].lstr);
-      free(corrs[i].rstr);
-    }
-
-    /* free the parameter corrections array. */
-    if (n_corrs) {
-      /* only if corrections have been allocated. */
-      free(corrs);
-      n_corrs = 0;
+    if (!main_apply_corrs(&D, corrs, n_corrs)) {
+      /* raise an error and end execution. */
+      raise("failed to apply parameter corrections");
+      traceback_print();
+      return 1;
     }
 
     /* load the array data. */
@@ -345,27 +373,11 @@ int main (int argc, char **argv) {
   }
 
   /* apply processing functions at this point. */
-  for (i = 0; i < n_procs; i++) {
-    /* apply the currently indexed processing function. */
-    if (!fn_execute(&D, procs[i].lstr, procs[i].d - 1, procs[i].rstr)) {
-      /* raise an exception. */
-      raise("failed to apply function '%s' (#%u)", procs[i].lstr, i);
-
-      /* end execution. */
-      traceback_print();
-      return 1;
-    }
-
-    /* free the allocated processing function strings. */
-    free(procs[i].lstr);
-    free(procs[i].rstr);
-  }
-
-  /* free the processing functions array. */
-  if (n_procs) {
-    /* but only if it's been allocated. */
-    free(procs);
-    n_procs = 0;
+  if (!main_apply_procs(&D, procs, n_procs)) {
+    /* raise an exception and end execution. */
+    raise("failed to apply processing functions");
+    traceback_print();
+    return 1;
   }
 
   /* determine how to write data out. */
@@ -392,5 +404,72 @@ int main (int argc, char **argv) {
 
   /* return successfully. */
   return 0;
+}
+
+/* main_apply_procs(): apply processing functions to a datum structure.
+ * @D: pointer to the datum to manipulate.
+ * @lst: list of processing function arguments.
+ * @n: number of processing functions.
+ */
+int main_apply_procs (datum *D, struct parsed_arg *lst, unsigned int n) {
+  /* declare a required loop counter. */
+  unsigned int i;
+
+  /* check that the list is non-empty. */
+  if (!n)
+    return 1;
+
+  /* loop over the array of function arguments. */
+  for (i = 0; i < n; i++) {
+    /* apply the currently indexed processing function. */
+    if (!fn_execute(D, lst[i].lstr, lst[i].d - 1, lst[i].rstr))
+      throw("failed to apply function '%s' (#%u)", lst[i].lstr, i);
+
+    /* free the allocated processing function strings. */
+    free(lst[i].lstr);
+    free(lst[i].rstr);
+  }
+
+  /* free the processing functions array. */
+  free(lst);
+
+  /* return success. */
+  return 1;
+}
+
+/* main_apply_corrs(): apply parameter corrections to a datum structure.
+ * @D: pointer to the datum to manipulate.
+ * @lst: list of correction arguments.
+ * @n: number of corrections.
+ */
+int main_apply_corrs (datum *D, struct parsed_arg *lst, unsigned int n) {
+  /* declare a required loop counter. */
+  unsigned int i;
+
+  /* check that the list is non-empty. */
+  if (!n)
+    return 1;
+
+  /* loop over the array of corrections. */
+  for (i = 0; i < n; i++) {
+    /* apply the currently indexed correction. */
+    if (!datum_set_dim_parameter(D, lst[i].lstr,
+                                 lst[i].d - 1,
+                                 lst[i].rstr)) {
+      /* raise an exception. */
+      throw("failed to correct %s[%u] to '%s'",
+            lst[i].lstr, lst[i].d, lst[i].rstr);
+    }
+
+    /* free the allocated correction strings. */
+    free(lst[i].lstr);
+    free(lst[i].rstr);
+  }
+
+  /* free the corrections array. */
+  free(lst);
+
+  /* return success. */
+  return 1;
 }
 

@@ -117,6 +117,7 @@ void datum_init (datum *D) {
   D->fname = NULL;
 
   /* initialize the datum type. */
+  D->endian = BYTES_ENDIAN_AUTO;
   D->type = DATUM_TYPE_UNDEFINED;
 
   /* initialize the dimension count and dimensions array. */
@@ -133,6 +134,7 @@ void datum_init (datum *D) {
 
   /* indicate that the array is not allocated. */
   D->array_alloc = 0;
+  hx_array_init(&D->array);
 }
 
 /* datum_free(): frees all allocated innards of an NMR datum structure.
@@ -1271,6 +1273,62 @@ int datum_read_sched (datum *D, const char *fname) {
 
   /* store the constructed schedule array. */
   D->sched = sched;
+
+  /* return success. */
+  return 1;
+}
+
+/* datum_alloc_array(): allocates a new array based on the currently set
+ * parameters in a datum structure.
+ * @D: pointer to the datum to allocate an array into.
+ */
+int datum_alloc_array (datum *D) {
+  /* declare a few required variables. */
+  int d, k, *sznew;
+  unsigned int i;
+
+  /* check if the array has been allocated. */
+  if (D->array_alloc)
+    throw("array is already allocated");
+
+  /* get the number of topological dimensions. */
+  k = (int) D->nd;
+
+  /* allocate an array for storing array dimension sizes. */
+  sznew = hx_array_index_alloc(k);
+
+  /* check that allocation was successful. */
+  if (!sznew)
+    throw("failed to allocate %d indices", k);
+
+  /* compute the number of algebraic dimensions. */
+  for (i = 0, d = 0; i < D->nd; i++) {
+    /* store the topological dimension index. */
+    D->dims[i].k = (int) i;
+
+    /* store the topological dimension size. */
+    sznew[i] = (D->dims[i].sz ? D->dims[i].sz : 1);
+
+    /* check if the dimension is complex. */
+    if (D->dims[i].cx) {
+      /* store the algebraic dimension index. */
+      D->dims[i].d = d++;
+    }
+    else {
+      /* store an invalid dimension index. */
+      D->dims[i].d = DATUM_DIM_INVALID;
+    }
+  }
+
+  /* allocate the core array. */
+  if (!hx_array_alloc(&D->array, d, k, sznew))
+    throw("failed to allocate core array");
+
+  /* indicate that the array has been allocated. */
+  D->array_alloc = 1;
+
+  /* free the size array. */
+  free(sznew);
 
   /* return success. */
   return 1;

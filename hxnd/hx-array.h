@@ -95,6 +95,8 @@ int hx_array_shift (hx_array *x, int k, int amount);
 
 /* function declarations (hx-array-mem.c): */
 
+void hx_array_init (hx_array *x);
+
 int hx_array_alloc (hx_array *x, int d, int k, int *sz);
 
 int hx_array_copy (hx_array *dst, hx_array *src);

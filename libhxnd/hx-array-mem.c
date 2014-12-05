@@ -23,6 +23,26 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
+/* hx_array_init(): initialize the elements of a hypercomplex array.
+ * @x: pointer to the array structure to initialize.
+ */
+void hx_array_init (hx_array *x) {
+  /* initialize the structure members. */
+  x->d = 0;
+  x->n = 0;
+  x->k = 0;
+  x->len = 0;
+
+  /* initialize the size array. */
+  x->sz = NULL;
+
+  /* initialize the coefficient array. */
+  x->x = NULL;
+
+  /* initialize the table pointer. */
+  x->tbl = NULL;
+}
+
 /* hx_array_alloc(): allocate a hypercomplex array structure for a given
  * dimensionality. a pointer to the array structure is required by this
  * function.

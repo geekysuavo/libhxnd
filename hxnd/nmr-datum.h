@@ -170,6 +170,8 @@ int datum_refactor_array (datum *D);
 
 int datum_read_sched (datum *D, const char *fname);
 
+int datum_alloc_array (datum *D);
+
 int datum_read_array (datum *D);
 
 int datum_free_array (datum *D);
