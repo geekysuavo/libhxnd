@@ -277,7 +277,7 @@ uint8_t *bytes_read_block (const char *fname,
   }
 
   /* read the bytes in from the input file. */
-  if (!fread(bytes, sizeof(uint8_t), n, fh)) {
+  if (fread(bytes, sizeof(uint8_t), n, fh) != n) {
     /* free the byte array and return nothing. */
     raise("failed to read %u bytes from '%s'", n, fname);
     free(bytes);

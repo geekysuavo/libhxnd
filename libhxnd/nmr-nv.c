@@ -121,12 +121,122 @@ int nv_read_header (const char *fname,
   return 1;
 }
 
+/* nv_tiler(): redo or undo the tiling inherent in nmrview-format files,
+ * effectively mapping between tiled array data and a real linear
+ * array suitable for datum_refactor_array().
+ * @x: pointer to the array to linearize.
+ * @hdr: pointer to the file header.
+ * @dir: direction, either 0 (linearize) or 1 (tileize).
+ */
+int nv_tiler (hx_array *x, struct nv_file_header *hdr, int dir) {
+  /* declare a few required variables:
+   * @i: general purpose loop counter.
+   * @k: number of dimensions.
+   * @nt: array of tile counts.
+   * @szt: array of tile sizes.
+   */
+  int i, k, *nt, *szt;
+
+  /* gain a handle on the dimensionality of the array data. */
+  k = (int) hdr->ndims;
+
+  /* allocate the size index arrays. */
+  nt = hx_array_index_alloc(k);
+  szt = hx_array_index_alloc(k);
+
+  /* check that all index allocations were successful. */
+  if (!nt || !szt)
+    throw("failed to allocate two sets of %d indices", k);
+
+  /* initialize the size arrays. */
+  for (i = 0; i < k; i++) {
+    /* check that the point and tile counts are nonzero. */
+    if (hdr->dims[i].sz < 1 || hdr->dims[i].szblk < 1)
+      throw("invalid tiling (%d, %d) along dimension %d",
+            hdr->dims[i].szblk, hdr->dims[i].sz, i);
+
+    /* check that the point count is evenly divided by the tile size. */
+    if (hdr->dims[i].sz % hdr->dims[i].szblk)
+      throw("tile size %u does not evenly divide point count %u",
+            hdr->dims[i].szblk, hdr->dims[i].sz);
+
+    /* set the tile count. */
+    nt[i] = hdr->dims[i].sz / hdr->dims[i].szblk;
+
+    /* set the tile point count. */
+    szt[i] = hdr->dims[i].szblk;
+  }
+
+  /* perform the mapping operation. */
+  if (!hx_array_tiler(x, k, nt, szt, dir))
+    throw("failed to perform tile mapping");
+
+  /* free the allocated index arrays. */
+  free(nt);
+  free(szt);
+
+  /* return success. */
+  return 1;
+}
+
+/* nv_linearize(): maps tiles to linear array data.
+ */
+#define nv_linearize(x, hdr) \
+  nv_tiler(x, hdr, HX_ARRAY_TILER_FORWARD)
+
+/* ucsf_tileize(): maps linear array data to tiles.
+ */
+#define nv_tileize(x, hdr) \
+  nv_tiler(x, hdr, HX_ARRAY_TILER_REVERSE)
+
 /* nv_read(): reads an nmrview-format data file into a real linear array.
  * @fname: the input data filename.
  * @x: the output array.
  */
 int nv_read (const char *fname, hx_array *x) {
-  /* FIXME: implement nv_read() */
+  /* declare variables required to read header information:
+   * @endianness: the byte ordering of the data file.
+   * @hdr: the nmrview file header structure.
+   */
+  enum byteorder endianness = BYTES_ENDIAN_AUTO;
+  struct nv_file_header hdr;
+
+  /* declare variables for reading raw data bytes:
+   * @offset: byte offset where point data begins.
+   * @i: general purpose loop counter.
+   * @n: number of bytes to read.
+   */
+  unsigned int offset, i, n;
+  uint8_t *bytes;
+
+  /* read the header information from the data file. */
+  if (!nv_read_header(fname, &endianness, &hdr))
+    throw("failed to read header of '%s'", fname);
+
+  /* compute the byte offset from which to begin reading point data. */
+  offset = sizeof(struct nv_file_header);
+
+  /* compute the number of bytes to read. */
+  for (i = 0, n = sizeof(float); i < hdr.ndims; i++)
+    n *= hdr.dims[i].sz;
+
+  /* read the data bytes in from the file. */
+  bytes = bytes_read_block(fname, offset, n);
+
+  /* check that the bytes were read successfully. */
+  if (!bytes)
+    throw("failed to read %u bytes from '%s'", n, fname);
+
+  /* build a real linear array from the byte data. */
+  if (!bytes_toarray(bytes, n, endianness, sizeof(float), 1, x))
+    throw("failed to convert bytes to array");
+
+  /* free the read byte data. */
+  free(bytes);
+
+  /* convert tiles to linear values. */
+  if (!nv_linearize(x, &hdr))
+    throw("failed to linearize tiled array");
 
   /* return success. */
   return 1;
@@ -167,7 +277,33 @@ int nv_fill_datum (const char *fname, datum *D) {
 
   /* store the dimension information. */
   for (d = 0; d < D->nd; d++) {
-    /* FIXME: implement nv_fill_datum() */
+    /* store the size parameters. */
+    D->dims[d].sz = D->dims[d].td = D->dims[d].tdunif =
+      (unsigned int) hdr.dims[d].sz;
+
+    /* store the status flags. */
+    D->dims[d].ft = 1;
+
+    /* store the spectral parameters. */
+    D->dims[d].carrier = (real) hdr.dims[d].sf;
+    D->dims[d].width = (real) hdr.dims[d].sw;
+    D->dims[d].offset = (real) hdr.dims[d].ref;
+
+    /* check if the offset value needs to be converted. */
+    switch (hdr.dims[d].refunits) {
+      /* ppm -> hz. */
+      case NV_REFUNIT_PPM:
+        D->dims[d].offset *= D->dims[d].carrier;
+        break;
+
+      /* other. */
+      default:
+        break;
+    }
+
+    /* store the nucleus string. */
+    strncpy(D->dims[d].nuc, hdr.dims[d].label, 8);
+    D->dims[d].nuc[7] = '\0';
   }
 
   /* store the filename string. */
@@ -189,7 +325,7 @@ int nv_fill_datum (const char *fname, datum *D) {
  * @fh: the output file stream.
  */
 int nv_fwrite_datum (datum *D, FILE *fh) {
-  /* FIXME: implement nv_fwrite_datum() */
+  /* FIXME: implement nv_fwrite_datum() */throw("unimplemented!");
 
   /* return success. */
   return 1;

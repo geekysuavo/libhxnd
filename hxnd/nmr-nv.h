@@ -39,6 +39,12 @@
  */
 #define NV_MAXDIM  8
 
+/* define the possible values that @refunits may take in nmrview files.
+ */
+#define NV_REFUNIT_PTS  1
+#define NV_REFUNIT_HZ   2
+#define NV_REFUNIT_PPM  3
+
 /* define sizes of the string struct members of the nmrview header. */
 #define NV_HDRSTR_SZ_SEQUENCE  32
 #define NV_HDRSTR_SZ_COMMENT  160
@@ -48,7 +54,7 @@
  * format file.
  */
 struct nv_dim_header {
-  /* (0) @sz: FIXME
+  /* (0) @sz: dimension point count.
    * (1) @szblk: FIXME
    * (2) @nblk: FIXME
    * (3) @offblk: FIXME
@@ -62,11 +68,11 @@ struct nv_dim_header {
   int32_t maskblk;
   int32_t ptoff;
 
-  /* (6) @sf: FIXME
-   * (7) @sw: FIXME
-   * (8) @refpt: FIXME
-   * (9) @ref: FIXME
-   * (10) @refunits: FIXME
+  /* (6) @sf: spectrometer carrier frequency (MHz).
+   * (7) @sw: spectral witch (Hz).
+   * (8) @refpt: reference spectral point.
+   * (9) @ref: reference frequency value.
+   * (10) @refunits: reference frequency units.
    */
   float sf;
   float sw;
@@ -74,8 +80,8 @@ struct nv_dim_header {
   float ref;
   int32_t refunits;
 
-  /* (11) @foldup: FIXME
-   * (12) @folddown: FIXME
+  /* (11) @foldup: upfield spectral folding parameter.
+   * (12) @folddown: downfield spectral folding parameter.
    */
   float foldup;
   float folddown;
@@ -96,7 +102,7 @@ struct nv_file_header {
    * (3) @fhdrsz: FIXME
    * (4) @bhdrsz: FIXME
    * (5) @blkelem: FIXME
-   * (6) @ndims: FIXME
+   * (6) @ndims: number of dimensions.
    * (7) @temp: collection temperature.
    * (8..15) @sequence: pulse sequence string.
    * (16..55) @comment: comment string.

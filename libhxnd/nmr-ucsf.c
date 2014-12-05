@@ -23,11 +23,6 @@
 /* include the ucsf header. */
 #include <hxnd/nmr-ucsf.h>
 
-/* define constants which determine the behavior of ucsf_map_tiles().
- */
-#define UCSF_TILEMAP_FORWARD  (+1)
-#define UCSF_TILEMAP_REVERSE  (-1)
-
 /* ucsf_check_magic(): checks the first "magic" bytes of a file and
  * returns whether they match the ucsf-format file magic number.
  * @fname: the input filename.
@@ -165,106 +160,63 @@ int ucsf_read_header (const char *fname,
   return 1;
 }
 
-/* ucsf_map_tiles(): redoes or undoes the tiling inherent in ucsf-format
- * files, effectively mapping between tiled array data and a real linear
+/* ucsf_tiler(): redo or undo the tiling inherent in ucsf-format files,
+ * effectively mapping between tiled array data and a real linear
  * array suitable for datum_refactor_array().
  * @x: pointer to the array to linearize.
  * @fhdr: pointer to the file header.
  * @dhdr: array of dimension headers.
- * @dir: direction, either +1 (linearize) or -1 (tileize).
+ * @dir: direction, either 0 (linearize) or 1 (tileize).
  */
-int ucsf_map_tiles (hx_array *x,
-                    struct ucsf_file_header *fhdr,
-                    struct ucsf_dim_header *dhdr,
-                    int dir) {
+int ucsf_tiler (hx_array *x,
+                struct ucsf_file_header *fhdr,
+                struct ucsf_dim_header *dhdr,
+                int dir) {
   /* declare a few required variables:
    * @i: general purpose loop counter.
    * @k: number of dimensions.
-   * @idxi: input array linear index.
-   * @idxo: output array linear index.
-   * @sz: array of tile sizes.
-   * @szt: array of tile counts.
-   * @arr: multidimensional point index array.
-   * @arrt: multidimensional tile index array.
-   * @xcpy: temporary tile array.
+   * @nt: array of tile counts.
+   * @szt: array of tile sizes.
    */
-  int i, k, n, ncpy, idxi, idxo, *sz, *szt, *arr, *arrt;
-  hx_array xcpy;
+  int i, k, *nt, *szt;
 
   /* gain a handle on the dimensionality of the array data. */
   k = (int) fhdr->ndims;
 
   /* allocate the size index arrays. */
-  sz = hx_array_index_alloc(k);
+  nt = hx_array_index_alloc(k);
   szt = hx_array_index_alloc(k);
 
-  /* allocate the loop index arrays. */
-  arr = hx_array_index_alloc(k);
-  arrt = hx_array_index_alloc(k);
-
   /* check that all index allocations were successful. */
-  if (!sz || !szt || !arr || !arrt)
-    throw("failed to allocate four sets of %d indices", k);
+  if (!nt || !szt)
+    throw("failed to allocate two sets of %d indices", k);
 
   /* initialize the size arrays. */
   for (i = 0; i < k; i++) {
+    /* check that the point and tile counts are nonzero. */
+    if (dhdr[i].npts < 1 || dhdr[i].sztile < 1)
+      throw("invalid tiling (%u, %u) along dimension %d",
+            dhdr[i].sztile, dhdr[i].npts, i);
+
     /* check that the point count is evenly divided by the tile size. */
     if (dhdr[i].npts % dhdr[i].sztile)
       throw("tile size %u does not evenly divide point count %u",
             dhdr[i].sztile, dhdr[i].npts);
 
-    /* set the tile point count. */
-    sz[i] = dhdr[i].sztile;
-
     /* set the tile count. */
-    szt[i] = dhdr[i].npts / dhdr[i].sztile;
+    nt[i] = dhdr[i].npts / dhdr[i].sztile;
+
+    /* set the tile point count. */
+    szt[i] = dhdr[i].sztile;
   }
 
-  /* allocate a temporary array for storing tile data. */
-  if (!hx_array_copy(&xcpy, x))
-    throw("failed to allocate tile array");
-
-  /* compute the coefficient count and byte count per scalar.
-   */
-  n = x->n;
-  ncpy = n * sizeof(real);
-
-  /* loop over the data tiles. initialize the input linear index. */
-  idxi = 0;
-  do {
-    /* loop over the tile points. */
-    do {
-      /* pack the tiled indices into a linear index. */
-      hx_array_index_pack_tiled(k, szt, sz, arr, arrt, &idxo);
-
-      /* determine the copy direction. */
-      switch (dir) {
-        /* forward: tiles -> linear. */
-        case UCSF_TILEMAP_FORWARD:
-          /* copy coefficients from the tiled array into the linear array. */
-          memcpy(x->x + idxo * n, xcpy.x + idxi * n, ncpy);
-          break;
-
-        /* reverse: linear -> tiles. */
-        case UCSF_TILEMAP_REVERSE:
-          /* copy coefficients from the linear array into the tiled array. */
-          memcpy(x->x + idxi * n, xcpy.x + idxo * n, ncpy);
-          break;
-      }
-
-      /* increment the tile linear index. */
-      idxi++;
-    } while (hx_array_index_incr_rev(k, sz, arr));
-  } while (hx_array_index_incr_rev(k, szt, arrt));
-
-  /* free the allocated tile array. */
-  hx_array_free(&xcpy);
+  /* perform the mapping operation. */
+  if (!hx_array_tiler(x, k, nt, szt, dir))
+    throw("failed to perform tile mapping");
 
   /* free the allocated index arrays. */
-  free(sz);
+  free(nt);
   free(szt);
-  free(arr);
-  free(arrt);
 
   /* return success. */
   return 1;
@@ -273,12 +225,12 @@ int ucsf_map_tiles (hx_array *x,
 /* ucsf_linearize(): maps tiles to linear array data.
  */
 #define ucsf_linearize(x, fhdr, dhdr) \
-  ucsf_map_tiles(x, fhdr, dhdr, UCSF_TILEMAP_FORWARD)
+  ucsf_tiler(x, fhdr, dhdr, HX_ARRAY_TILER_FORWARD)
 
-/* ucsf_delinearize(): maps linear array data to tiles.
+/* ucsf_tileize(): maps linear array data to tiles.
  */
-#define ucsf_delinearize(x, fhdr, dhdr) \
-  ucsf_map_tiles(x, fhdr, dhdr, UCSF_TILEMAP_REVERSE)
+#define ucsf_tileize(x, fhdr, dhdr) \
+  ucsf_tiler(x, fhdr, dhdr, HX_ARRAY_TILER_REVERSE)
 
 /* ucsf_read(): reads a ucsf-format data file into a real linear array.
  * @fname: the input data filename.
@@ -509,7 +461,7 @@ int ucsf_fwrite_datum (datum *D, FILE *fh) {
   }
 
   /* map the linear datum array back into tiles. */
-  if (!ucsf_delinearize(&xout, &fhdr, dhdr))
+  if (!ucsf_tileize(&xout, &fhdr, dhdr))
     throw("failed to delinearize array into tiles");
 
   /* write the file header. */

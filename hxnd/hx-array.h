@@ -34,6 +34,12 @@
 #define HX_ARRAY_SLICER_SLICE 0
 #define HX_ARRAY_SLICER_STORE 1
 
+/* define constants for forward (linearize) and reverse (tileize) tiler
+ * operations.
+ */
+#define HX_ARRAY_TILER_FORWARD  0
+#define HX_ARRAY_TILER_REVERSE  1
+
 /* hx_array: data type for nD arrays of hypercomplex nD numbers.
  *
  * all the above information still applies to arrays, but an extra layer of
@@ -150,6 +156,16 @@ int hx_array_slicer (hx_array *x, hx_array *y,
 int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int loc);
 
 int hx_array_store_vector (hx_array *x, hx_array *y, int k, int loc);
+
+/* function declarations (hx-array-tile.c): */
+
+int hx_array_tiler (hx_array *x, int k, int *nt, int *szt, int dir);
+
+#define hx_array_linearize(x, k, n, s) \
+  hx_array_tiler(x, k, n, s, HX_ARRAY_TILER_FORWARD)
+
+#define hx_array_tileize(x, k, n, s) \
+  hx_array_tiler(x, k, n, s, HX_ARRAY_TILER_REVERSE)
 
 #endif /* __HXND_HX_ARRAY_H__ */
 
