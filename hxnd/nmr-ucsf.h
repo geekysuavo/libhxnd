@@ -83,7 +83,8 @@ struct ucsf_dim_header {
 
 int ucsf_check_magic (const char *fname);
 
-int ucsf_read_header (const char *fname, enum byteorder *endianness,
+int ucsf_read_header (const char *fname,
+                      enum byteorder *endianness,
                       struct ucsf_file_header *hdr,
                       struct ucsf_dim_header **dims);
 

@@ -71,12 +71,13 @@ datum_dim_desc;
 /* datum_types: local table of all available datum type names and values.
  */
 static const struct datum_type_def datum_types[] = {
+  { "hx",     DATUM_TYPE_HXND },
+  { "text",   DATUM_TYPE_TEXT },
   { "bruker", DATUM_TYPE_BRUKER },
   { "varian", DATUM_TYPE_VARIAN },
   { "pipe",   DATUM_TYPE_PIPE },
   { "ucsf",   DATUM_TYPE_UCSF },
-  { "hx",     DATUM_TYPE_HXND },
-  { "text",   DATUM_TYPE_TEXT },
+  { "nv",     DATUM_TYPE_NV },
   { NULL, DATUM_TYPE_UNDEFINED }
 };
 
@@ -199,6 +200,12 @@ enum datum_type datum_guess_type (const char *fname) {
   /* check if the file is a ucsf-format file. */
   if (ucsf_check_magic(fname))
     return DATUM_TYPE_UCSF;
+  else
+    traceback_clear();
+
+  /* check if the file is an nmrview-format file. */
+  if (nv_check_magic(fname))
+    return DATUM_TYPE_NV;
   else
     traceback_clear();
 
@@ -404,6 +411,10 @@ int datum_fwrite_formatted (datum *D, FILE *fh, enum datum_type fmt) {
     /* ucsf format. */
     case DATUM_TYPE_UCSF:
       return ucsf_fwrite_datum(D, fh);
+
+    /* nmrview format. */
+    case DATUM_TYPE_NV:
+      return nv_fwrite_datum(D, fh);
 
     /* hx native format. */
     case DATUM_TYPE_HXND:
@@ -1394,6 +1405,11 @@ int datum_read_array (datum *D) {
     if (!ucsf_read(D->fname, &D->array))
       throw("failed to read ucsf data from '%s'", D->fname);
   }
+  else if (D->type == DATUM_TYPE_NV) {
+    /* load the raw data from the nmrview file. */
+    if (!nv_read(D->fname, &D->array))
+      throw("failed to read nmrview data from '%s'", D->fname);
+  }
   else if (D->type == DATUM_TYPE_HXND) {
     /* compute the offset where the array begins. */
     offset = NMR_DATUM_FWRITE_SZ_HDR;
@@ -1638,6 +1654,15 @@ int datum_fill (datum *D, const char *fname) {
       /* attempt to fill from a ucsf-format file. */
       if (!ucsf_fill_datum(fname, D))
         throw("failed to parse ucsf parameters");
+
+      /* break out. */
+      break;
+
+    /* nmrview. */
+    case DATUM_TYPE_NV:
+      /* attempt to fill from an nmrview-format file. */
+      if (!nv_fill_datum(fname, D))
+        throw("failed to parse nmrview parameters");
 
       /* break out. */
       break;
