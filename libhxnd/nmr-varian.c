@@ -312,37 +312,39 @@ int varian_read_hdr_file (const char *fname, enum byteorder *endianness,
 int varian_read (const char *fname, hx_array *x) {
   /* declare a few required variables.
    */
-  unsigned int n, flt, nblk, szblk, offblk, offhead;
-  struct varian_hdr_file fh;
-  enum byteorder endianness;
-  uint8_t *bytes;
+  unsigned int isflt, nblk, szblk, offblk, offhead;
+  struct varian_hdr_file hdr;
+  enum byteorder endian;
+  FILE *fh;
 
   /* read the file header. */
-  if (!varian_read_hdr_file(fname, &endianness, &fh))
+  if (!varian_read_hdr_file(fname, &endian, &hdr))
     throw("failed to read header from '%s'", fname);
 
   /* compute block and header sizes for data loading. */
-  nblk = fh.nblocks;
-  szblk = fh.ntraces * fh.tbytes;
-  offblk = fh.bbytes - szblk;
+  nblk = hdr.nblocks;
+  szblk = hdr.ntraces * hdr.tbytes;
+  offblk = hdr.bbytes - szblk;
   offhead = sizeof(struct varian_hdr_file);
 
   /* determine whether the data is floating point or not. */
-  flt = (fh.status & VARIAN_HDR_S_FLOAT ? 1 : 0);
+  isflt = (hdr.status & VARIAN_HDR_S_FLOAT ? 1 : 0);
 
-  /* read the data bytes in from the file. */
-  bytes = bytes_read_varian(fname, nblk, szblk, offblk, offhead, &n);
+  /* open the input file for reading. */
+  fh = fopen(fname, "rb");
 
-  /* check that the bytes were read successfully. */
-  if (!bytes)
-    throw("failed to read %u %u-byte blocks from '%s'", nblk, szblk, fname);
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
 
-  /* build a real linear array from the byte data. */
-  if (!bytes_toarray(bytes, n, endianness, fh.ebytes, flt, x))
-    throw("failed to convert bytes to array");
+  /* read data from the file into the output array. */
+  if (!hx_array_fread_raw(fh, x, endian, hdr.ebytes, isflt,
+                          offhead, offblk, nblk,
+                          szblk / hdr.ebytes, 0))
+    throw("failed to read raw data from '%s'", fname);
 
-  /* free the read byte data. */
-  free(bytes);
+  /* close the input file. */
+  fclose(fh);
 
   /* return success. */
   return 1;

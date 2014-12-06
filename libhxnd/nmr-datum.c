@@ -1364,19 +1364,12 @@ int datum_read_array (datum *D) {
 
   /* load based on the type of data. */
   if (D->type == DATUM_TYPE_BRUKER) {
-    /* determine the data block size. */
-    szblk = 4 * D->dims[0].td;
+    /* determine the data block size, in words. */
+    szblk = D->dims[0].td;
 
     /* determine the data block count. */
     for (d = 1, nblk = 1; d < D->nd; d++)
       nblk *= D->dims[d].td;
-
-    /* check if the blocks are 1.0 KiB-aligned. */
-    if (szblk % 1024 == 0) {
-      /* yes. use a (faster) single read, because no gaps exist. */
-      szblk *= nblk;
-      nblk = 1;
-    }
 
     /* load the raw data from the fid/ser file. */
     if (!bruker_read(D->fname, D->endian, nblk, szblk, &D->array))

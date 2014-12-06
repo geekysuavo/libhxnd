@@ -210,13 +210,13 @@ void pipe_print_header (struct pipe_header *hdr) {
  */
 int pipe_read (const char *fname, unsigned int n, hx_array *x) {
   /* declare a few required variables. */
-  enum byteorder endianness = BYTES_ENDIAN_AUTO;
-  unsigned int n_actual, offset;
+  enum byteorder endian = BYTES_ENDIAN_AUTO;
+  unsigned int n_words, n_actual, offset;
   struct pipe_header hdr;
-  uint8_t *bytes;
+  FILE *fh;
 
   /* read the header information from the data file. */
-  if (!pipe_read_header(fname, &endianness, &hdr))
+  if (!pipe_read_header(fname, &endian, &hdr))
     throw("failed to read header of '%s'", fname);
 
   /* compute the byte offset from which to begin reading point data. */
@@ -224,24 +224,26 @@ int pipe_read (const char *fname, unsigned int n, hx_array *x) {
 
   /* compute the actual number of bytes in the file. */
   n_actual = bytes_size(fname) - offset;
+  n_words = n / sizeof(float);
 
   /* check that the byte counts match. */
   if (n != n_actual)
     throw("data size mismatch (expected %u, read %u)", n, n_actual);
 
-  /* read the data bytes in from the file. */
-  bytes = bytes_read_block(fname, offset, n);
+  /* open the input file for reading. */
+  fh = fopen(fname, "rb");
 
-  /* check that the bytes were read successfully. */
-  if (!bytes)
-    throw("failed to read %u bytes from '%s'", n, fname);
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
 
-  /* build a real linear array from the byte data. */
-  if (!bytes_toarray(bytes, n, endianness, sizeof(float), 1, x))
-    throw("failed to convert bytes to array");
+  /* read data from the file into the output array. */
+  if (!hx_array_fread_raw(fh, x, endian, sizeof(float), 1,
+                          offset, 0, 1, n_words, 0))
+    throw("failed to read raw data from '%s'", fname);
 
-  /* free the read byte data. */
-  free(bytes);
+  /* close the input file. */
+  fclose(fh);
 
   /* return success. */
   return 1;

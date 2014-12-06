@@ -96,18 +96,6 @@ uint8_t *bytes_read_block (const char *fname,
                            unsigned int offset,
                            unsigned int n);
 
-uint8_t *bytes_read_bruker (const char *fname,
-                            unsigned int nblk,
-                            unsigned int szblk,
-                            unsigned int *n);
-
-uint8_t *bytes_read_varian (const char *fname,
-                            unsigned int nblk,
-                            unsigned int szblk,
-                            unsigned int offblk,
-                            unsigned int offhead,
-                            unsigned int *n);
-
 real bytes_toword (uint8_t *bytes, int sz, int isflt);
 
 uint64_t bytes_real_to_u64 (const real x);

@@ -198,41 +198,42 @@ int nv_read (const char *fname, hx_array *x) {
    * @endianness: the byte ordering of the data file.
    * @hdr: the nmrview file header structure.
    */
-  enum byteorder endianness = BYTES_ENDIAN_AUTO;
+  enum byteorder endian = BYTES_ENDIAN_AUTO;
   struct nv_file_header hdr;
 
   /* declare variables for reading raw data bytes:
    * @offset: byte offset where point data begins.
    * @i: general purpose loop counter.
-   * @n: number of bytes to read.
+   * @n: number of words to read.
    */
   unsigned int offset, i, n;
-  uint8_t *bytes;
+  FILE *fh;
 
   /* read the header information from the data file. */
-  if (!nv_read_header(fname, &endianness, &hdr))
+  if (!nv_read_header(fname, &endian, &hdr))
     throw("failed to read header of '%s'", fname);
 
   /* compute the byte offset from which to begin reading point data. */
   offset = sizeof(struct nv_file_header);
 
-  /* compute the number of bytes to read. */
-  for (i = 0, n = sizeof(float); i < hdr.ndims; i++)
+  /* compute the number of words to read. */
+  for (i = 0, n = 1; i < hdr.ndims; i++)
     n *= hdr.dims[i].sz;
 
-  /* read the data bytes in from the file. */
-  bytes = bytes_read_block(fname, offset, n);
+  /* open the input file for reading. */
+  fh = fopen(fname, "rb");
 
-  /* check that the bytes were read successfully. */
-  if (!bytes)
-    throw("failed to read %u bytes from '%s'", n, fname);
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
 
-  /* build a real linear array from the byte data. */
-  if (!bytes_toarray(bytes, n, endianness, sizeof(float), 1, x))
-    throw("failed to convert bytes to array");
+  /* read data from the file into the output array. */
+  if (!hx_array_fread_raw(fh, x, endian, sizeof(float), 1,
+                          offset, 0, 1, n, 0))
+    throw("failed to read raw data from '%s'", fname);
 
-  /* free the read byte data. */
-  free(bytes);
+  /* close the input file. */
+  fclose(fh);
 
   /* convert tiles to linear values. */
   if (!nv_linearize(x, &hdr))

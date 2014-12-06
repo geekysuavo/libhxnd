@@ -377,50 +377,71 @@ int hx_array_fread_raw (FILE *fh, hx_array *x, enum byteorder endian,
                         unsigned int offhead, unsigned int offblk,
                         unsigned int nblks, unsigned int nwords,
                         unsigned int nalign) {
-  /* declare a few required variables:
-   * @i: read loop counter.
-   * @n: number of reads.
+  /* declare variables required for buffered reading:
+   * @pos: current file position, in bytes.
+   * @i: main block loop counter.
+   * @n: number of blocks to read.
    * @nbytes: number of bytes per block.
    * @nbuf: number of buffer bytes.
+   * @nask: number to requested bytes.
+   * @nread: number of read bytes.
+   * @nrem: number of bytes remaining.
+   * @ialign: number of alignment offsets.
    * @buf: array of buffer bytes.
+   */
+  unsigned int pos, i, n, nbytes, nbuf, nask, nread, nrem, ialign;
+  uint8_t *buf;
+
+  /* declare variables required for coefficient allocation and access:
+   * @k: raw buffer byte index for conversion into array words.
+   * @xi: current array coefficient pointer.
    * @len: total number of words.
    */
-  unsigned int i, n, nbytes, nbuf;
-  uint8_t *buf;
+  unsigned int k;
+  real *xi;
   int len;
 
-  /* compute the number of bytes per block. */
+  /* compute the number of bytes per block, and the total byte count. */
   nbytes = nwords * wordsz;
+  nrem = nbytes * nblks;
 
   /* compute the total number of data words. */
   len = nblks * nwords;
 
-  /* determine whether physical or logical blocking must be done. */
-  if (nblks == 1) {
-    /* use logical blocking, if needed. */
-    if (nbytes > HX_ARRAY_FREAD_SZ_BUF) {
-      /* logical blocking is needed. */
-      nbuf = HX_ARRAY_FREAD_SZ_BUF;
-      n = nbytes / nbuf;
+  /* initialize the block count and size. */
+  nbuf = nbytes;
+  n = nblks;
 
-      /* add one last incomplete buffer fill. */
-      if (nbytes % nbuf)
-        n++;
-    }
-    else {
-      /* logical blocking is not needed. */
-      nbuf = nbytes;
+  /* determine whether block alignment is specified. */
+  if (nalign) {
+    /* check for the special case in which the reads may be lumped:
+     * 1. the blocks fall on the alignment boundaries.
+     * 2. no block header exists.
+     * 3. no file header exists.
+     */
+    if (offhead == 0 && offblk == 0 && nbytes % nalign == 0) {
+      /* in this special case, we can increase the buffer size. */
+      nbuf *= n;
       n = 1;
     }
   }
-  else {
-    /* use physical blocking. */
-    nbuf = nbytes;
-    n = nblks;
+
+  /* determine whether logical blocking must be done. */
+  if (n == 1 && nbuf > HX_ARRAY_FREAD_SZ_BUF) {
+    /* logical blocking is needed. determine the number of logical blocks:
+     *  - if the buffer is evenly divided by the max size, use that ratio.
+     *  - if not, add one to the ratio, where the last read will be partial.
+     */
+    n = (nbuf % HX_ARRAY_FREAD_SZ_BUF ?
+         nbuf / HX_ARRAY_FREAD_SZ_BUF + 1 :
+         nbuf / HX_ARRAY_FREAD_SZ_BUF);
+
+    /* use the maximum allowed read buffer size. */
+    nbuf = HX_ARRAY_FREAD_SZ_BUF;
   }
 
   /* allocate memory for the buffer bytes. */
-  buf = (uint8_t*) malloc(nbytes * sizeof(uint8_t));
+  buf = (uint8_t*) calloc(nbuf, sizeof(uint8_t));
 
   /* check that memory was allocated. */
   if (!buf)
@@ -430,57 +451,57 @@ int hx_array_fread_raw (FILE *fh, hx_array *x, enum byteorder endian,
   if (!hx_array_alloc(x, 0, 1, &len))
     throw("failed to allocate %d array coefficients", len);
 
-  /* loop over the data blocks. */
-  for (i = 0; i < n; i++) {
-    /* FIXME: read block @i. */
-  }
+  /* move past the file header. */
+  if (offhead && fseek(fh, offhead, SEEK_SET))
+    throw("failed to seek %u bytes past file header", offhead);
 
-  /* FIXME: implement hx_array_fread_raw() */
+  /* initialize the file position and the alignment offset. */
+  pos = offhead;
+  ialign = 0;
+
+  /* loop over the data blocks. */
+  for (i = 0, xi = x->x; i < n; i++) {
+    /* check if alignment is required. */
+    if (nalign) {
+      /* align to the next boundary. */
+      ialign = pos / nalign;
+      while (pos % nalign)
+        pos = ++ialign * nalign;
+
+      /* move to the new aligned location. */
+      if (fseek(fh, pos, SEEK_SET))
+        throw("failed to seek to %u-byte alignment boundary", nalign);
+    }
+
+    /* move past the block header. */
+    pos += offblk;
+    if (offblk && fseek(fh, offblk, SEEK_CUR))
+      throw("failed to seek %u bytes past block header", offblk);
+
+    /* determine how many bytes to ask for. */
+    nask = (nrem > nbuf ? nbuf : nrem);
+
+    /* read the current data block. */
+    nread = fread(buf, sizeof(uint8_t), nask, fh);
+
+    /* check that the read succeeded. */
+    if (nread != nask)
+      throw("failed to read data block #%u", i);
+
+    /* subtract the read bytes from the bytes remaining. */
+    nrem -= nread;
+
+    /* check if byte swaps are required. */
+    if (!bytes_native(endian) && wordsz > 1)
+      bytes_swap(buf, nbuf / wordsz, wordsz);
+
+    /* copy the read words into the final array. */
+    for (k = 0; k < nread; k += wordsz)
+      *(xi++) = bytes_toword(buf + k, wordsz, isflt);
+  }
 
   /* free the allocated buffer memory. */
   free(buf);
-
-  /* return success. */
-  return 1;
-}
-
-/* bytes_toarray(): converts bytes loaded from a bruker/varian fid/ser
- * serial file into a one-dimensional real array.
- * @bytes: the byte array to convert into an array.
- * @nbytes: the number of bytes in the array.
- * @endianness: the endianness of the data.
- * @wordsz: number of bytes per data word.
- * @flt: whether each word is a float (1) or int (0).
- * @x: the final output array.
- */
-int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
-                   enum byteorder endianness,
-                   int wordsz, int flt,
-                   hx_array *x) {
-  /* declare a few required variables. */
-  int nwords, topo[1], i, k;
-
-  /* read the number of bytes in the input file and compute the number
-   * of words in the serial file and words in the array.
-   */
-  nwords = nbytes / wordsz;
-  topo[0] = nwords;
-
-  /* check if byte swaps are required. */
-  if (!bytes_native(endianness) && wordsz > 1) {
-    /* swap the bytes of each word. */
-    bytes_swap(bytes, nwords, wordsz);
-  }
-
-  /* allocate memory for a linear, real output array. */
-  if (!hx_array_alloc(x, 0, 1, topo))
-    throw("failed to allocate array");
-
-  /* copy the read, properly ordered byte data into the output array. */
-  for (i = 0, k = 0; i < nbytes; i += wordsz, k++) {
-    /* convert the data word into floating point. */
-    x->x[k] = bytes_toword(bytes + i, wordsz, flt);
-  }
 
   /* return success. */
   return 1;

@@ -134,12 +134,6 @@ int hx_array_fread_raw (FILE *fh, hx_array *x, enum byteorder endian,
                         unsigned int nblks, unsigned int nwords,
                         unsigned int nalign);
 
-/* FIXME: remove this declaration when possible: */
-int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
-                   enum byteorder endianness,
-                   int wordsz, int flt,
-                   hx_array *x);
-
 /* function declarations (hx-array-topo.c): */
 
 int hx_array_nnzdims (hx_array *x);

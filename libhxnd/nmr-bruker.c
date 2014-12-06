@@ -245,31 +245,31 @@ int bruker_read_parms (const char *fname, unsigned int n, ...) {
 
 /* bruker_read(): reads a bruker data file into a real linear array.
  * @fname: the input data filename.
- * @endianness: the data byte ordering.
- * @nblk: the number of blocks/fids.
- * @szblk: the size of block/fid.
+ * @endian: the data byte ordering.
+ * @nblk: the number of data blocks.
+ * @szblk: the number of words per block.
  * @x: the output array.
  */
-int bruker_read (const char *fname, enum byteorder endianness,
+int bruker_read (const char *fname, enum byteorder endian,
                  unsigned int nblk, unsigned int szblk,
                  hx_array *x) {
   /* declare a few required variables. */
-  unsigned int n;
-  uint8_t *bytes;
+  FILE *fh;
 
-  /* read the data bytes in from the file. */
-  bytes = bytes_read_bruker(fname, nblk, szblk, &n);
+  /* open the input file for reading. */
+  fh = fopen(fname, "rb");
 
-  /* check that the bytes were read successfully. */
-  if (!bytes)
-    throw("failed to read %u %u-byte blocks from '%s'", nblk, szblk, fname);
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
 
-  /* build a real linear array from the byte data. */
-  if (!bytes_toarray(bytes, n, endianness, 4, 0, x))
-    throw("failed to convert bytes to array");
+  /* read data from the file into the output array. */
+  if (!hx_array_fread_raw(fh, x, endian, 4, 0,
+                          0, 0, nblk, szblk, 1024))
+    throw("failed to read raw data from '%s'", fname);
 
-  /* free the read byte data. */
-  free(bytes);
+  /* close the input file. */
+  fclose(fh);
 
   /* return success. */
   return 1;
