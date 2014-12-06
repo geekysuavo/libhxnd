@@ -30,6 +30,10 @@
  */
 #define HX_ARRAY_FWRITE_SZ_HDR  6
 
+/* define the size of the data buffer for raw file reading, in bytes.
+ */
+#define HX_ARRAY_FREAD_SZ_BUF  33554432
+
 /* hx_array_print(): prints a hypercomplex multidimensional array as text.
  * @x: the array to print data from.
  * @fname: the output filename.
@@ -350,6 +354,133 @@ int hx_array_load (hx_array *x, const char *fname) {
   /* close the input file. */
   if (fname)
     fclose(fh);
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_fread_raw(): read raw bytes from a file out of a given format
+ * and into a linear hypercomplex array.
+ * @fh: input file handle.
+ * @x: output array structure pointer.
+ * @endian: raw word byte ordering.
+ * @wordsz: number of bytes per word.
+ * @isflt: whether the words are floats.
+ * @offhead: file header offset in bytes.
+ * @offblk: file block offset in bytes.
+ * @nblks: number of data blocks.
+ * @nwords: number of data words per block.
+ * @nalign: number of bytes to align blocks to.
+ */
+int hx_array_fread_raw (FILE *fh, hx_array *x, enum byteorder endian,
+                        unsigned int wordsz, unsigned int isflt,
+                        unsigned int offhead, unsigned int offblk,
+                        unsigned int nblks, unsigned int nwords,
+                        unsigned int nalign) {
+  /* declare a few required variables:
+   * @i: read loop counter.
+   * @n: number of reads.
+   * @nbytes: number of bytes per block.
+   * @nbuf: number of buffer bytes.
+   * @buf: array of buffer bytes.
+   * @len: total number of words.
+   */
+  unsigned int i, n, nbytes, nbuf;
+  uint8_t *buf;
+  int len;
+
+  /* compute the number of bytes per block. */
+  nbytes = nwords * wordsz;
+
+  /* compute the total number of data words. */
+  len = nblks * nwords;
+
+  /* determine whether physical or logical blocking must be done. */
+  if (nblks == 1) {
+    /* use logical blocking, if needed. */
+    if (nbytes > HX_ARRAY_FREAD_SZ_BUF) {
+      /* logical blocking is needed. */
+      nbuf = HX_ARRAY_FREAD_SZ_BUF;
+      n = nbytes / nbuf;
+
+      /* add one last incomplete buffer fill. */
+      if (nbytes % nbuf)
+        n++;
+    }
+    else {
+      /* logical blocking is not needed. */
+      nbuf = nbytes;
+      n = 1;
+    }
+  }
+  else {
+    /* use physical blocking. */
+    nbuf = nbytes;
+    n = nblks;
+  }
+
+  /* allocate memory for the buffer bytes. */
+  buf = (uint8_t*) malloc(nbytes * sizeof(uint8_t));
+
+  /* check that memory was allocated. */
+  if (!buf)
+    throw("failed to allocate %u buffer bytes", nbytes);
+
+  /* allocate the destination array structure. */
+  if (!hx_array_alloc(x, 0, 1, &len))
+    throw("failed to allocate %d array coefficients", len);
+
+  /* loop over the data blocks. */
+  for (i = 0; i < n; i++) {
+    /* FIXME: read block @i. */
+  }
+
+  /* FIXME: implement hx_array_fread_raw() */
+
+  /* free the allocated buffer memory. */
+  free(buf);
+
+  /* return success. */
+  return 1;
+}
+
+/* bytes_toarray(): converts bytes loaded from a bruker/varian fid/ser
+ * serial file into a one-dimensional real array.
+ * @bytes: the byte array to convert into an array.
+ * @nbytes: the number of bytes in the array.
+ * @endianness: the endianness of the data.
+ * @wordsz: number of bytes per data word.
+ * @flt: whether each word is a float (1) or int (0).
+ * @x: the final output array.
+ */
+int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
+                   enum byteorder endianness,
+                   int wordsz, int flt,
+                   hx_array *x) {
+  /* declare a few required variables. */
+  int nwords, topo[1], i, k;
+
+  /* read the number of bytes in the input file and compute the number
+   * of words in the serial file and words in the array.
+   */
+  nwords = nbytes / wordsz;
+  topo[0] = nwords;
+
+  /* check if byte swaps are required. */
+  if (!bytes_native(endianness) && wordsz > 1) {
+    /* swap the bytes of each word. */
+    bytes_swap(bytes, nwords, wordsz);
+  }
+
+  /* allocate memory for a linear, real output array. */
+  if (!hx_array_alloc(x, 0, 1, topo))
+    throw("failed to allocate array");
+
+  /* copy the read, properly ordered byte data into the output array. */
+  for (i = 0, k = 0; i < nbytes; i += wordsz, k++) {
+    /* convert the data word into floating point. */
+    x->x[k] = bytes_toword(bytes + i, wordsz, flt);
+  }
 
   /* return success. */
   return 1;

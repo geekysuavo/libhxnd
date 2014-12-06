@@ -432,9 +432,9 @@ uint8_t *bytes_read_varian (const char *fname,
  * inclusion into a hypercomplex array structure.
  * @bytes: the bytes of the word.
  * @sz: the byte count of the word.
- * @flt: if the word is floating point.
+ * @isflt: if the word is floating point.
  */
-real bytes_toword (uint8_t *bytes, int sz, int flt) {
+real bytes_toword (uint8_t *bytes, int sz, int isflt) {
   /* declare required variables to ensure proper signed integer support.
    * if the specified word size is either that of 'int' or 'short', then
    * each data word is down-cast to that type and then re-cast to a 'long',
@@ -462,7 +462,7 @@ real bytes_toword (uint8_t *bytes, int sz, int flt) {
   x = 0.0;
 
   /* convert based on whether we are in integer or float format. */
-  if (flt) {
+  if (isflt) {
     /* check the size of the float. */
     if (sz == 2) {
       /* build a 16-bit word. */
@@ -538,48 +538,6 @@ real bytes_toword (uint8_t *bytes, int sz, int flt) {
 
   /* return the converted real value. */
   return x;
-}
-
-/* bytes_toarray(): converts bytes loaded from a bruker/varian fid/ser
- * serial file into a one-dimensional real array.
- * @bytes: the byte array to convert into an array.
- * @nbytes: the number of bytes in the array.
- * @endianness: the endianness of the data.
- * @wordsz: number of bytes per data word.
- * @flt: whether each word is a float (1) or int (0).
- * @x: the final output array.
- */
-int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
-                   enum byteorder endianness,
-                   int wordsz, int flt,
-                   hx_array *x) {
-  /* declare a few required variables. */
-  int nwords, topo[1], i, k;
-
-  /* read the number of bytes in the input file and compute the number
-   * of words in the serial file and words in the array.
-   */
-  nwords = nbytes / wordsz;
-  topo[0] = nwords;
-
-  /* check if byte swaps are required. */
-  if (!bytes_native(endianness) && wordsz > 1) {
-    /* swap the bytes of each word. */
-    bytes_swap(bytes, nwords, wordsz);
-  }
-
-  /* allocate memory for a linear, real output array. */
-  if (!hx_array_alloc(x, 0, 1, topo))
-    throw("failed to allocate array");
-
-  /* copy the read, properly ordered byte data into the output array. */
-  for (i = 0, k = 0; i < nbytes; i += wordsz, k++) {
-    /* convert the data word into floating point. */
-    x->x[k] = bytes_toword(bytes + i, wordsz, flt);
-  }
-
-  /* return success. */
-  return 1;
 }
 
 /* bytes_real_to_u64(): convert a real floating point value to a u64.

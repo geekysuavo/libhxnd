@@ -24,6 +24,9 @@
 #ifndef __HXND_HX_ARRAY_H__
 #define __HXND_HX_ARRAY_H__
 
+/* include the byte-level data header. */
+#include <hxnd/bytes.h>
+
 /* define a magic number to use when determining byte order of binary-format
  * hypercomplex multidimensional array files. (in L.E. = 'HXNDARRY')
  */
@@ -124,6 +127,18 @@ int hx_array_fread (hx_array *x, FILE *fh);
 int hx_array_save (hx_array *x, const char *fname);
 
 int hx_array_load (hx_array *x, const char *fname);
+
+int hx_array_fread_raw (FILE *fh, hx_array *x, enum byteorder endian,
+                        unsigned int wordsz, unsigned int isflt,
+                        unsigned int offhead, unsigned int offblk,
+                        unsigned int nblks, unsigned int nwords,
+                        unsigned int nalign);
+
+/* FIXME: remove this declaration when possible: */
+int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
+                   enum byteorder endianness,
+                   int wordsz, int flt,
+                   hx_array *x);
 
 /* function declarations (hx-array-topo.c): */
 

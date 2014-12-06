@@ -24,8 +24,15 @@
 #ifndef __HXND_BYTES_H__
 #define __HXND_BYTES_H__
 
-/* include the n-dimensional math header. */
-#include <hxnd/hx.h>
+/* include required standard c library headers. */
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <math.h>
+
+/* include the definition of real scalar values. */
+#include <hxnd/hx-real.h>
+#include <hxnd/trace.h>
 
 /* define macros to extract bytes from words and double-words.
  */
@@ -101,10 +108,7 @@ uint8_t *bytes_read_varian (const char *fname,
                             unsigned int offhead,
                             unsigned int *n);
 
-int bytes_toarray (uint8_t *bytes, unsigned int nbytes,
-                   enum byteorder endianness,
-                   int wordsz, int flt,
-                   hx_array *x);
+real bytes_toword (uint8_t *bytes, int sz, int isflt);
 
 uint64_t bytes_real_to_u64 (const real x);
 
