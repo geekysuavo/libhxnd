@@ -111,9 +111,10 @@ value \fIVAL\fR.
 .PP
 The
 .BR hx
-tool is capable of reading Bruker AMX and DMX format "fid" and "ser" files,
-Varian Unity and INOVA format "fid" files, nmrPipe format files, UCSF "Sparky"
-format files and NMRView format files for conversion into the \fIhx\fR file
+tool is capable of reading Bruker AMX and DMX format "fid" and "ser" files
+(\fIbruker\fR), Varian Unity and INOVA format "fid" files (\fIvarian\fR),
+nmrPipe format files (\fIpipe\fR), UCSF "Sparky" format files (\fIucsf\fR)
+and NMRView format files (\fInv\fR) for conversion into the \fIhx\fR file
 format.
 .PP
 The
@@ -143,6 +144,11 @@ files, no external files are required for conversion.
 Files stored in the UCSF "Sparky" format may be read as inputs to \fBhx\fR
 and converted into the native \fIhx\fR format. All required spectral
 parameters are contained in the header of UCSF files, so no external
+parameter files are required for conversion.
+.SS "NMRView format files"
+Files stored in the NMRView(J) blocked format may be read as inputs to
+\fBhx\fR and converted into the native \fIhx\fR format. All required spectral
+parameters are contained in the header of NMRView files, so no external
 parameter files are required for conversion.
 
 .SH "PROCESSING FUNCTIONS"
