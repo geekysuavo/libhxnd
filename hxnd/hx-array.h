@@ -186,5 +186,7 @@ int hx_array_tiler (hx_array *x, int k, int *nt, int *szt,
     HX_ARRAY_TILER_REVERSE, \
     HX_ARRAY_INCR_FORWARD)
 
+int hx_array_tiling (hx_array *x, unsigned int nbytes, int *nt, int *szt);
+
 #endif /* __HXND_HX_ARRAY_H__ */
 

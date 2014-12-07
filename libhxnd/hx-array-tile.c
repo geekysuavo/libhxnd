@@ -130,3 +130,51 @@ int hx_array_tiler (hx_array *x, int k, int *nt, int *szt,
   return 1;
 }
 
+/* hx_array_tiling(): determine the tile counts and sizes for a hypercomplex
+ * array such that the tile size is less than a certain word count.
+ * @x: source array structure pointer.
+ * @nwords: maximum number of data words per tile.
+ * @nt: pointer to the output array of tile counts.
+ * @szt: pointer to the output array of tile sizes.
+ */
+int hx_array_tiling (hx_array *x, unsigned int nwords, int *nt, int *szt) {
+  /* declare a few required variables:
+   * @k: general purpose dimension loop counter.
+   * @k_div: current array dimension to subdivide.
+   * @n: number of current bytes per tile.
+   */
+  int k, k_div, n;
+
+  /* initialize the tile counts and sizes. */
+  for (k = 0; k < x->k; k++) {
+    /* begin at a single tile that spans the dimension. */
+    nt[k] = 1;
+    szt[k] = x->sz[k];
+  }
+
+  /* initialize the current tile to be subdivided. */
+  k_div = 0;
+
+  /* loop until the tile size is below the specified limit. */
+  do {
+    /* do not attempt to subdivide odd tiles further. */
+    while (szt[k_div] % 2 && k_div < x->k)
+      k_div++;
+
+    /* check that we found an index to subdivide. */
+    if (k_div >= x->k)
+      throw("failed to identify suitable tiling");
+
+    /* divide the currently indexed tile size. */
+    szt[k_div] /= 2;
+    nt[k_div] *= 2;
+
+    /* compute the new tile byte count. */
+    for (k = 0, n = 1; k < x->k; k++)
+      n *= szt[k];
+  } while (n > nwords);
+
+  /* return success. */
+  return 1;
+}
+
