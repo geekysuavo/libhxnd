@@ -93,10 +93,10 @@ struct nv_dim_header {
   int32_t pad_end[15];
 };
 
-/* nv_file_header: complete file header of data contained in an nmrview
+/* nv_header: complete file header of data contained in an nmrview
  * format file.
  */
-struct nv_file_header {
+struct nv_header {
   /* (0) @magic: magic number.
    * (1..2) @pad0
    * (3) @fhdrsz: file header size, in bytes.
@@ -135,8 +135,8 @@ struct nv_file_header {
 int nv_check_magic (const char *fname);
 
 int nv_read_header (const char *fname,
-                    enum byteorder *endianness,
-                    struct nv_file_header *hdr);
+                    enum byteorder *endian,
+                    struct nv_header *hdr);
 
 int nv_read (const char *fname, hx_array *x);
 

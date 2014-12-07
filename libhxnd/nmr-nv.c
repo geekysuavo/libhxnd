@@ -68,15 +68,15 @@ int nv_check_magic (const char *fname) {
  * @hdr: file header result pointer.
  */
 int nv_read_header (const char *fname,
-                    enum byteorder *endianness,
-                    struct nv_file_header *hdr) {
+                    enum byteorder *endian,
+                    struct nv_header *hdr) {
   /* declare a few required variables:
    */
   unsigned int i, n_bytes, n_words;
   uint8_t *bytes;
 
   /* read in the file header bytes. */
-  n_bytes = sizeof(struct nv_file_header);
+  n_bytes = sizeof(struct nv_header);
   n_words = n_bytes / sizeof(int32_t);
   bytes = bytes_read_block(fname, 0, n_bytes);
 
@@ -107,11 +107,11 @@ int nv_read_header (const char *fname,
                  NV_HDRSTR_SZ_LABEL, sizeof(char));
 
     /* opposite endianness. */
-    *endianness = bytes_get_nonnative();
+    *endian = bytes_get_nonnative();
   }
   else {
     /* same endianness. */
-    *endianness = bytes_get_native();
+    *endian = bytes_get_native();
   }
 
   /* free the read bytes. */
@@ -128,7 +128,7 @@ int nv_read_header (const char *fname,
  * @hdr: pointer to the file header.
  * @dir: direction, either 0 (linearize) or 1 (tileize).
  */
-int nv_tiler (hx_array *x, struct nv_file_header *hdr, int dir) {
+int nv_tiler (hx_array *x, struct nv_header *hdr, int dir) {
   /* declare a few required variables:
    * @i: general purpose loop counter.
    * @k: number of dimensions.
@@ -199,7 +199,7 @@ int nv_read (const char *fname, hx_array *x) {
    * @hdr: the nmrview file header structure.
    */
   enum byteorder endian = BYTES_ENDIAN_AUTO;
-  struct nv_file_header hdr;
+  struct nv_header hdr;
 
   /* declare variables for reading raw data bytes:
    * @offset: byte offset where point data begins.
@@ -214,7 +214,7 @@ int nv_read (const char *fname, hx_array *x) {
     throw("failed to read header of '%s'", fname);
 
   /* compute the byte offset from which to begin reading point data. */
-  offset = sizeof(struct nv_file_header);
+  offset = sizeof(struct nv_header);
 
   /* compute the number of words to read. */
   for (i = 0, n = 1; i < hdr.ndims; i++)
@@ -254,12 +254,12 @@ int nv_fill_datum (const char *fname, datum *D) {
    * @hdr: the nmrview file header structure.
    * @d: dimension loop counter.
    */
-  enum byteorder endianness = BYTES_ENDIAN_AUTO;
-  struct nv_file_header hdr;
+  enum byteorder endian = BYTES_ENDIAN_AUTO;
+  struct nv_header hdr;
   unsigned int d;
 
   /* read the header information from the data file. */
-  if (!nv_read_header(fname, &endianness, &hdr))
+  if (!nv_read_header(fname, &endian, &hdr))
     throw("failed to read header of '%s'", fname);
 
   /* store the dimension count. */
@@ -314,7 +314,7 @@ int nv_fill_datum (const char *fname, datum *D) {
 
   /* store the datum type. */
   D->type = DATUM_TYPE_NV;
-  D->endian = endianness;
+  D->endian = endian;
 
   /* return success. */
   return 1;
