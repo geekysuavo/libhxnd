@@ -277,10 +277,9 @@ int bruker_read (const char *fname, enum byteorder endian,
 
 /* bruker_fix_grpdelay(): corrects a hypercomplex array loaded from a bruker
  * raw data file for group delay.
- * @x: pointer to the array to correct.
- * @grpdelay: group delay value, or -1 to use autodetection.
+ * @D: pointer to the datum to correct.
  */
-int bruker_fix_grpdelay (hx_array *x, real grpdelay) {
+int bruker_fix_grpdelay (datum *D) {
   /* declare a few required variables:
    * @I: current absolute intensity value.
    * @Ire: current real intensity value.
@@ -288,12 +287,17 @@ int bruker_fix_grpdelay (hx_array *x, real grpdelay) {
    * @Imax: maximum absolute intensity value.
    * @gd: local variable used for group delay correction.
    * @gdmax: first trace index having maximal absolute intensity.
+   * @sznew: array of new size values.
+   * @i: dimension loop counter.
+   * @x: datum array structure pointer.
    */
   real I, Ire, Iim, Imax;
-  int gd, gdmax;
+  int i, gd, gdmax, *sznew;
+  hx_array *x;
 
-  /* store the group delay value locally. */
-  gd = (int) grpdelay;
+  /* store the group delay value and array pointer locally. */
+  gd = (int) D->grpdelay;
+  x = &D->array;
 
   /* check if the group delay value needs autodetection. */
   if (gd == -1) {
@@ -318,9 +322,31 @@ int bruker_fix_grpdelay (hx_array *x, real grpdelay) {
     gd = gdmax;
   }
 
+  /* allocate the new size array. */
+  sznew = hx_array_index_alloc(x->k);
+
+  /* check that the size array was allocated. */
+  if (!sznew)
+    throw("failed to allocate %d indices", x->k);
+
+  /* fill the new size array. */
+  for (i = 0; i < x->k; i++)
+    sznew[i] = x->sz[i];
+
   /* left-shift each trace based on the group delay value. */
   if (!hx_array_shift(x, 0, -gd))
     throw("failed to correct bruker group delay");
+
+  /* correct the first dimension of the size array. */
+  D->dims[0].sz -= gd;
+  sznew[0] -= gd;
+
+  /* crop the shifted array. */
+  if (!hx_array_resize(x, x->d, x->k, sznew))
+    throw("failed to crop bruker group delay points");
+
+  /* free the allocated size array. */
+  free(sznew);
 
   /* return success. */
   return 1;

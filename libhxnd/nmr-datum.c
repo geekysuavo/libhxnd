@@ -1440,14 +1440,19 @@ int datum_read_array (datum *D) {
   if (D->type != DATUM_TYPE_HXND && !datum_refactor_array(D))
     throw("failed to refactor array");
 
-  /* correct for group delay *after* the array has been refactored. */
+  /* correct vendor-specific array defects after refactoring. */
   if (D->type == DATUM_TYPE_BRUKER) {
     /* correct the loaded raw data for bruker group delay uberfail. */
-    if (!bruker_fix_grpdelay(&D->array, D->grpdelay))
+    if (!bruker_fix_grpdelay(D))
       throw("failed to correct bruker group delay");
 
     /* reset the group delay back to zero. */
     D->grpdelay = 0.0;
+  }
+  else if (D->type == DATUM_TYPE_NV) {
+    /* de-adjust the datum array into the true size. */
+    if (!nv_fix_adjustment(D))
+      throw("failed to de-adjust datum array");
   }
 
   /* return success. */

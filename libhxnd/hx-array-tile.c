@@ -30,16 +30,20 @@
  * @nt: array of tile counts.
  * @szt: array of tile sizes.
  * @dir: direction, either 0 (linearize) or 1 (tileize).
+ * @incr: incrementation mode, either 0 (normal) or 1 (reverse).
  */
-int hx_array_tiler (hx_array *x, int k, int *nt, int *szt, int dir) {
+int hx_array_tiler (hx_array *x, int k, int *nt, int *szt,
+                    int dir, int incr) {
   /* declare a few required variables:
    * @idxi: input array linear index.
    * @idxo: output array linear index.
    * @arr: multidimensional point index array.
    * @arrt: multidimensional tile index array.
    * @xcpy: temporary tile array.
+   * @res: result of inner array incrementation.
+   * @rest: result of outer array incrementation.
    */
-  int n, ncpy, idxi, idxo, *arr, *arrt;
+  int n, ncpy, idxi, idxo, *arr, *arrt, res, rest;
   hx_array xcpy;
 
   /* allocate the loop index arrays. */
@@ -84,8 +88,36 @@ int hx_array_tiler (hx_array *x, int k, int *nt, int *szt, int dir) {
 
       /* increment the tile linear index. */
       idxi++;
-    } while (hx_array_index_incr_rev(k, szt, arr));
-  } while (hx_array_index_incr_rev(k, nt, arrt));
+
+      /* increment the point multidimensional index. */
+      res = 0;
+      switch (incr) {
+        /* normal: lowest dimension varies fastest. */
+        case HX_ARRAY_INCR_NORMAL:
+          res = hx_array_index_incr(k, szt, arr);
+          break;
+
+        /* reverse: highest dimension varies fastest. */
+        case HX_ARRAY_INCR_REVERSE:
+          res = hx_array_index_incr_rev(k, szt, arr);
+          break;
+      }
+    } while (res);
+
+    /* increment the tile multidimensional index. */
+    rest = 0;
+    switch (incr) {
+      /* normal: lowest dimension varies fastest. */
+      case HX_ARRAY_INCR_NORMAL:
+        rest = hx_array_index_incr(k, nt, arrt);
+        break;
+
+      /* reverse: highest dimension varies fastest. */
+      case HX_ARRAY_INCR_REVERSE:
+        rest = hx_array_index_incr_rev(k, nt, arrt);
+        break;
+    }
+  } while (rest);
 
   /* free the allocated tile array. */
   hx_array_free(&xcpy);

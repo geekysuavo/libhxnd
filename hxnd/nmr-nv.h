@@ -151,6 +151,8 @@ int nv_read_header (const char *fname,
 
 int nv_read (const char *fname, hx_array *x);
 
+int nv_fix_adjustment (datum *D);
+
 int nv_fill_datum (const char *fname, datum *D);
 
 int nv_fwrite_datum (datum *D, FILE *fh);

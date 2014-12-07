@@ -211,7 +211,7 @@ int ucsf_tiler (hx_array *x,
   }
 
   /* perform the mapping operation. */
-  if (!hx_array_tiler(x, k, nt, szt, dir))
+  if (!hx_array_tiler(x, k, nt, szt, dir, HX_ARRAY_INCR_REVERSE))
     throw("failed to perform tile mapping");
 
   /* free the allocated index arrays. */
