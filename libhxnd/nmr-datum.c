@@ -1445,9 +1445,6 @@ int datum_read_array (datum *D) {
     /* correct the loaded raw data for bruker group delay uberfail. */
     if (!bruker_fix_grpdelay(D))
       throw("failed to correct bruker group delay");
-
-    /* reset the group delay back to zero. */
-    D->grpdelay = 0.0;
   }
   else if (D->type == DATUM_TYPE_NV) {
     /* de-adjust the datum array into the true size. */

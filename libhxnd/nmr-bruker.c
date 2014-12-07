@@ -338,7 +338,6 @@ int bruker_fix_grpdelay (datum *D) {
     throw("failed to correct bruker group delay");
 
   /* correct the first dimension of the size array. */
-  D->dims[0].sz -= gd;
   sznew[0] -= gd;
 
   /* crop the shifted array. */
@@ -347,6 +346,10 @@ int bruker_fix_grpdelay (datum *D) {
 
   /* free the allocated size array. */
   free(sznew);
+
+  /* correct the datum fields. */
+  D->dims[0].sz -= gd;
+  D->grpdelay = 0.0;
 
   /* return success. */
   return 1;
