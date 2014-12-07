@@ -55,11 +55,11 @@
  */
 struct nv_dim_header {
   /* (0) @sz: dimension point count.
-   * (1) @szblk: FIXME
-   * (2) @nblk: FIXME
-   * (3) @offblk: FIXME
-   * (4) @maskblk: FIXME
-   * (5) @ptoff: FIXME
+   * (1) @szblk: dimension block size.
+   * (2) @nblk: number of blocks along this dimension.
+   * (3) @offblk: block offset in this dimension.
+   * (4) @maskblk: block bit mask for indexing.
+   * (5) @ptoff: block point offset.
    */
   int32_t sz;
   int32_t szblk;
@@ -93,8 +93,9 @@ struct nv_dim_header {
   int32_t pad_end[15];
 };
 
-/* nv_header: complete file header of data contained in an nmrview
- * format file.
+/* nv_header: 2048-byte file header of data contained in an nmrview
+ * format file. indices below relate to the structure padding, which
+ * is based on 32-bit integers.
  */
 struct nv_header {
   /* (0) @magic: magic number.
@@ -126,7 +127,17 @@ struct nv_header {
   /* (59..255) @pad1 */
   int32_t pad1[197];
 
-  /* (256..end) @dims: dimension fields. */
+  /* (256..511) @dims: dimension fields:
+   *
+   * (256..287) @dims[0]
+   * (288..319) @dims[1]
+   * (320..351) @dims[2]
+   * (352..383) @dims[3]
+   * (384..415) @dims[4]
+   * (416..447) @dims[5]
+   * (448..479) @dims[6]
+   * (480..511) @dims[7]
+   */
   struct nv_dim_header dims[NV_MAXDIM];
 };
 
