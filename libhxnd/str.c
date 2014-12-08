@@ -325,8 +325,7 @@ void strvcompact (char **strv, unsigned int *pn) {
     for (i = n; i < *pn; i++)
       free(strv[i]);
 
-    /* reallocate the string array. */
-    strv = (char**) realloc(strv, n * sizeof(char*));
+    /* store the new string array length. */
     *pn = n;
   }
 }
