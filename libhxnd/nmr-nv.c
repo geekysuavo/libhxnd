@@ -488,13 +488,36 @@ int nv_fill_datum (const char *fname, datum *D) {
  */
 int nv_fwrite_datum (datum *D, FILE *fh) {
   /* declare variables required to write header information:
-   * @hdr: the output file header structure.
    * @d: dimension loop counter.
+   * @i_div: current division to subdivide.
+   * @n_tile: number of words per tile.
+   * @hdr: the output file header structure.
    * @ts: calendar time structure.
    */
+  unsigned int i_div, n_tile;
   struct nv_header hdr;
-  unsigned int d;
   struct tm *ts;
+
+  /* declare variables required for size adjustment:
+   * @szadj: whether to adjust the array size.
+   * @sz: previous array size.
+   * @sznew: adjusted array size.
+   */
+  int szadj, *sz, *sznew;
+
+  /* declare a dimension loop counter. */
+  unsigned int d;
+
+  /* declare an array structure to use for writing. */
+  hx_array xout;
+
+  /* allocate size arrays for possible adjustments. */
+  sz = hx_array_index_alloc(D->array.k);
+  sznew = hx_array_index_alloc(D->array.k);
+
+  /* check that array allocation succeeded. */
+  if (!sz || !sznew)
+    throw("failed to allocate two sets of %d indices", D->array.k);
 
   /* initialize the file header. */
   memset(&hdr, 0, sizeof(struct nv_header));
@@ -503,7 +526,6 @@ int nv_fwrite_datum (datum *D, FILE *fh) {
   hdr.magic = NV_MAGIC;
   hdr.fhdrsz = sizeof(struct nv_header);
   hdr.bhdrsz = 0;
-  /* FIXME */hdr.blkelem = 0;
   hdr.ndims = D->nd;
 
   /* compute the calendar date structure fields. */
@@ -519,20 +541,56 @@ int nv_fwrite_datum (datum *D, FILE *fh) {
   strcpy(hdr.sequence, "");
   strcpy(hdr.comment, "");
 
+  /* initialize the tile sizes. */
+  for (d = 0; d < D->nd; d++)
+    hdr.dims[d].szblk = 2;
+
+  /* determine the tile size of each dimension. */
+  i_div = 0;
+  do {
+    /* multiply the tile size of the currently indexed dimension. */
+    hdr.dims[i_div].szblk *= 2;
+
+    /* increment the dimension index. */
+    if (++i_div >= D->nd)
+      i_div = 0;
+
+    /* compute the new tile size. */
+    for (d = 0, n_tile = 2; d < D->nd; d++)
+      n_tile *= hdr.dims[d].szblk;
+  } while (n_tile < NV_MAX_TILE);
+
+  /* compute the number of block elements. */
+  for (d = 0, hdr.blkelem = 1; d < D->nd; d++)
+    hdr.blkelem *= hdr.dims[d].szblk;
+
   /* configure each dimension sub-header. */
-  for (d = 0; d < D->nd; d++) {
+  for (d = 0, szadj = 0; d < D->nd; d++) {
+    /* store the old dimension size. */
+    sznew[d] = sz[d] = D->dims[d].sz;
+
+    /* if any single dimension does not evenly divide into blocks,
+     * the array will need to be resized.
+     */
+    if (sznew[d] % hdr.dims[d].szblk) {
+      /* adjustment is required. */
+      szadj = 1;
+
+      /* compute the adjusted dimension size. */
+      sznew[d] = hdr.dims[d].szblk * (sz[d] / hdr.dims[d].szblk + 1);
+    }
+
     /* set the dimension sub-header fields. */
-    hdr.dims[d].sz = D->dims[d].sz;
-    /* FIXME */hdr.dims[d].szblk = 0;
-    /* FIXME */hdr.dims[d].nblk = 0;
-    /* FIXME */hdr.dims[d].offblk = 0;
-    /* FIXME */hdr.dims[d].maskblk = 0;
-    /* FIXME */hdr.dims[d].ptoff = 0;
+    hdr.dims[d].sz = sznew[d];
+    hdr.dims[d].nblk = 16;
+    hdr.dims[d].offblk = (d > 0 ? d * 16 : 1);
+    hdr.dims[d].maskblk = hdr.dims[d].szblk - 1;
+    hdr.dims[d].ptoff = 1 + d * 4;
 
     /* set the dimension spectral parameters. */
     hdr.dims[d].sf = D->dims[d].carrier;
     hdr.dims[d].sw = D->dims[d].width;
-    /* FIXME */hdr.dims[d].refpt = 0;
+    hdr.dims[d].refpt = hdr.dims[d].sz / 2;
     hdr.dims[d].ref = D->dims[d].offset / D->dims[d].carrier;
     hdr.dims[d].refunits = NV_REFUNIT_PPM;
 
@@ -544,8 +602,44 @@ int nv_fwrite_datum (datum *D, FILE *fh) {
     strcpy(hdr.dims[d].label, D->dims[d].nuc);
   }
 
-  /* FIXME: implement nv_fwrite_datum() */
-  throw("unimplemented!");
+  /* check if the datum array is real. */
+  if (D->array.d == 0) {
+    /* just use the datum array. */
+    if (!hx_array_copy(&xout, &D->array))
+      throw("failed to copy core array");
+  }
+  else {
+    /* copy the real component of the datum array. */
+    if (!hx_array_copy_real(&xout, &D->array))
+      throw("failed to copy real component of core array");
+  }
+
+  /* check if size adjustment is required. */
+  if (szadj && !hx_array_resize(&xout, xout.d, xout.k, sznew))
+    throw("failed to adjust array size for output");
+
+  /* map the linear datum array back into tiles. */
+  if (!nv_tileize(&xout, &hdr))
+    throw("failed to delinearize array into tiles");
+
+  /* de-adjust the header size values. */
+  for (d = 0; d < D->nd; d++)
+    hdr.dims[d].sz = sz[d];
+
+  /* write the file header. */
+  if (fwrite(&hdr, sizeof(struct nv_header), 1, fh) != 1)
+    throw("failed to write file header");
+
+  /* write the array data. */
+  if (!hx_array_fwrite_raw(fh, &xout, bytes_get_native(), sizeof(float), 1))
+    throw("failed to write core array data");
+
+  /* throw away the real copy of the datum array. */
+  hx_array_free(&xout);
+
+  /* free the allocated size arrays. */
+  free(sz);
+  free(sznew);
 
   /* return success. */
   return 1;

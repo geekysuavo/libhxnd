@@ -139,6 +139,9 @@ int hx_array_fread_raw (FILE *fh, hx_array *x, enum byteorder endian,
                         unsigned int nblks, unsigned int nwords,
                         unsigned int nalign);
 
+int hx_array_fwrite_raw (FILE *fh, hx_array *x, enum byteorder endian,
+                         unsigned int wordsz, unsigned int isflt);
+
 /* function declarations (hx-array-topo.c): */
 
 int hx_array_nnzdims (hx_array *x);

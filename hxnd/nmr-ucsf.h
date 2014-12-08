@@ -35,6 +35,9 @@
 #define UCSF_NUM_MAGIC  10
 #define UCSF_MAGIC      "UCSF NMR"
 
+/* define the maximum block size (in data words) for ucsf files. */
+#define UCSF_MAX_TILE  8192
+
 /* ucsf_file_header: 180-byte file header of data contained in a ucsf-format
  * file.
  */

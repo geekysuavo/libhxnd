@@ -507,3 +507,33 @@ int hx_array_fread_raw (FILE *fh, hx_array *x, enum byteorder endian,
   return 1;
 }
 
+/* hx_array_fwrite_raw(): write a hypercomplex array into a raw output format
+ * that differs from the internal storage format of the hx_array.
+ * @fh: output file handle.
+ * @x: source array structure pointer.
+ * @endian: raw word byte ordering.
+ * @wordsz: number of bytes per word.
+ * @isflt: whether the words are floats.
+ */
+int hx_array_fwrite_raw (FILE *fh, hx_array *x, enum byteorder endian,
+                         unsigned int wordsz, unsigned int isflt) {
+  /* check if the requested parameters match the internal storage. */
+  if (bytes_native(endian) && wordsz == sizeof(real) && isflt) {
+    /* use a much faster single write. */
+    if (fwrite(x->x, sizeof(real), x->len, fh) != x->len)
+      throw("failed to write %d %cE %u-byte %ss", x->len,
+            endian == BYTES_ENDIAN_LITTLE ? 'L' :
+            endian == BYTES_ENDIAN_BIG ? 'B' : 'U',
+            wordsz, isflt ? "float" : "integer");
+
+    /* return successfully. */
+    return 1;
+  }
+
+  /* FIXME: implement hx_array_fwrite_raw() */
+  throw("unimplemented!");
+
+  /* return success. */
+  return 1;
+}
+

@@ -39,13 +39,17 @@
  */
 #define NV_MAXDIM  8
 
+/* define the maximum block size (in data words) for nmrview files. */
+#define NV_MAX_TILE  8192
+
 /* define the possible values that @refunits may take in nmrview files.
  */
 #define NV_REFUNIT_PTS  1
 #define NV_REFUNIT_HZ   2
 #define NV_REFUNIT_PPM  3
 
-/* define sizes of the string struct members of the nmrview header. */
+/* define sizes of the string struct members of the nmrview header.
+ */
 #define NV_HDRSTR_SZ_SEQUENCE  32
 #define NV_HDRSTR_SZ_COMMENT  160
 #define NV_HDRSTR_SZ_LABEL     16

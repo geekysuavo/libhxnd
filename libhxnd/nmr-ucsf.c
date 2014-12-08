@@ -376,7 +376,7 @@ int ucsf_fwrite_datum (datum *D, FILE *fh) {
    * @fhdr: output file header.
    * @dhdr: array of dimension headers.
    * @i_div: current dimension to subdivide.
-   * @n_tile: number of bytes per tile.
+   * @n_tile: number of words per tile.
    */
   struct ucsf_file_header fhdr;
   struct ucsf_dim_header *dhdr;
@@ -446,9 +446,9 @@ int ucsf_fwrite_datum (datum *D, FILE *fh) {
       i_div = 0;
 
     /* compute the new tile size. */
-    for (d = 0, n_tile = sizeof(float); d < D->nd; d++)
+    for (d = 0, n_tile = 1; d < D->nd; d++)
       n_tile *= dhdr[d].sztile;
-  } while (n_tile > 32768);
+  } while (n_tile > UCSF_MAX_TILE);
 
   /* check if the datum array is real. */
   if (D->array.d == 0) {
@@ -474,7 +474,7 @@ int ucsf_fwrite_datum (datum *D, FILE *fh) {
     throw("failed to write %u dimension headers", D->nd);
 
   /* write the array data. */
-  if (fwrite(xout.x, sizeof(real), xout.len, fh) != xout.len)
+  if (!hx_array_fwrite_raw(fh, &xout, bytes_get_native(), sizeof(float), 1))
     throw("failed to write core array data");
 
   /* check if the datum array was used directly. */
