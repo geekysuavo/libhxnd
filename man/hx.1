@@ -114,7 +114,8 @@ The
 tool is capable of reading Bruker AMX and DMX format "fid" and "ser" files
 (\fIbruker\fR), Varian Unity and INOVA format "fid" files (\fIvarian\fR),
 nmrPipe format files (\fIpipe\fR), UCSF "Sparky" format files (\fIucsf\fR)
-and NMRView format files (\fInv\fR) for conversion into the \fIhx\fR file
+NMRView format files (\fInv\fR) and Rowland NMR Toolkit format files
+(\fIrnmrtk\fR) for conversion into the \fIhx\fR file
 format.
 .PP
 The
@@ -150,6 +151,11 @@ Files stored in the NMRView(J) blocked format may be read as inputs to
 \fBhx\fR and converted into the native \fIhx\fR format. All required spectral
 parameters are contained in the header of NMRView files, so no external
 parameter files are required for conversion.
+.SS "Rowland NMR Toolkit format files"
+Tiles stored in the RNMRTK format may be read as inputs to \fBhx\fR and
+converted into the native \fIhx\fR format. A parameter file must coexist
+with the data file, where the last four characters of the parameter file
+are ".par" instead of whatever they are in the data file.
 
 .SH "PROCESSING FUNCTIONS"
 .PP
