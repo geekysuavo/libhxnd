@@ -133,6 +133,8 @@ int hx_array_save (hx_array *x, const char *fname);
 
 int hx_array_load (hx_array *x, const char *fname);
 
+/* function declarations (hx-array-rawio.c): */
+
 int hx_array_fread_raw (FILE *fh, hx_array *x, enum byteorder endian,
                         unsigned int wordsz, unsigned int isflt,
                         unsigned int offhead, unsigned int offblk,

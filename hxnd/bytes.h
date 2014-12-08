@@ -96,11 +96,13 @@ uint8_t *bytes_read_block (const char *fname,
                            unsigned int offset,
                            unsigned int n);
 
-real bytes_toword (uint8_t *bytes, int sz, int isflt);
-
 uint64_t bytes_real_to_u64 (const real x);
 
 real bytes_u64_to_real (const uint64_t x);
+
+real bytes_unpack (uint8_t *bytes, int sz, int isflt);
+
+int bytes_pack (real value, uint8_t *bytes, int sz, int isflt);
 
 #endif /* __HXND_BYTES_H__ */
 

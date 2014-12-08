@@ -289,13 +289,38 @@ uint8_t *bytes_read_block (const char *fname,
   return bytes;
 }
 
-/* bytes_toword(): converts a single word into the correct format for
- * inclusion into a hypercomplex array structure.
+/* bytes_real_to_u64(): convert a real floating point value to a u64.
+ */
+uint64_t bytes_real_to_u64 (const real x) {
+  /* declare a conversion union. */
+  bytes_conv_real_u64_t conv;
+
+  /* store the input value into the union. */
+  conv.fval = x;
+
+  /* return the output value. */
+  return conv.ival;
+}
+
+/* bytes_u64_to_real(): convert a u64 to a real floating point value.
+ */
+real bytes_u64_to_real (const uint64_t x) {
+  /* declare a conversion union. */
+  bytes_conv_real_u64_t conv;
+
+  /* store the input value into the union. */
+  conv.ival = x;
+
+  /* return the output value. */
+  return conv.fval;
+}
+
+/* bytes_unpack(): convert a single raw data word into the native hx format.
  * @bytes: the bytes of the word.
  * @sz: the byte count of the word.
  * @isflt: if the word is floating point.
  */
-real bytes_toword (uint8_t *bytes, int sz, int isflt) {
+real bytes_unpack (uint8_t *bytes, int sz, int isflt) {
   /* declare required variables to ensure proper signed integer support.
    * if the specified word size is either that of 'int' or 'short', then
    * each data word is down-cast to that type and then re-cast to a 'long',
@@ -364,15 +389,15 @@ real bytes_toword (uint8_t *bytes, int sz, int isflt) {
     if (sz == sizeof(int8_t)) {
       /* build a single-byte word and convert to float. */
       i8 = bytes[0];
-      x = (real) i8 / 128.0;
+      x = (real) i8;
     }
-    if (sz == sizeof(int16_t)) {
+    else if (sz == sizeof(int16_t)) {
       /* build a two-byte word. */
       i16 = (bytes[1] << 8) |
              bytes[0];
 
       /* convert to float. */
-      x = (real) i16 / 32768.0;
+      x = (real) i16;
     }
     else if (sz == sizeof(int32_t)) {
       /* build a four-byte word. */
@@ -382,7 +407,7 @@ real bytes_toword (uint8_t *bytes, int sz, int isflt) {
              bytes[0];
 
       /* convert to float. */
-      x = (real) i32 / 2147483648.0;
+      x = (real) i32;
     }
     else if (sz == sizeof(int64_t)) {
       /* build an eight-byte float word. */
@@ -393,7 +418,7 @@ real bytes_toword (uint8_t *bytes, int sz, int isflt) {
              bytes[0];
 
       /* convert to the final value. */
-      x = (real) i64 / 9223372036854775808.0;
+      x = (real) i64;
     }
   }
 
@@ -401,29 +426,80 @@ real bytes_toword (uint8_t *bytes, int sz, int isflt) {
   return x;
 }
 
-/* bytes_real_to_u64(): convert a real floating point value to a u64.
+/* bytes_pack(): build a single raw data word from the native hx format.
+ * @value: the input native hx-format value.
+ * @bytes: the generated raw bytes of the word.
+ * @sz: the byte count of the output word.
+ * @isflt: if the output word is floating point.
  */
-uint64_t bytes_real_to_u64 (const real x) {
-  /* declare a conversion union. */
-  bytes_conv_real_u64_t conv;
+int bytes_pack (real value, uint8_t *bytes, int sz, int isflt) {
+  /* declare variables for packing.
+   */
+  int16_t i16;
+  int32_t i32;
+  int64_t i64;
+  float f32;
+  double f64;
 
-  /* store the input value into the union. */
-  conv.fval = x;
+  /* convert based on whether we are in integer or float format. */
+  if (isflt) {
+    /* check the size of the float. */
+    if (sz == sizeof(float)) {
+      /* convert to a four-byte float word. */
+      f32 = (float) value;
+      memcpy(bytes, &f32, sz);
+    }
+    else if (sz == sizeof(double)) {
+      /* convert to an eight-byte float word. */
+      f64 = (double) value;
+      memcpy(bytes, &f64, sz);
+    }
+    else
+      throw("cannot pack %d-byte floats", sz);
+  }
+  else {
+    /* check the size of the integer. */
+    if (sz == sizeof(int8_t)) {
+      /* convert to a one-byte integer. */
+      bytes[0] = (int8_t) value;
+    }
+    else if (sz == sizeof(int16_t)) {
+      /* convert to a two-byte integer. */
+      i16 = (int16_t) value;
+      bytes[0] = BYTES_BYTE0(i16);
+      bytes[1] = BYTES_BYTE1(i16);
+    }
+    else if (sz == sizeof(int32_t)) {
+      /* convert to a four-byte integer. */
+      i32 = (int32_t) value;
+      bytes[0] = BYTES_BYTE0(i32);
+      bytes[1] = BYTES_BYTE1(i32);
+      bytes[2] = BYTES_BYTE2(i32);
+      bytes[3] = BYTES_BYTE3(i32);
+    }
+    else if (sz == sizeof(int64_t)) {
+      /* convert to an eight-byte integer. */
+      i64 = (int64_t) value;
+      i32 = (int32_t) BYTES_RSHIFT4(i64);
 
-  /* return the output value. */
-  return conv.ival;
-}
+      /* build the first four bytes. */
+      bytes[0] = BYTES_BYTE0(i64);
+      bytes[1] = BYTES_BYTE1(i64);
+      bytes[2] = BYTES_BYTE2(i64);
+      bytes[3] = BYTES_BYTE3(i64);
 
-/* bytes_u64_to_real(): convert a u64 to a real floating point value.
- */
-real bytes_u64_to_real (const uint64_t x) {
-  /* declare a conversion union. */
-  bytes_conv_real_u64_t conv;
+      /* build the next four bytes. */
+      i32 = (int32_t) BYTES_RSHIFT4(i64);
+      bytes[4] = BYTES_BYTE0(i32);
+      bytes[5] = BYTES_BYTE1(i32);
+      bytes[6] = BYTES_BYTE2(i32);
+      bytes[7] = BYTES_BYTE3(i32);
+    }
+    else
+      throw("cannot pack %d-byte integers", sz);
+  }
 
-  /* store the input value into the union. */
-  conv.ival = x;
-
-  /* return the output value. */
-  return conv.fval;
+  /* return success. */
+  return 1;
 }
 
