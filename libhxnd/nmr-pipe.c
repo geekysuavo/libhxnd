@@ -482,13 +482,19 @@ int pipe_fill_datum (const char *fname, datum *D) {
  * @dim: current datum dimension in the recursion.
  * @n0: current coefficient offset in the recursion.
  * @arr: index array for looping through the datum core array.
- * @buf: output float buffer.
- * @ibuf: float buffer index.
+ * @fh: the output file handle.
  */
-int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr,
-                     float *buf, int *ibuf) {
-  /* declare a few required variables. */
+int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr, FILE *fh) {
+  /* declare a few required variables:
+   * @d: current array algebraic dimension index.
+   * @k: current array topological dimension index.
+   * @n: current array coefficient imaginary offset.
+   * @num: size along current array dimension.
+   * @idx: array linear scalar index.
+   * @f: float output value.
+   */
   int d, k, n, num, idx;
+  float f;
 
   /* determine the array dimension indices. */
   d = D->dims[dim].d;
@@ -506,7 +512,11 @@ int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr,
     for (arr[dim] = 0; arr[dim] < num; arr[dim]++) {
       /* pack the linear index and store the coefficient. */
       hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
-      buf[(*ibuf)++] = (float) D->array.x[D->array.n * idx + n0];
+      f = (float) D->array.x[D->array.n * idx + n0];
+
+      /* write the coefficient. */
+      if (fwrite(&f, sizeof(float), 1, fh) != 1)
+        return 0;
     }
 
     /* check if the trace is complex. */
@@ -515,7 +525,11 @@ int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr,
       for (arr[dim] = 0; arr[dim] < num; arr[dim]++) {
         /* pack the linear index and store the coefficient. */
         hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
-        buf[(*ibuf)++] = (float) D->array.x[D->array.n * idx + n0 + n];
+        f = (float) D->array.x[D->array.n * idx + n0 + n];
+
+        /* write the coefficient. */
+        if (fwrite(&f, sizeof(float), 1, fh) != 1)
+          return 0;
       }
     }
   }
@@ -523,11 +537,11 @@ int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr,
     /* recurse into the lower dimensions. */
     for (arr[dim] = 0; arr[dim] < num; arr[dim]++) {
       /* recurse the real component. */
-      pipe_fwrite_dim(D, dim - 1, n0, arr, buf, ibuf);
+      pipe_fwrite_dim(D, dim - 1, n0, arr, fh);
 
       /* recurse the imaginary component. */
       if (D->dims[dim].cx)
-        pipe_fwrite_dim(D, dim - 1, n0 + n, arr, buf, ibuf);
+        pipe_fwrite_dim(D, dim - 1, n0 + n, arr, fh);
     }
   }
 
@@ -543,17 +557,14 @@ int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr,
 int pipe_fwrite_datum (datum *D, FILE *fh) {
   /* declare variables required to output pipe-format files:
    * @ord: dimension ordering array.
+   * @arr: array index for iteration during output.
    * @hdr: the pipe file header structure.
-   * @fhdr: array of float values in the header.
-   * @fdata: array of float values in the raw data.
    * @nhdr: number of floats in @fhdr.
-   * @ndata: number of floats in @fdata.
    * @ts: calendar time structure.
    */
   int ord[PIPE_MAXDIM], arr[PIPE_MAXDIM];
-  int i, n, ifdata, nhdr, ndata;
   struct pipe_header hdr;
-  float *fhdr, *fdata;
+  int i, n, nhdr;
   struct tm *ts;
 
   /* check that the datum will fit in a pipe-format file. */
@@ -694,46 +705,17 @@ int pipe_fwrite_datum (datum *D, FILE *fh) {
   /* compute the size of the header buffer. */
   nhdr = sizeof(struct pipe_header) / sizeof(float);
 
-  /* allocate the header float buffer. */
-  fhdr = (float*) calloc(nhdr, sizeof(float));
-
-  /* check that the header buffer was allocated. */
-  if (!fhdr)
-    throw("failed to allocate %d header values", nhdr);
-
-  /* copy the header values into the header buffer. */
-  memcpy(fhdr, &hdr, nhdr * sizeof(float));
-
-  /* compute the size of the data buffer. */
-  ndata = D->array.len;
-
-  /* allocate the data float buffer. */
-  fdata = (float*) calloc(ndata, sizeof(float));
-
-  /* check that the data buffer was allocated. */
-  if (!fdata)
-    throw("failed to allocate %d array values", ndata);
-
   /* initialize the data buffer index. */
   arr[0] = arr[1] = arr[2] = arr[3] = 0;
-  ifdata = 0;
   n = 0;
 
-  /* fill the data buffer from the datum core array. */
-  if (!pipe_fwrite_dim(D, D->nd - 1, n, arr, fdata, &ifdata))
-    throw("failed to convert core array to pipe format");
-
   /* write the header to the output stream. */
-  if (fwrite(fhdr, sizeof(float), nhdr, fh) != nhdr)
+  if (fwrite(&hdr, sizeof(float), nhdr, fh) != nhdr)
     throw("failed to write %d header values", nhdr);
 
-  /* write the array data to the output stream. */
-  if (fwrite(fdata, sizeof(float), ndata, fh) != ndata)
-    throw("failed to write %d array values", ndata);
-
-  /* free the allocated buffers. */
-  free(fhdr);
-  free(fdata);
+  /* write coefficients out from the datum core array. */
+  if (!pipe_fwrite_dim(D, D->nd - 1, n, arr, fh))
+    throw("failed to convert core array to pipe format");
 
   /* return success. */
   return 1;
