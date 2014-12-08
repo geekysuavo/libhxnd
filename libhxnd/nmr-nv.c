@@ -383,14 +383,16 @@ int nv_fix_adjustment (datum *D) {
  */
 int nv_fill_datum (const char *fname, datum *D) {
   /* declare variables required to read header information:
-   * @endianness: the byte ordering of the data file.
+   * @endian: the byte ordering of the data file.
    * @hdr: the original file header structure.
    * @hdradj: the adjusted file header structure.
    * @d: dimension loop counter.
+   * @ts: calendar time structure to hold header values.
    */
   enum byteorder endian = BYTES_ENDIAN_AUTO;
   struct nv_header hdr, hdradj;
   unsigned int d;
+  struct tm ts;
 
   /* read the header information from the data file. */
   if (!nv_read_header(fname, &endian, &hdr))
@@ -402,6 +404,17 @@ int nv_fill_datum (const char *fname, datum *D) {
   /* adjust the file header, if necessary. */
   if (!nv_adjust_header(fname, &hdradj))
     throw("failed to perform header adjustment");
+
+  /* check if time/date information exists in the header fields. */
+  if (hdr.year && hdr.month) {
+    /* parse the date header fields. */
+    ts.tm_mon = (int) hdr.month - 1;
+    ts.tm_mday = (int) hdr.day;
+    ts.tm_year = (int) hdr.year - 1900;
+
+    /* convert the date and time into an epoch offset. */
+    D->epoch = mktime(&ts);
+  }
 
   /* store the dimension count. */
   D->nd = (unsigned int) hdr.ndims;
@@ -474,6 +487,63 @@ int nv_fill_datum (const char *fname, datum *D) {
  * @fh: the output file stream.
  */
 int nv_fwrite_datum (datum *D, FILE *fh) {
+  /* declare variables required to write header information:
+   * @hdr: the output file header structure.
+   * @d: dimension loop counter.
+   * @ts: calendar time structure.
+   */
+  struct nv_header hdr;
+  unsigned int d;
+  struct tm *ts;
+
+  /* initialize the file header. */
+  memset(&hdr, 0, sizeof(struct nv_header));
+
+  /* set the fields of the file header. */
+  hdr.magic = NV_MAGIC;
+  hdr.fhdrsz = sizeof(struct nv_header);
+  hdr.bhdrsz = 0;
+  /* FIXME */hdr.blkelem = 0;
+  hdr.ndims = D->nd;
+
+  /* compute the calendar date structure fields. */
+  ts = gmtime(&D->epoch);
+
+  /* store the header date fields. */
+  hdr.month = ts->tm_mon + 1;
+  hdr.day = ts->tm_mday;
+  hdr.year = ts->tm_year + 1900;
+
+  /* set the extraneous file header fields. */
+  hdr.temp = 298.15;
+  strcpy(hdr.sequence, "");
+  strcpy(hdr.comment, "");
+
+  /* configure each dimension sub-header. */
+  for (d = 0; d < D->nd; d++) {
+    /* set the dimension sub-header fields. */
+    hdr.dims[d].sz = D->dims[d].sz;
+    /* FIXME */hdr.dims[d].szblk = 0;
+    /* FIXME */hdr.dims[d].nblk = 0;
+    /* FIXME */hdr.dims[d].offblk = 0;
+    /* FIXME */hdr.dims[d].maskblk = 0;
+    /* FIXME */hdr.dims[d].ptoff = 0;
+
+    /* set the dimension spectral parameters. */
+    hdr.dims[d].sf = D->dims[d].carrier;
+    hdr.dims[d].sw = D->dims[d].width;
+    /* FIXME */hdr.dims[d].refpt = 0;
+    hdr.dims[d].ref = D->dims[d].offset / D->dims[d].carrier;
+    hdr.dims[d].refunits = NV_REFUNIT_PPM;
+
+    /* set the spectral folding parameters. */
+    hdr.dims[d].foldup = 0.0;
+    hdr.dims[d].folddown = 0.0;
+
+    /* copy the dimension label string. */
+    strcpy(hdr.dims[d].label, D->dims[d].nuc);
+  }
+
   /* FIXME: implement nv_fwrite_datum() */
   throw("unimplemented!");
 

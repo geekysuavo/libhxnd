@@ -98,9 +98,15 @@ typedef struct {
   /* @fname: raw byte data filename string. */
   char *fname;
 
-  /* @type: raw byte data type. */
+  /* @endian: raw data byte ordering.
+   * @type: file type for array reads.
+   */
   enum byteorder endian;
   enum datum_type type;
+
+  /* @epoch: time since the epoch of acquisition or datum creation.
+   */
+  time_t epoch;
 
   /* @dims: array of per-dimension parameter values.
    * @nd: number of dimensions.

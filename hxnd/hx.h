@@ -32,6 +32,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 /* include the openmp library header. */
 #include <omp.h>

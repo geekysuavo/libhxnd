@@ -328,9 +328,30 @@ int pipe_fill_datum (const char *fname, datum *D) {
   unsigned int d;
   int ord[PIPE_MAXDIM];
 
+  /* declare variables required to parse date information:
+   * @ts: calendar time structure to hold header values.
+   */
+  struct tm ts;
+
   /* read the header information from the data file. */
   if (!pipe_read_header(fname, &endianness, &hdr))
     throw("failed to read header of '%s'", fname);
+
+  /* check if time/date information exists in the header fields. */
+  if (hdr.d_year && hdr.d_month) {
+    /* parse the time header fields. */
+    ts.tm_hour = (int) hdr.t_hour;
+    ts.tm_min = (int) hdr.t_min;
+    ts.tm_sec = (int) hdr.t_sec;
+
+    /* parse the date header fields. */
+    ts.tm_mon = (int) hdr.d_month - 1;
+    ts.tm_mday = (int) hdr.d_day;
+    ts.tm_year = (int) hdr.d_year - 1900;
+
+    /* convert the date and time into an epoch offset. */
+    D->epoch = mktime(&ts);
+  }
 
   /* initially set the number of dimensions to the maximum allowed, because
    * pipe arranges its dimension information in a really screwy way.
@@ -527,11 +548,13 @@ int pipe_fwrite_datum (datum *D, FILE *fh) {
    * @fdata: array of float values in the raw data.
    * @nhdr: number of floats in @fhdr.
    * @ndata: number of floats in @fdata.
+   * @ts: calendar time structure.
    */
   int ord[PIPE_MAXDIM], arr[PIPE_MAXDIM];
   int i, n, ifdata, nhdr, ndata;
   struct pipe_header hdr;
   float *fhdr, *fdata;
+  struct tm *ts;
 
   /* check that the datum will fit in a pipe-format file. */
   if (D->nd > PIPE_MAXDIM)
@@ -544,6 +567,19 @@ int pipe_fwrite_datum (datum *D, FILE *fh) {
   hdr.magic = 0.0;
   hdr.format = (float) 0xeeeeeeee;
   hdr.order = (float) PIPE_MAGIC;
+
+  /* compute the calendar date structure fields. */
+  ts = gmtime(&D->epoch);
+
+  /* store the header date fields. */
+  hdr.d_year = (float) ts->tm_year + 1900;
+  hdr.d_month = (float) ts->tm_mon + 1.0;
+  hdr.d_day = (float) ts->tm_mday;
+
+  /* store the header time fields. */
+  hdr.t_hour = (float) ts->tm_hour;
+  hdr.t_min = (float) ts->tm_min;
+  hdr.t_sec = (float) ts->tm_sec;
 
   /* set the number of dimensions and the plane mode. */
   hdr.ndims = (float) D->nd;

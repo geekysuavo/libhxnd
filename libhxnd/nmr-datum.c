@@ -30,7 +30,7 @@
 /* define the number of (u64) members in the header and dimension sections of
  * binary datum files.
  */
-#define NMR_DATUM_FWRITE_SZ_HDR   6
+#define NMR_DATUM_FWRITE_SZ_HDR   7
 #define NMR_DATUM_FWRITE_SZ_DIM  10
 
 /* define bit field positions to store status flags in binary datum files.
@@ -120,6 +120,9 @@ void datum_init (datum *D) {
   /* initialize the datum type. */
   D->endian = BYTES_ENDIAN_AUTO;
   D->type = DATUM_TYPE_UNDEFINED;
+
+  /* initialize the datum date. */
+  D->epoch = time(NULL);
 
   /* initialize the dimension count and dimensions array. */
   D->dims = NULL;
@@ -231,9 +234,13 @@ enum datum_type datum_guess_type (const char *fname) {
  */
 int datum_print (datum *D, const char *fname) {
   /* declare a few required variables:
+   * @timedate: local calendar time structure.
+   * @tmstr: date/time string.
    * @d: dimension loop counter.
    * @fh: the file handle used for writing.
    */
+  struct tm *timedate;
+  char tmstr[N_BUF];
   unsigned int d, n;
   FILE *fh;
 
@@ -250,7 +257,12 @@ int datum_print (datum *D, const char *fname) {
   /* print the filename line. */
   fprintf (fh, "File:  %s\n", D->fname ? D->fname : "Unknown");
 
-  /* print the first line. */
+  /* print the date line. */
+  timedate = gmtime(&D->epoch);
+  strftime(tmstr, N_BUF, "%c", timedate);
+  fprintf(fh, "Date: %s\n", tmstr);
+
+  /* print the array line. */
   fprintf(fh, "Array: ");
   if (D->array_alloc) {
     /* print the initial information. */
@@ -264,14 +276,10 @@ int datum_print (datum *D, const char *fname) {
       /* print a delimiter if required. */
       if (d < D->array.k - 1)
         fprintf(fh, ", ");
-
-      /* print an ending if required. */
-      if (d == D->array.k - 1)
-        fprintf(fh, ")\n");
     }
 
     /* print a newline. */
-    fprintf(fh, "\n");
+    fprintf(fh, ")\n\n");
   }
   else
     fprintf(fh, "Unallocated.\n\n");
@@ -524,6 +532,7 @@ int datum_fwrite (datum *D, FILE *fh) {
   buf[i++] = (uint64_t) NMR_DATUM_MAGIC;
   buf[i++] = (uint64_t) D->endian;
   buf[i++] = (uint64_t) DATUM_TYPE_HXND;
+  buf[i++] = (uint64_t) D->epoch;
   buf[i++] = (uint64_t) D->nd;
   buf[i++] = (uint64_t) D->d_sched;
   buf[i++] = (uint64_t) D->n_sched;
@@ -646,6 +655,7 @@ int datum_fread (datum *D, FILE *fh, int read_array) {
   i = 1;
   D->endian = (enum byteorder) buf[i++];
   D->type = (enum datum_type) buf[i++];
+  D->epoch = (time_t) buf[i++];
   D->nd = (unsigned int) buf[i++];
   D->d_sched = (int) buf[i++];
   D->n_sched = (int) buf[i++];

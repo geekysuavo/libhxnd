@@ -370,6 +370,11 @@ int bruker_fill_datum (const char *dname, datum *D) {
   char *fname_data;
   char *fname_parm;
 
+  /* declare a variable for date/time extraction:
+   * @acqus_date: seconds since the epoch of data collection.
+   */
+  int acqus_date = 0;
+
   /* declare variables for identifying data dimensionality:
    * @acqus_parmode: the acqus 'PARMODE' parameter.
    * @d: dimension loop counter.
@@ -420,6 +425,13 @@ int bruker_fill_datum (const char *dname, datum *D) {
         BRUKER_PARMTYPE_INT, "PARMODE", &acqus_parmode,
         BRUKER_PARMTYPE_INT, "BYTORDA", &acqus_bytorda) != 2)
     throw("failed to get PARMODE/BYTORDA from '%s'", fname_parm);
+
+  /* parse the date from the acqus file. */
+  bruker_read_parms(fname_parm, 1,
+    BRUKER_PARMTYPE_INT, "DATE", &acqus_date);
+
+  /* store the parsed date value. */
+  D->epoch = (time_t) acqus_date;
 
   /* parse the group delay from the acqus file. */
   bruker_read_parms(fname_parm, 1,

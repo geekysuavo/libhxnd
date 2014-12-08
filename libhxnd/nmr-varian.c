@@ -190,8 +190,11 @@ int varian_read_parms (const char *fname, unsigned int n, ...) {
             /* trim trailing newlines from the string. */
             strnltrim((char*) buf);
 
-            /* split the next line by whitespace. */
-            fields = strsplit(buf, " ", &nfields);
+            /* split the next line by whitespace or quotes. */
+            if (typs[i] == VARIAN_PARMTYPE_STRING)
+              fields = strsplit(buf, "\"", &nfields);
+            else
+              fields = strsplit(buf, " ", &nfields);
 
             /* act based on the parameter type. */
             switch (typs[i]) {
@@ -213,8 +216,8 @@ int varian_read_parms (const char *fname, unsigned int n, ...) {
 
               /* string */
               case VARIAN_PARMTYPE_STRING:
-                ncpy = strlen(fields[1]) - 2;
-                strncpy(vals[i], fields[1] + 1, ncpy);
+                ncpy = strlen(fields[1]);
+                strncpy(vals[i], fields[1], ncpy);
                 ((char*) vals[i])[ncpy] = '\0';
                 break;
 
@@ -400,6 +403,52 @@ unsigned int varian_count_dims (const char *fname) {
   return n;
 }
 
+/* varian_parse_date(): computes the number of seconds past the epoch of
+ * varian data collection from the date string in a procpar file.
+ * @fname: the input procpar filename.
+ */
+time_t varian_parse_date (const char *fname) {
+  /* declare a few required variables:
+   */
+  char tstr[N_BUF];
+  struct tm ts;
+  time_t t;
+
+  /* initialize the time structure. */
+  memset(&ts, 0, sizeof(struct tm));
+  t = 0;
+
+  /* parse the date string from the procpar file. */
+  varian_read_parms(fname, 1, VARIAN_PARMTYPE_STRING, "date", tstr);
+
+  /* attempt to parse the month from the date string. */
+  ts.tm_mon = (
+    strncmp(tstr, "Jan", 3) == 0 ?  0 :
+    strncmp(tstr, "Feb", 3) == 0 ?  1 :
+    strncmp(tstr, "Mar", 3) == 0 ?  2 :
+    strncmp(tstr, "Apr", 3) == 0 ?  3 :
+    strncmp(tstr, "May", 3) == 0 ?  4 :
+    strncmp(tstr, "Jun", 3) == 0 ?  5 :
+    strncmp(tstr, "Jul", 3) == 0 ?  6 :
+    strncmp(tstr, "Aug", 3) == 0 ?  7 :
+    strncmp(tstr, "Sep", 3) == 0 ?  8 :
+    strncmp(tstr, "Oct", 3) == 0 ?  9 :
+    strncmp(tstr, "Nov", 3) == 0 ? 10 :
+    strncmp(tstr, "Dec", 3) == 0 ? 11 : 0);
+
+  /* attempt to parse the numeric components from the date string. */
+  sscanf(tstr, "%*s %d %d", &ts.tm_mday, &ts.tm_year);
+
+  /* subtract 1900 from the year structure field. */
+  ts.tm_year -= 1900;
+
+  /* convert the time structure values into an epoch offset. */
+  t = mktime(&ts);
+
+  /* return the computed time. */
+  return t;
+}
+
 /* varian_fill_datum(): semi-intelligently parses varian acquisition
  * parameters into an NMR datum structure.
  * @dname: the input directory name.
@@ -453,6 +502,9 @@ int varian_fill_datum (const char *dname, datum *D) {
 
   /* build the fid filename. */
   snprintf(fname_data, n_fname, "%s/fid", dname);
+
+  /* store the parsed date value. */
+  D->epoch = varian_parse_date(fname_parm);;
 
   /* algorithmically guess the dimensionality of the data. */
   D->nd = varian_count_dims(fname_parm);
