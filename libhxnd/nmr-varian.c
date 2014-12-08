@@ -36,7 +36,6 @@ int varian_check_dir (const char *dname) {
   int have_procpar, have_fid;
   unsigned int n_fname;
   char *fname;
-  FILE *fh;
 
   /* allocate a string for checking file existence. */
   n_fname = strlen(dname) + 16;
@@ -44,31 +43,15 @@ int varian_check_dir (const char *dname) {
 
   /* check that the string was allocated. */
   if (!fname)
-    throw("failed to allocate %d-char buffer", n_fname);
+    throw("failed to allocate %u-char buffer", n_fname);
 
-  /* try to open the procpar file. */
-  have_procpar = 0;
+  /* check if the procpar file exists. */
   snprintf(fname, n_fname, "%s/procpar", dname);
-  fh = fopen(fname, "rb");
+  have_procpar = bytes_fexist(fname);
 
-  /* check if the procpar file was opened. */
-  if (fh) {
-    /* yep. it exists. */
-    have_procpar = 1;
-    fclose(fh);
-  }
-
-  /* try to open the fid file. */
-  have_fid = 0;
+  /* check if the fid file exists.. */
   snprintf(fname, n_fname, "%s/fid", dname);
-  fh = fopen(fname, "rb");
-
-  /* check if the fid file was opened. */
-  if (fh) {
-    /* yep. it exists. */
-    have_fid = 1;
-    fclose(fh);
-  }
+  have_fid = bytes_fexist(fname);
 
   /* free the filename string. */
   free(fname);

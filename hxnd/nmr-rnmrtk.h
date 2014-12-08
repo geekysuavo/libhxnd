@@ -32,7 +32,40 @@
 #include <hxnd/bytes.h>
 #include <hxnd/str.h>
 
-/* define the maximum number of dimensions supported by rnmrtk files. */
+/* define all possible parameter file statement strings supported by rnmrtk.
+ */
+#define RNMRTK_PARLINE_FORMAT  "format"
+#define RNMRTK_PARLINE_DOM     "dom"
+#define RNMRTK_PARLINE_N       "n"
+#define RNMRTK_PARLINE_LAYOUT  "layout"
+#define RNMRTK_PARLINE_SF      "sf"
+#define RNMRTK_PARLINE_PPM     "ppm"
+#define RNMRTK_PARLINE_QUAD    "quad"
+#define RNMRTK_PARLINE_SW      "sw"
+
+/* define all possible endianness strings in rnmrtk 'format' lines.
+ */
+#define RNMRTK_ENDIAN_BIG     "big-endian"
+#define RNMRTK_ENDIAN_LITTLE  "little-endian"
+
+/* define all possible word-type strings in rnmrtk 'format' lines.
+ */
+#define RNMRTK_WTYPE_INT  "int-32"
+#define RNMRTK_WTYPE_FLT  "ieee-float"
+
+/* define all possible quadrature strings in rnmrtk 'quad' lines.
+ */
+#define RNMRTK_QUADSTR_TPPI        "tppi"
+#define RNMRTK_QUADSTR_STATES      "states"
+#define RNMRTK_QUADSTR_STATESTPPI  "states-tppi"
+
+/* define all possible real/complex strings in rnmrtk 'n' lines.
+ */
+#define RNMRTK_NTYPE_REAL     "r"
+#define RNMRTK_NTYPE_COMPLEX  "c"
+
+/* define the maximum number of dimensions supported by rnmrtk files.
+ */
 #define RNMRTK_MAXDIM   4
 #define RNMRTK_MAXSUB  10
 
@@ -40,7 +73,7 @@
  * dimension in an RNMRTK data file.
  */
 enum rnmrtk_quad {
-  RNMRTK_QUAD_UNKNOWN    = 0x00,
+  RNMRTK_QUAD_REAL       = 0x00,
   RNMRTK_QUAD_TPPI       = 0x01,
   RNMRTK_QUAD_STATES     = 0x02,
   RNMRTK_QUAD_STATESTPPI = 0x03
@@ -67,8 +100,10 @@ struct rnmrtk_parms {
 
   /* arguments parsed from parfile 'dom' lines:
    * @ord: dimension ordering array, one-based.
+   * @nd: dimension count.
    */
   int ord[RNMRTK_MAXDIM];
+  unsigned int nd;
 
   /* arguments parsed from parfile 'n' lines:
    * @sz: array of sizes for each dimension.

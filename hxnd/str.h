@@ -50,6 +50,12 @@ char **strsplit (const char *s1, const char *s2, unsigned int *ntok);
 
 void strvtrim (char **strv, unsigned int n);
 
+void strvcompact (char **strv, unsigned int *pn);
+
+void strvtolower (char **strv, unsigned int n);
+
+void strvtoupper (char **strv, unsigned int n);
+
 void strvfree (char **strv, unsigned int n);
 
 #endif /* __HXND_STR_H__ */

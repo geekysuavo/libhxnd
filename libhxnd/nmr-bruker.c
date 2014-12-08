@@ -36,7 +36,6 @@ int bruker_check_dir (const char *dname) {
   int have_acqus, have_fid, have_ser;
   unsigned int n_fname;
   char *fname;
-  FILE *fh;
 
   /* allocate a string for checking file existence. */
   n_fname = strlen(dname) + 16;
@@ -44,43 +43,19 @@ int bruker_check_dir (const char *dname) {
 
   /* check that the string was allocated. */
   if (!fname)
-    throw("failed to allocate %d-char buffer", n_fname);
+    throw("failed to allocate %u-char buffer", n_fname);
 
-  /* try to open the acqus file. */
-  have_acqus = 0;
+  /* check if the acqus file exists. */
   snprintf(fname, n_fname, "%s/acqus", dname);
-  fh = fopen(fname, "rb");
+  have_acqus = bytes_fexist(fname);
 
-  /* check if the acqus file was opened. */
-  if (fh) {
-    /* yep. it exists. */
-    have_acqus = 1;
-    fclose(fh);
-  }
-
-  /* try to open the fid file. */
-  have_fid = 0;
+  /* check if the fid file exists. */
   snprintf(fname, n_fname, "%s/fid", dname);
-  fh = fopen(fname, "rb");
+  have_fid = bytes_fexist(fname);
 
-  /* check if the fid file was opened. */
-  if (fh) {
-    /* yep. it exists. */
-    have_fid = 1;
-    fclose(fh);
-  }
-
-  /* try to open the ser file. */
-  have_ser = 0;
+  /* check if the ser file exists. */
   snprintf(fname, n_fname, "%s/ser", dname);
-  fh = fopen(fname, "rb");
-
-  /* check if the ser file was opened. */
-  if (fh) {
-    /* yep. it exists. */
-    have_ser = 1;
-    fclose(fh);
-  }
+  have_ser = bytes_fexist(fname);
 
   /* free the filename string. */
   free(fname);

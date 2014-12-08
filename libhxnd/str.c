@@ -291,6 +291,72 @@ void strvtrim (char **strv, unsigned int n) {
     strtrim(strv[i]);
 }
 
+/* strvcompact(): compact a string array by removing all empty strings.
+ * @strv: the string array to compact.
+ * @pn: pointer to the array length.
+ */
+void strvcompact (char **strv, unsigned int *pn) {
+  /* declare a few required variables. */
+  unsigned int i, n;
+
+  /* loop over the array until we reach a non-empty member. */
+  for (i = 0, n = 0; i < *pn; i++) {
+    /* check if the current member is non-empty. */
+    if (strlen(strv[i])) {
+      /* check if it may be shifted left. */
+      if (i > n) {
+        /* yes. resize the destination string. */
+        strv[n] = (char*)
+          realloc(strv[n], (strlen(strv[i]) + 1) * sizeof(char));
+
+        /* move the string. */
+        strcpy(strv[n], strv[i]);
+        strcpy(strv[i], "");
+      }
+
+      /* increment the adjusted index. */
+      n++;
+    }
+  }
+
+  /* check if fields were moved. */
+  if (n < *pn) {
+    /* free the trailing empty strings. */
+    for (i = n; i < *pn; i++)
+      free(strv[i]);
+
+    /* reallocate the string array. */
+    strv = (char**) realloc(strv, n * sizeof(char*));
+    *pn = n;
+  }
+}
+
+/* strvtolower(): convert each string in an array to lowercase.
+ * @strv: the string array to convert.
+ * @n: the number of strings in the array.
+ */
+void strvtolower (char **strv, unsigned int n) {
+  /* declare a loop counter. */
+  unsigned int i;
+
+  /* convert the individual strings in the array. */
+  for (i = 0; i < n; i++)
+    strtolower(strv[i]);
+}
+
+/* strvtoupper(): convert each string in an array to uppercase.
+ * @strv: the string array to convert.
+ * @n: the number of strings in the array.
+ */
+void strvtoupper (char **strv, unsigned int n) {
+  /* declare a loop counter. */
+  unsigned int i;
+
+  /* convert the individual strings in the array. */
+  for (i = 0; i < n; i++)
+    strtoupper(strv[i]);
+}
+
 /* strvfree(): free a string array.
  * @strv: the string array to free.
  * @n: the number of strings in the array.
