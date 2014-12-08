@@ -78,6 +78,7 @@ static const struct datum_type_def datum_types[] = {
   { "pipe",   DATUM_TYPE_PIPE },
   { "ucsf",   DATUM_TYPE_UCSF },
   { "nv",     DATUM_TYPE_NV },
+  { "rnmrtk", DATUM_TYPE_RNMRTK },
   { NULL, DATUM_TYPE_UNDEFINED }
 };
 
@@ -221,6 +222,12 @@ enum datum_type datum_guess_type (const char *fname) {
   /* check if the file is a bruker-format directory. */
   if (bruker_check_dir(fname))
     return DATUM_TYPE_BRUKER;
+  else
+    traceback_clear();
+
+  /* check if the file is an RNMRTK data file. */
+  if (rnmrtk_check_file(fname))
+    return DATUM_TYPE_RNMRTK;
   else
     traceback_clear();
 
@@ -1413,6 +1420,11 @@ int datum_read_array (datum *D) {
     if (!nv_read(D->fname, &D->array))
       throw("failed to read nmrview data from '%s'", D->fname);
   }
+  else if (D->type == DATUM_TYPE_RNMRTK) {
+    /* load the raw data from the RNMRTK data file. */
+    if (!rnmrtk_read(D->fname, &D->array))
+      throw("failed to read rnmrtk data from '%s'", D->fname);
+  }
   else if (D->type == DATUM_TYPE_HXND) {
     /* compute the offset where the array begins. */
     offset = NMR_DATUM_FWRITE_SZ_HDR;
@@ -1668,6 +1680,15 @@ int datum_fill (datum *D, const char *fname) {
       /* attempt to fill from an nmrview-format file. */
       if (!nv_fill_datum(fname, D))
         throw("failed to parse nmrview parameters");
+
+      /* break out. */
+      break;
+
+    /* rnmrtk. */
+    case DATUM_TYPE_RNMRTK:
+      /* attempt to fill from an rnmrtk-format file. */
+      if (!rnmrtk_fill_datum(fname, D))
+        throw("failed to parse rnmrtk parameters");
 
       /* break out. */
       break;

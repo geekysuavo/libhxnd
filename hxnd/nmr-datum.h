@@ -50,7 +50,8 @@ enum datum_type {
   DATUM_TYPE_VARIAN,
   DATUM_TYPE_PIPE,
   DATUM_TYPE_UCSF,
-  DATUM_TYPE_NV
+  DATUM_TYPE_NV,
+  DATUM_TYPE_RNMRTK
 };
 
 /* datum_dim: single dimension of parameters for acquired NMR data.
@@ -139,6 +140,7 @@ datum;
 #include <hxnd/nmr-pipe.h>
 #include <hxnd/nmr-ucsf.h>
 #include <hxnd/nmr-nv.h>
+#include <hxnd/nmr-rnmrtk.h>
 
 /* function declarations: */
 

@@ -13,7 +13,7 @@ LIBSRC+= hx-array-tile hx-cmp hx-arith hx-phasor hx-fourier hx-window hx-ist
 LIBSRC+= trace opts str bytes
 
 # LIBSRC: library source basenames: nmr data formats.
-LIBSRC+= nmr-datum nmr-bruker nmr-varian nmr-pipe nmr-ucsf nmr-nv
+LIBSRC+= nmr-datum nmr-bruker nmr-varian nmr-pipe nmr-ucsf nmr-nv nmr-rnmrtk
 
 # LIBSRC: library source basenames: processing functions.
 LIBSRC+= fn fn-abs fn-add fn-complex fn-cut fn-fft fn-ht fn-ist fn-phase
