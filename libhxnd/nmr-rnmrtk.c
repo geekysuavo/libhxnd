@@ -312,12 +312,102 @@ int rnmrtk_read (const char *fname, hx_array *x) {
   /* declare a structure to hold parameter information. */
   struct rnmrtk_parms par;
 
+  /* declare variables required for array raw input:
+   * @wordsz: number of bytes per data word.
+   * @isflt: whether the words are floats.
+   * @ntrue: number of bytes in the input file.
+   * @ncalc: estimated value of @ntrue.
+   * @offhead: file header byte offset.
+   * @offblk: block header byte offset.
+   * @offend: block footer byte offset.
+   * @nblks: number of data blocks.
+   * @nwords: number of words per block.
+   * @nalign: block alignment byte count.
+   * @fh: input file handle.
+   */
+  unsigned int wordsz;
+  unsigned int isflt;
+  unsigned int ntrue;
+  unsigned int ncalc;
+  unsigned int offhead;
+  unsigned int offblk;
+  unsigned int offend;
+  unsigned int nblks;
+  unsigned int nwords;
+  unsigned int nalign;
+  FILE *fh;
+
   /* read the parameter file. */
   if (!rnmrtk_read_parms(fname, &par))
     throw("failed to read rnmrtk parameter file");
 
-  /* FIXME: implement rnmrtk_read() */
-  throw("unimplemented!");
+  /* check the word type. */
+  if (par.isflt) {
+    /* set the float flag and the word size. */
+    wordsz = sizeof(float);
+    isflt = 1;
+  }
+  else {
+    /* set the int flag and the word size. */
+    wordsz = sizeof(int32_t);
+    isflt = 0;
+  }
+
+  /* get the header and block byte offsets. */
+  offhead = par.nheader;
+  offblk = par.nbegin;
+  offend = par.nend;
+
+  /* get the total file size. */
+  ntrue = bytes_size(fname);
+
+  /* check that the file size is valid. */
+  if (ntrue <= offhead)
+    throw("invalid data file size of %u bytes", ntrue);
+
+  /* get (or compute) the number of words per block. */
+  if (par.reclen) {
+    /* get the number from the parm structure. */
+    nwords = par.reclen;
+
+    /* determine how many blocks are in the file. */
+    nblks = (ntrue - offhead) / (offblk + nwords * wordsz + offend);
+  }
+  else {
+    /* assume a single data block. */
+    nblks = 1;
+
+    /* determine the size of the data block. */
+    nwords = (ntrue - offhead - offblk - offend) / wordsz;
+  }
+
+  /* check that the computed blocking information matches the file size. */
+  ncalc = offhead + nblks * (offblk + nwords * wordsz + offend);
+  if (ncalc != ntrue)
+    throw("expected file size %uB does not match actual %uB", ncalc, ntrue);
+
+  /* check if block alignment is required. */
+  if (offend) {
+    /* build the block alignment size. */
+    nalign = offblk + nwords * wordsz + offend;
+  }
+  else
+    nalign = 0;
+
+  /* open the input file for reading. */
+  fh = fopen(fname, "rb");
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
+  /* read data from the file into the output array. */
+  if (!hx_array_fread_raw(fh, x, par.endian, wordsz, isflt, offhead,
+                          offblk, nblks, nwords, nalign))
+    throw("failed to read raw data from '%s'", fname);
+
+  /* close the input file. */
+  fclose(fh);
 
   /* return success. */
   return 1;
@@ -329,15 +419,82 @@ int rnmrtk_read (const char *fname, hx_array *x) {
  * @D: pointer to the datum struct to fill.
  */
 int rnmrtk_fill_datum (const char *fname, datum *D) {
-  /* declare a structure to hold parameter information. */
+  /* @par: structure to hold parameter information.
+   * @ord: dimension ordering array.
+   * @d: dimension loop counter.
+   */
   struct rnmrtk_parms par;
+  int ord[RNMRTK_MAXDIM];
+  unsigned int d;
 
   /* read the parameter file. */
   if (!rnmrtk_read_parms(fname, &par))
     throw("failed to read rnmrtk parameter file");
 
-  /* FIXME: implement rnmrtk_fill_datum() */
-  throw("unimplemented!");
+  /* store the dimensionality. */
+  D->nd = par.nd;
+
+  /* check the dimensionality. */
+  if (D->nd < 1 || D->nd > RNMRTK_MAXDIM)
+    throw("invalid dimensionality %u", D->nd);
+
+  /* allocate the dimension parameter array. */
+  D->dims = (datum_dim*) calloc(D->nd, sizeof(datum_dim));
+
+  /* check that the dimension parameter array was allocated. */
+  if (D->dims == NULL)
+    throw("failed to allocate %u datum dimensions", D->nd);
+
+  /* store the dimension information. */
+  for (d = 0; d < D->nd; d++) {
+    /* store the dimension size. */
+    D->dims[d].td = D->dims[d].tdunif = par.layout[d][1];
+    D->dims[d].sz = par.sz[d];
+
+    /* store the complex flag. */
+    if (par.cx[d])
+      D->dims[d].cx = 1;
+
+    /* store the spectral parameters. */
+    D->dims[d].carrier = par.sf[d];
+    D->dims[d].width = par.sw[d];
+    D->dims[d].offset = par.ppm[d] / par.sf[d];
+
+    /* determine quadrature information. */
+    switch (par.quad[d]) {
+      /* real, states: no extra processing. */
+      case RNMRTK_QUAD_REAL:
+      case RNMRTK_QUAD_STATES:
+        break;
+
+      /* tppi, states-tppi: sign alternation. */
+      case RNMRTK_QUAD_TPPI:
+      case RNMRTK_QUAD_STATESTPPI:
+        D->dims[d].alt = 1;
+        break;
+
+      /* other: assume no extra processing. */
+      default:
+        break;
+    }
+  }
+
+  /* build a local copy of the dimension ordering array. */
+  for (d = 0; d < RNMRTK_MAXDIM; d++)
+    ord[d] = (d < par.nd ? par.nd - par.ord[d] : par.nd);
+
+  /* swap the ordering of the dimension parameters. */
+  if (!datum_reorder_dims(D, ord))
+    throw("failed to reorder dimensions");
+
+  /* store the filename string. */
+  D->fname = (char*) malloc((strlen(fname) + 1) * sizeof(char));
+  if (D->fname)
+    strcpy(D->fname, fname);
+
+  /* store the datum type. */
+  D->type = DATUM_TYPE_RNMRTK;
+  D->endian = par.endian;
 
   /* return success. */
   return 1;
