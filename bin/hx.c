@@ -241,16 +241,12 @@ int main (int argc, char **argv) {
 
   /* determine whether and how to read data in. */
   if (mknew) {
-    /* initialize the datum main fields. */
+    /* initialize the datum type field. */
     D.type = DATUM_TYPE_HXND;
-    D.nd = ndnew;
 
     /* allocate the required datum dimensions. */
-    D.dims = (datum_dim*) calloc(D.nd, sizeof(datum_dim));
-
-    /* check that allocation succeeded. */
-    if (D.dims == NULL)
-      trace("failed to allocate datum dimensions");
+    if (!datum_realloc_dims(&D, ndnew))
+      throw("failed to allocate dimension array");
 
     /* apply parameter corrections. */
     if (!main_apply_corrs(&D, corrs, n_corrs))

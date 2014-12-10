@@ -701,22 +701,16 @@ int pipe_decode (datum *D, const char *fname) {
     D->epoch = mktime(&ts);
   }
 
-  /* initially set the number of dimensions to the maximum allowed, because
-   * pipe arranges its dimension information in a really screwy way.
-   */
-  D->nd = PIPE_MAXDIM;
-
   /* check the dimensionality. */
   if ((int) hdr.ndims < 1 ||
       (int) hdr.ndims > PIPE_MAXDIM)
     throw("invalid dimensionality %.0f", hdr.ndims);
 
-  /* allocate the dimension parameter array. */
-  D->dims = (datum_dim*) calloc(PIPE_MAXDIM, sizeof(datum_dim));
-
-  /* check that the dimension parameter array was allocated. */
-  if (D->dims == NULL)
-    throw("failed to allocate four datum dimensions");
+  /* initially set the number of dimensions to the maximum allowed, because
+   * pipe arranges its dimension information in a really screwy way.
+   */
+  if (!datum_realloc_dims(D, PIPE_MAXDIM))
+    throw("failed to allocate dimension array");
 
   /* store the dimension ordering array values. */
   for (d = 0; d < PIPE_MAXDIM; d++)
@@ -803,12 +797,8 @@ int pipe_decode (datum *D, const char *fname) {
   D->dims[ord[3]].offset = hdr.car_f4 * hdr.obs_f4;
 
   /* set the true dimension count and reallocate the dimension array. */
-  D->nd = (unsigned int) hdr.ndims;
-  D->dims = (datum_dim*) realloc(D->dims, D->nd * sizeof(datum_dim));
-
-  /* check that the array was reallocated successfully. */
-  if (D->dims == NULL)
-    throw("failed to resize dimension array to %u elements", D->nd);
+  if (!datum_realloc_dims(D, hdr.ndims))
+    throw("failed to reallocate dimension array");
 
   /* store the filename string. */
   D->fname = (char*) malloc((strlen(fname) + 1) * sizeof(char));

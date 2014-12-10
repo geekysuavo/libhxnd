@@ -168,6 +168,8 @@ int datum_get_dim_parameter (datum *D, const char *name, unsigned int d,
 int datum_set_dim_parameter (datum *D, const char *name, unsigned int d,
                              const char *parm);
 
+int datum_realloc_dims (datum *D, unsigned int nd);
+
 int datum_reorder_dims (datum *D, int *order);
 
 #endif /* __HXND_NMR_DATUM_H__ */

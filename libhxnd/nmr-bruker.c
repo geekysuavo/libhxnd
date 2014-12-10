@@ -273,7 +273,7 @@ int bruker_decode (datum *D, const char *dname) {
    * @ord: dimension index array for 'AQSEQ' corrections.
    */
   int acqus_parmode = -1;
-  unsigned int d;
+  unsigned int d, nd;
   int *ord;
 
   /* declare variables for parsing data byte ordering:
@@ -340,11 +340,11 @@ int bruker_decode (datum *D, const char *dname) {
     BRUKER_PARMTYPE_INT, "AQSEQ", &acqus_aqseq);
 
   /* compute the dimensionality of the data. */
-  D->nd = acqus_parmode + 1;
+  nd = acqus_parmode + 1;
 
   /* check the dimensionality. */
-  if (D->nd < 1)
-    throw("invalid dimensionality %u", D->nd);
+  if (nd < 1)
+    throw("invalid dimensionality %u", nd);
 
   /* determine the byte ordering of the data. */
   if (acqus_bytorda == 0)
@@ -353,17 +353,14 @@ int bruker_decode (datum *D, const char *dname) {
     endianness = BYTES_ENDIAN_BIG;
 
   /* build the data filename. */
-  if (D->nd > 1)
+  if (nd > 1)
     snprintf(fname_data, n_fname, "%s/ser", dname);
   else
     snprintf(fname_data, n_fname, "%s/fid", dname);
 
   /* allocate the dimension parameter array. */
-  D->dims = (datum_dim*) calloc(D->nd, sizeof(datum_dim));
-
-  /* check that the dimension parameter array was allocated. */
-  if (D->dims == NULL)
-    throw("failed to allocate %u datum dimensions", D->nd);
+  if (!datum_realloc_dims(D, nd))
+    throw("failed to allocate dimension array");
 
   /* loop over the acquisition dimensions. */
   for (d = 0; d < D->nd; d++) {

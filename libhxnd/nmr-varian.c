@@ -515,9 +515,10 @@ int varian_decode (datum *D, const char *dname) {
 
   /* declare variables for looping over dimensions:
    * @d: dimension loop counter (integer).
+   * @nd: dimension count.
    * @dstr: dimension loop counter (string).
    */
-  unsigned int d;
+  unsigned int d, nd;
   char dstr[8];
 
   /* declare variables for parsing dimension parameters:
@@ -556,18 +557,15 @@ int varian_decode (datum *D, const char *dname) {
   D->epoch = varian_parse_date(fname_parm);;
 
   /* algorithmically guess the dimensionality of the data. */
-  D->nd = varian_count_dims(fname_parm);
+  nd = varian_count_dims(fname_parm);
 
   /* check the dimensionality. */
-  if (D->nd < 1)
-    throw("invalid dimensionality %u", D->nd);
+  if (nd < 1)
+    throw("invalid dimensionality %u", nd);
 
   /* allocate the dimension parameter array. */
-  D->dims = (datum_dim*) calloc(D->nd, sizeof(datum_dim));
-
-  /* check that the dimension parameter array was allocated. */
-  if (D->dims == NULL)
-    throw("failed to allocate %u datum dimensions", D->nd);
+  if (!datum_realloc_dims(D, nd))
+    throw("failed to allocate dimension array");
 
   /* loop over the acquisition dimensions. */
   for (d = 0; d < D->nd; d++) {

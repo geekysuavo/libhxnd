@@ -208,6 +208,33 @@ int datum_set_dim_parameter (datum *D, const char *name, unsigned int d,
   throw("invalid dimension parameter name '%s'", name);
 }
 
+/* datum_realloc_dims(): reallocate the array of dimension parameters inside
+ * a datum structure.
+ * @D: pointer to the target datum structure.
+ * @nd: new dimensionality
+ */
+int datum_realloc_dims (datum *D, unsigned int nd) {
+  /* declare a loop counter. */
+  unsigned int i;
+
+  /* attempt to reallocate the dimensions array. */
+  D->dims = (datum_dim*) realloc(D->dims, nd * sizeof(datum_dim));
+
+  /* check that the reallocation succeeded. */
+  if (D->dims == NULL)
+    throw("failed to reallocate %u datum dimensions", nd);
+
+  /* zero the contents of any new dimensions. */
+  for (i = D->nd; i < nd; i++)
+    memset(D->dims + i, 0, sizeof(datum_dim));
+
+  /* set the new dimensionality. */
+  D->nd = nd;
+
+  /* return success. */
+  return 1;
+}
+
 /* datum_reorder_dims(): reorder the dimensions inside a datum structure
  * according to the initial ordering @order. the target ordering will be
  * achieved by sorting the values in @order until they are in increasing

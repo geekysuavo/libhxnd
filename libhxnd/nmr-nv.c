@@ -419,19 +419,13 @@ int nv_decode (datum *D, const char *fname) {
     D->epoch = mktime(&ts);
   }
 
-  /* store the dimension count. */
-  D->nd = (unsigned int) hdr.ndims;
-
   /* check the dimension count. */
-  if (D->nd < 1 || D->nd > NV_MAXDIM)
+  if (hdr.ndims < 1 || hdr.ndims > NV_MAXDIM)
     throw("invalid dimensionality %d", hdr.ndims);
 
   /* allocate the dimension parameter array. */
-  D->dims = (datum_dim*) calloc(D->nd, sizeof(datum_dim));
-
-  /* check that the dimension parameter array was allocated. */
-  if (D->dims == NULL)
-    throw("failed to allocate %u datum dimensions", D->nd);
+  if (!datum_realloc_dims(D, hdr.ndims))
+    throw("failed to allocate dimension array");
 
   /* store the dimension information. */
   for (d = 0; d < D->nd; d++) {

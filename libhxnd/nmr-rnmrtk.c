@@ -413,19 +413,13 @@ int rnmrtk_decode (datum *D, const char *fname) {
   if (!rnmrtk_read_parms(fname, &par))
     throw("failed to read rnmrtk parameter file");
 
-  /* store the dimensionality. */
-  D->nd = par.nd;
-
   /* check the dimensionality. */
-  if (D->nd < 1 || D->nd > RNMRTK_MAXDIM)
+  if (par.nd < 1 || par.nd > RNMRTK_MAXDIM)
     throw("invalid dimensionality %u", D->nd);
 
   /* allocate the dimension parameter array. */
-  D->dims = (datum_dim*) calloc(D->nd, sizeof(datum_dim));
-
-  /* check that the dimension parameter array was allocated. */
-  if (D->dims == NULL)
-    throw("failed to allocate %u datum dimensions", D->nd);
+  if (!datum_realloc_dims(D, par.nd))
+    throw("failed to allocate dimension array");
 
   /* store the dimension information. */
   for (d = 0; d < D->nd; d++) {

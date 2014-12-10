@@ -84,12 +84,13 @@ int hxnd_decode (datum *D, const char *fname) {
   /* declare a few required variables:
    * @i: buffer index.
    * @d: dimension loop counter.
+   * @nd: dimension count.
    * @n_buf: current buffer word size.
    * @buf: output header/dimension buffer.
    * @status: status word value.
    * @fh: input file handle.
    */
-  unsigned int i, d, n_buf, n_sched, swapping;
+  unsigned int i, d, nd, n_buf, n_sched, swapping;
   uint64_t *buf, status;
   FILE *fh;
 
@@ -139,7 +140,7 @@ int hxnd_decode (datum *D, const char *fname) {
   D->endian = (enum byteorder) buf[i++];
   D->type = (enum datum_type) buf[i++];
   D->epoch = (time_t) buf[i++];
-  D->nd = (unsigned int) buf[i++];
+  nd = (unsigned int) buf[i++];
   D->d_sched = (int) buf[i++];
   D->n_sched = (int) buf[i++];
 
@@ -179,11 +180,8 @@ int hxnd_decode (datum *D, const char *fname) {
   }
 
   /* allocate the dimension array. */
-  D->dims = (datum_dim*) calloc(D->nd, sizeof(datum_dim));
-
-  /* check that allocation succeeded. */
-  if (D->dims == NULL)
-    throw("failed to allocate %u dimensions", D->nd);
+  if (!datum_realloc_dims(D, nd))
+    throw("failed to allocate dimension array");
 
   /* reallocate the buffer to hold dimension information. */
   n_buf = HXND_SZ_DIM;

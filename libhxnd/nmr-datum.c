@@ -444,10 +444,11 @@ int datum_resize_array (datum *D, int *sz) {
 int datum_slice_array (datum *D, int *lower, int *upper) {
   /* declare a few required variables:
    * @arrnew: destination slice array.
+   * @nd: previous dimension count.
    * @ndnew: new number of dimensions.
    * @ord: dimension reordering array.
    */
-  int ndnew, d, dadj, *ord;
+  int nd, ndnew, d, dadj, *ord;
   hx_array arrnew;
 
   /* initialize the local array values, just to be safe. */
@@ -466,14 +467,15 @@ int datum_slice_array (datum *D, int *lower, int *upper) {
   /* allocate an array to specify how to reorder the datum dimensions,
    * if the need arises.
    */
-  ord = hx_array_index_alloc(D->nd);
+  nd = D->nd;
+  ord = hx_array_index_alloc(nd);
 
   /* check that allocation succeeded. */
   if (!ord)
-    throw("failed to allocate %u indices", D->nd);
+    throw("failed to allocate %u indices", nd);
 
   /* store the new array sizes in the datum dimensions. */
-  for (d = 0, dadj = 0, ndnew = 0; d < D->nd; d++) {
+  for (d = 0, dadj = 0, ndnew = 0; d < nd; d++) {
     /* check if the current dimension has nonzero size. */
     if (D->array.sz[d] > 1) {
       /* store a sortable value in the ordering array. */
@@ -485,7 +487,7 @@ int datum_slice_array (datum *D, int *lower, int *upper) {
     }
     else {
       /* store an unsortable value in the ordering array. */
-      ord[d] = (int) D->nd;
+      ord[d] = (int) nd;
     }
 
     /* store the new array dimension size. */
@@ -497,20 +499,17 @@ int datum_slice_array (datum *D, int *lower, int *upper) {
     throw("failed to compact core array");
 
   /* check if the dimension count changed. */
-  if (ndnew != D->nd) {
+  if (ndnew != nd) {
     /* reorder the datum dimensions. */
     if (!datum_reorder_dims(D, ord))
       throw("failed to reorder datum dimensions");
 
     /* reallocate the dimension array. */
-    D->dims = (datum_dim*) realloc(D->dims, ndnew * sizeof(datum_dim));
-
-    /* check that allocated succeeded. */
-    if (D->dims == NULL)
+    if (!datum_realloc_dims(D, ndnew))
       throw("failed to reallocate dimension array");
 
     /* sort the ordering array into a valid index list. */
-    hx_array_index_sort(D->nd, ord);
+    hx_array_index_sort(nd, ord);
 
     /* reorder the core array basis elements. */
     if (!hx_array_reorder_bases(&D->array, ord))
@@ -519,9 +518,6 @@ int datum_slice_array (datum *D, int *lower, int *upper) {
     /* reduce the dimensionality of the core array. */
     if (!hx_array_resize(&D->array, ndnew, D->array.k, D->array.sz))
       throw("failed to resize core array");
-
-    /* set the new dimension count. */
-    D->nd = ndnew;
   }
 
   /* free the allocated index array. */
