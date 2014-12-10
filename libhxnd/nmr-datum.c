@@ -501,11 +501,11 @@ int datum_slice_array (datum *D, int *lower, int *upper) {
   /* check if the dimension count changed. */
   if (ndnew != nd) {
     /* reorder the datum dimensions. */
-    if (!datum_reorder_dims(D, ord))
+    if (!datum_dims_reorder(D, ord))
       throw("failed to reorder datum dimensions");
 
     /* reallocate the dimension array. */
-    if (!datum_realloc_dims(D, ndnew))
+    if (!datum_dims_realloc(D, ndnew))
       throw("failed to reallocate dimension array");
 
     /* sort the ordering array into a valid index list. */

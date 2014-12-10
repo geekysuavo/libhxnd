@@ -424,7 +424,7 @@ int nv_decode (datum *D, const char *fname) {
     throw("invalid dimensionality %d", hdr.ndims);
 
   /* allocate the dimension parameter array. */
-  if (!datum_realloc_dims(D, hdr.ndims))
+  if (!datum_dims_realloc(D, hdr.ndims))
     throw("failed to allocate dimension array");
 
   /* store the dimension information. */

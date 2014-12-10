@@ -245,7 +245,7 @@ int main (int argc, char **argv) {
     D.type = DATUM_TYPE_HXND;
 
     /* allocate the required datum dimensions. */
-    if (!datum_realloc_dims(&D, ndnew))
+    if (!datum_dims_realloc(&D, ndnew))
       throw("failed to allocate dimension array");
 
     /* apply parameter corrections. */
@@ -365,9 +365,9 @@ int main_apply_corrs (datum *D, struct parsed_arg *lst, unsigned int n) {
   /* loop over the array of corrections. */
   for (i = 0; i < n; i++) {
     /* apply the currently indexed correction. */
-    if (!datum_set_dim_parameter(D, lst[i].lstr,
-                                 lst[i].d - 1,
-                                 lst[i].rstr)) {
+    if (!datum_dims_setparm(D, lst[i].lstr,
+                            lst[i].d - 1,
+                            lst[i].rstr)) {
       /* raise an exception. */
       throw("failed to correct %s[%u] to '%s'",
             lst[i].lstr, lst[i].d, lst[i].rstr);

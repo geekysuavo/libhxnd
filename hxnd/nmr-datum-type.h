@@ -34,7 +34,7 @@
 #include <hxnd/nmr-nv.h>
 #include <hxnd/nmr-rnmrtk.h>
 
-/* function declarations: */
+/* function declarations (nmr-datum-type.c): */
 
 const char *datum_type_name (enum datum_type typ);
 

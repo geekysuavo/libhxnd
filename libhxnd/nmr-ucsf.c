@@ -311,7 +311,7 @@ int ucsf_decode (datum *D, const char *fname) {
     throw("invalid dimensionality %u", fhdr.ndims);
 
   /* allocate the dimension parameter array. */
-  if (!datum_realloc_dims(D, fhdr.ndims))
+  if (!datum_dims_realloc(D, fhdr.ndims))
     throw("failed to allocate dimension array");
 
   /* store the dimension information. */

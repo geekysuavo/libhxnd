@@ -564,7 +564,7 @@ int varian_decode (datum *D, const char *dname) {
     throw("invalid dimensionality %u", nd);
 
   /* allocate the dimension parameter array. */
-  if (!datum_realloc_dims(D, nd))
+  if (!datum_dims_realloc(D, nd))
     throw("failed to allocate dimension array");
 
   /* loop over the acquisition dimensions. */
@@ -697,7 +697,7 @@ int varian_decode (datum *D, const char *dname) {
     /* swap the ordering of the dimension parameters, but only if all
      * phase values were found in the array.
      */
-    if (i && !datum_reorder_dims(D, ord))
+    if (i && !datum_dims_reorder(D, ord))
       throw("failed to reorder dimensions");
 
     /* free the string and index arrays. */

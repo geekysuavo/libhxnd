@@ -709,7 +709,7 @@ int pipe_decode (datum *D, const char *fname) {
   /* initially set the number of dimensions to the maximum allowed, because
    * pipe arranges its dimension information in a really screwy way.
    */
-  if (!datum_realloc_dims(D, PIPE_MAXDIM))
+  if (!datum_dims_realloc(D, PIPE_MAXDIM))
     throw("failed to allocate dimension array");
 
   /* store the dimension ordering array values. */
@@ -797,7 +797,7 @@ int pipe_decode (datum *D, const char *fname) {
   D->dims[ord[3]].offset = hdr.car_f4 * hdr.obs_f4;
 
   /* set the true dimension count and reallocate the dimension array. */
-  if (!datum_realloc_dims(D, hdr.ndims))
+  if (!datum_dims_realloc(D, hdr.ndims))
     throw("failed to reallocate dimension array");
 
   /* store the filename string. */

@@ -67,15 +67,16 @@ static const datum_dim_desc datum_dim_parms[] = {
   { NULL, 'c', 0 }
 };
 
-/* datum_get_dim_parameter(): retrieve a dimension parameter from a datum
+/* datum_dims_getparm(): retrieve a dimension parameter from a datum
  * structure, by name and dimension index.
  * @D: pointer to the datum struct.
  * @name: parameter name to get.
  * @d: dimension of parameter.
  * @parm: pointer to the result.
  */
-int datum_get_dim_parameter (datum *D, const char *name, unsigned int d,
-                             void *parm) {
+int datum_dims_getparm (datum *D, const char *name,
+                        unsigned int d,
+                        void *parm) {
   /* declare pointer locations for each data type. */
   unsigned int *uptr;
   char *sptr;
@@ -135,15 +136,16 @@ int datum_get_dim_parameter (datum *D, const char *name, unsigned int d,
   throw("invalid dimension parameter name '%s'", name);
 }
 
-/* datum_set_dim_parameter(): store a dimension parameter into a datum
+/* datum_dims_setparm(): store a dimension parameter into a datum
  * structure, by name and dimension index.
  * @D: pointer to the datum struct.
  * @name: parameter name to set.
  * @d: dimension of parameter.
  * @parm: the new value, as a string.
  */
-int datum_set_dim_parameter (datum *D, const char *name, unsigned int d,
-                             const char *parm) {
+int datum_dims_setparm (datum *D, const char *name,
+                        unsigned int d,
+                        const char *parm) {
   /* declare pointer locations for each data type. */
   unsigned int *uptr;
   char *sptr;
@@ -208,12 +210,12 @@ int datum_set_dim_parameter (datum *D, const char *name, unsigned int d,
   throw("invalid dimension parameter name '%s'", name);
 }
 
-/* datum_realloc_dims(): reallocate the array of dimension parameters inside
+/* datum_dims_realloc(): reallocate the array of dimension parameters inside
  * a datum structure.
  * @D: pointer to the target datum structure.
  * @nd: new dimensionality
  */
-int datum_realloc_dims (datum *D, unsigned int nd) {
+int datum_dims_realloc (datum *D, unsigned int nd) {
   /* declare a loop counter. */
   unsigned int i;
 
@@ -235,7 +237,7 @@ int datum_realloc_dims (datum *D, unsigned int nd) {
   return 1;
 }
 
-/* datum_reorder_dims(): reorder the dimensions inside a datum structure
+/* datum_dims_reorder(): reorder the dimensions inside a datum structure
  * according to the initial ordering @order. the target ordering will be
  * achieved by sorting the values in @order until they are in increasing
  * order.
@@ -243,7 +245,7 @@ int datum_realloc_dims (datum *D, unsigned int nd) {
  * @D: pointer to the target datum structure.
  * @order: initial dimension ordering.
  */
-int datum_reorder_dims (datum *D, int *order) {
+int datum_dims_reorder (datum *D, int *order) {
   /* declare required variables:
    * @i: insertion sort outer loop counter.
    * @j: insertion sort inner loop counter.

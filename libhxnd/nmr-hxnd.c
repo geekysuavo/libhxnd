@@ -185,7 +185,7 @@ int hxnd_decode (datum *D, const char *fname) {
   }
 
   /* allocate the dimension array. */
-  if (!datum_realloc_dims(D, nd))
+  if (!datum_dims_realloc(D, nd))
     throw("failed to allocate dimension array");
 
   /* reallocate the buffer to hold dimension information. */

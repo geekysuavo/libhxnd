@@ -549,7 +549,7 @@ int rnmrtk_decode (datum *D, const char *fname) {
     throw("invalid dimensionality %u", D->nd);
 
   /* allocate the dimension parameter array. */
-  if (!datum_realloc_dims(D, par.nd))
+  if (!datum_dims_realloc(D, par.nd))
     throw("failed to allocate dimension array");
 
   /* store the dimension information. */
@@ -591,7 +591,7 @@ int rnmrtk_decode (datum *D, const char *fname) {
     ord[d] = (d < par.nd ? par.nd - par.ord[d] : par.nd);
 
   /* swap the ordering of the dimension parameters. */
-  if (!datum_reorder_dims(D, ord))
+  if (!datum_dims_reorder(D, ord))
     throw("failed to reorder dimensions");
 
   /* store the filename string. */

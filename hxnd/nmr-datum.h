@@ -129,8 +129,15 @@ typedef struct {
 }
 datum;
 
-/* include the nmr format conversion header. */
-#include <hxnd/nmr-datum-type.h>
+/* include the nmr format headers. */
+#include <hxnd/nmr-hxnd.h>
+#include <hxnd/nmr-text.h>
+#include <hxnd/nmr-bruker.h>
+#include <hxnd/nmr-varian.h>
+#include <hxnd/nmr-pipe.h>
+#include <hxnd/nmr-ucsf.h>
+#include <hxnd/nmr-nv.h>
+#include <hxnd/nmr-rnmrtk.h>
 
 /* function declarations (nmr-datum.c): */
 
@@ -162,15 +169,35 @@ int datum_print (datum *D, const char *fname);
 
 /* function declarations (nmr-datum-dims.c): */
 
-int datum_get_dim_parameter (datum *D, const char *name, unsigned int d,
-                             void *parm);
+int datum_dims_getparm (datum *D, const char *name,
+                        unsigned int d,
+                        void *parm);
 
-int datum_set_dim_parameter (datum *D, const char *name, unsigned int d,
-                             const char *parm);
+int datum_dims_setparm (datum *D, const char *name,
+                        unsigned int d,
+                        const char *parm);
 
-int datum_realloc_dims (datum *D, unsigned int nd);
+int datum_dims_realloc (datum *D, unsigned int nd);
 
-int datum_reorder_dims (datum *D, int *order);
+int datum_dims_reorder (datum *D, int *order);
+
+/* function declarations (nmr-datum-type.c): */
+
+const char *datum_type_name (enum datum_type typ);
+
+const char *datum_type_desc (enum datum_type typ);
+
+enum datum_type datum_type_lookup (const char *name);
+
+enum datum_type datum_type_guess (const char *fname);
+
+int datum_type_decode (datum *D, const char *fname, enum datum_type typ);
+
+int datum_type_encode (datum *D, const char *fname, enum datum_type typ);
+
+int datum_type_array (datum *D, enum datum_type typ);
+
+int datum_type_post (datum *D, enum datum_type typ);
 
 #endif /* __HXND_NMR_DATUM_H__ */
 

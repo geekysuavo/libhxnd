@@ -359,7 +359,7 @@ int bruker_decode (datum *D, const char *dname) {
     snprintf(fname_data, n_fname, "%s/fid", dname);
 
   /* allocate the dimension parameter array. */
-  if (!datum_realloc_dims(D, nd))
+  if (!datum_dims_realloc(D, nd))
     throw("failed to allocate dimension array");
 
   /* loop over the acquisition dimensions. */
@@ -433,7 +433,7 @@ int bruker_decode (datum *D, const char *dname) {
       ord[d] = D->nd - d;
 
     /* swap the ordering of the dimension parameters. */
-    if (!datum_reorder_dims(D, ord))
+    if (!datum_dims_reorder(D, ord))
       throw("failed to reorder dimensions");
 
     /* free the dimension index array. */
