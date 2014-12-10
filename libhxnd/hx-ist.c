@@ -121,10 +121,11 @@ int hx_array_ist1d (hx_array *x, int nsched, int *sched,
   #pragma omp parallel
   {
     /* declare a few required thread-local variables:
-     * @tid: thread index.
-     * @tnum: thread count.
+     * @j: array skipped iteration master index.
+     * @l: unscheduled array loop index.
+     * @idx: packed linear array index.
      */
-    int j, l, idx, tid, tnum;
+    int j, l, idx;
 
     /* @y: currently sliced sub-array.
      * @z: output result sub-array.
@@ -136,10 +137,6 @@ int hx_array_ist1d (hx_array *x, int nsched, int *sched,
      * @zeros: linear indices of all unscheduled elements in @y.
      */
     real *ynorms;
-
-    /* gain a handle of the thread index and number of threads. */
-    tnum = omp_get_num_threads();
-    tid = omp_get_thread_num();
 
     /* allocate temporary scalars for use in the fft. */
     if (!hx_scalar_alloc(&w, d) ||
@@ -155,7 +152,8 @@ int hx_array_ist1d (hx_array *x, int nsched, int *sched,
     ynorms = (real*) calloc(nnorms, sizeof(real));
 
     /* distribute tasks to the team of threads. */
-    for (j = tid; j < jmax; j += tnum) {
+    #pragma omp for
+    for (j = 0; j < jmax; j++) {
       /* compute the linear array index of the current vector. */
       idx = hx_array_index_jump(j, ja, jb);
 

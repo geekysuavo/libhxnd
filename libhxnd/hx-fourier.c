@@ -206,17 +206,15 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
   /* create a team of threads to execute multiple parallel transforms. */
   #pragma omp parallel
   {
-    /* declare a few required variables:
+    /* declare a few required thread-local variables:
+     * @j: array skipped iteration master index.
+     * @idx: packed linear array index.
      * @w: temporary array of twiddle factors.
      * @swp: temporary array of intermediate results, swapped values.
      */
+    int j, idx;
     hx_array xv;
     hx_scalar w, swp;
-    int j, idx, tid, tnum;
-
-    /* gain a handle on the thread index and number of threads. */
-    tnum = omp_get_num_threads();
-    tid = omp_get_thread_num();
 
     /* allocate temporary scalars for use in every transformation. */
     if (!hx_scalar_alloc(&w, x->d) ||
@@ -228,7 +226,8 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
       raise("failed to allocate temporary (%d,1)-array", x->d);
 
     /* distribute tasks to the team of threads. */
-    for (j = tid; j < jmax; j += tnum) {
+    #pragma omp for
+    for (j = 0; j < jmax; j++) {
       /* compute the linear array index of the current vector. */
       idx = hx_array_index_jump(j, ja, jb);
 
