@@ -71,7 +71,7 @@ void datum_free (datum *D) {
     free(D->sched);
 
   /* free the array data. */
-  datum_free_array(D);
+  datum_array_free(D);
 
   /* re-initialize the datum. */
   datum_init(D);

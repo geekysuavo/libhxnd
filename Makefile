@@ -13,7 +13,8 @@ LIBSRC+= hx-array-tile hx-cmp hx-arith hx-phasor hx-fourier hx-window hx-ist
 LIBSRC+= trace opts str bytes
 
 # LIBSRC: library source basenames: core nmr datum structure.
-LIBSRC+= nmr-datum nmr-datum-mem nmr-datum-io nmr-datum-type nmr-datum-dims
+LIBSRC+= nmr-datum nmr-datum-mem nmr-datum-io nmr-datum-array
+LIBSRC+= nmr-datum-type nmr-datum-dims
 
 # LIBSRC: library source basenames: nmr data formats.
 LIBSRC+= nmr-hxnd nmr-text nmr-bruker nmr-varian nmr-pipe nmr-ucsf nmr-nv

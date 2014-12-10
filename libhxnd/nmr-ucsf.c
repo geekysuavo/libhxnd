@@ -179,7 +179,7 @@ int ucsf_read_header (const char *fname,
 
 /* ucsf_tiler(): redo or undo the tiling inherent in ucsf-format files,
  * effectively mapping between tiled array data and a real linear
- * array suitable for datum_refactor_array().
+ * array suitable for refactoring.
  * @x: pointer to the array to linearize.
  * @fhdr: pointer to the file header.
  * @dhdr: array of dimension headers.

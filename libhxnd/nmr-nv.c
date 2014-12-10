@@ -276,7 +276,7 @@ int nv_adjust_header (const char *fname, struct nv_header *hdr) {
 
 /* nv_tiler(): redo or undo the tiling inherent in nmrview-format files,
  * effectively mapping between tiled array data and a real linear
- * array suitable for datum_refactor_array().
+ * array suitable for refactoring.
  * @x: pointer to the array to linearize.
  * @hdr: pointer to the file header.
  * @dir: direction, either 0 (linearize) or 1 (tileize).

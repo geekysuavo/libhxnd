@@ -253,7 +253,7 @@ int main (int argc, char **argv) {
       trace("failed to apply parameter corrections");
 
     /* allocate the array to match the datum parameters. */
-    if (!datum_alloc_array(&D))
+    if (!datum_array_alloc(&D))
       trace("failed to allocate new datum array");
   }
   else {
@@ -277,7 +277,7 @@ int main (int argc, char **argv) {
       trace("failed to apply parameter corrections");
 
     /* load the array data. */
-    if (!datum_read_array(&D))
+    if (!datum_array_read(&D))
       trace("failed to generate hx-format data from '%s'", fname_in);
   }
 

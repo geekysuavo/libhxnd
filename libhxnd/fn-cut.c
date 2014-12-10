@@ -130,7 +130,7 @@ int fn_execute_cut (datum *D, const int dim, const char *argstr) {
   }
 
   /* slice the datum based on the built lower and upper bounds. */
-  if (!datum_slice_array(D, lower, upper))
+  if (!datum_array_slice(D, lower, upper))
     throw("failed to perform slice operation");
 
   /* free the lower and upper bound index arrays. */

@@ -52,7 +52,7 @@ int datum_load (datum *D, const char *fname) {
           datum_type_name(D->type), fname);
 
   /* read the array data from the file. */
-  if (!datum_read_array(D))
+  if (!datum_array_read(D))
     throw("failed to read %s-format array data from '%s'",
           datum_type_name(D->type), fname);
 

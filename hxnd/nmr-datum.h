@@ -141,19 +141,7 @@ datum;
 
 /* function declarations (nmr-datum.c): */
 
-int datum_refactor_array (datum *D);
-
 int datum_read_sched (datum *D, const char *fname);
-
-int datum_alloc_array (datum *D);
-
-int datum_read_array (datum *D);
-
-int datum_free_array (datum *D);
-
-int datum_resize_array (datum *D, int *sz);
-
-int datum_slice_array (datum *D, int *lower, int *upper);
 
 /* function declarations (nmr-datum-mem.c): */
 
@@ -180,6 +168,20 @@ int datum_dims_setparm (datum *D, const char *name,
 int datum_dims_realloc (datum *D, unsigned int nd);
 
 int datum_dims_reorder (datum *D, int *order);
+
+/* function declarations (nmr-datum-array.c): */
+
+int datum_array_refactor (datum *D);
+
+int datum_array_alloc (datum *D);
+
+int datum_array_read (datum *D);
+
+int datum_array_free (datum *D);
+
+int datum_array_resize (datum *D, int *sz);
+
+int datum_array_slice (datum *D, int *lower, int *upper);
 
 /* function declarations (nmr-datum-type.c): */
 

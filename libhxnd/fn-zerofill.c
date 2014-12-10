@@ -97,7 +97,7 @@ int fn_execute_zerofill (datum *D, const int dim, const char *argstr) {
     throw("dimension index %d out of bounds [0,%u)", dim, D->nd);
 
   /* resize the datum content. */
-  if (!datum_resize_array(D, sznew))
+  if (!datum_array_resize(D, sznew))
     throw("failed to resize datum");
 
   /* free the size array. */
