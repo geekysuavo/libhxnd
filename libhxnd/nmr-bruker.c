@@ -27,45 +27,39 @@
  */
 #define N_BUF  256
 
-/* bruker_check_dir(): checks a directory for the requisite files for
- * loading bruker-formatted raw data.
- * @dname: the input directory name.
+/* define constant parameter type characters for acqus file parsing.
  */
-int bruker_check_dir (const char *dname) {
-  /* declare a few required variables. */
-  int have_acqus, have_fid, have_ser;
-  unsigned int n_fname;
-  char *fname;
+#define BRUKER_PARMTYPE_INT     'i'
+#define BRUKER_PARMTYPE_FLOAT   'f'
+#define BRUKER_PARMTYPE_STRING  's'
 
-  /* allocate a string for checking file existence. */
-  n_fname = strlen(dname) + 16;
-  fname = (char*) malloc(n_fname * sizeof(char));
+/* bruker_aqmod: enumerated type for direct acquisition modes.
+ */
+enum bruker_aqmod {
+  BRUKER_AQMOD_QF,    /* single-channel (real) detection. */
+  BRUKER_AQMOD_QSIM,  /* simultaneous quadrature detection. */
+  BRUKER_AQMOD_QSEQ,  /* sequential quadrature detection. */
+  BRUKER_AQMOD_DQD    /* digital quadrature detection. */
+};
 
-  /* check that the string was allocated. */
-  if (!fname)
-    throw("failed to allocate %u-char buffer", n_fname);
+/* bruker_fnmode: enumerated type for indirect acquisition modes.
+ */
+enum bruker_fnmode {
+  BRUKER_FNMODE_UNDEFINED,
+  BRUKER_FNMODE_QF,
+  BRUKER_FNMODE_QSEQ,
+  BRUKER_FNMODE_TPPI,
+  BRUKER_FNMODE_STATES,
+  BRUKER_FNMODE_STATESTPPI,
+  BRUKER_FNMODE_GRADIENT
+};
 
-  /* check if the acqus file exists. */
-  snprintf(fname, n_fname, "%s/acqus", dname);
-  have_acqus = bytes_fexist(fname);
-
-  /* check if the fid file exists. */
-  snprintf(fname, n_fname, "%s/fid", dname);
-  have_fid = bytes_fexist(fname);
-
-  /* check if the ser file exists. */
-  snprintf(fname, n_fname, "%s/ser", dname);
-  have_ser = bytes_fexist(fname);
-
-  /* free the filename string. */
-  free(fname);
-
-  /* clear any errors that may have popped up. */
-  traceback_clear();
-
-  /* return the result. */
-  return (have_acqus && (have_fid || have_ser));
-}
+/* bruker_aqseq: (3+)-dimensional acquisition ordering scheme.
+ */
+enum bruker_aqseq {
+  BRUKER_AQSEQ_321,
+  BRUKER_AQSEQ_312
+};
 
 /* bruker_read_parms(): read any number of parameters from a bruker
  * 'acqu', 'acqus', 'proc' or 'procs' file. each parameter requested
@@ -218,124 +212,47 @@ int bruker_read_parms (const char *fname, unsigned int n, ...) {
   return nid;
 }
 
-/* bruker_read(): reads a bruker data file into a real linear array.
- * @fname: the input data filename.
- * @endian: the data byte ordering.
- * @nblk: the number of data blocks.
- * @szblk: the number of words per block.
- * @x: the output array.
- */
-int bruker_read (const char *fname, enum byteorder endian,
-                 unsigned int nblk, unsigned int szblk,
-                 hx_array *x) {
-  /* declare a few required variables. */
-  FILE *fh;
-
-  /* open the input file for reading. */
-  fh = fopen(fname, "rb");
-
-  /* check that the file was opened. */
-  if (!fh)
-    throw("failed to open '%s'", fname);
-
-  /* read data from the file into the output array. */
-  if (!hx_array_fread_raw(fh, x, endian, 4, 0,
-                          0, 0, nblk, szblk, 1024))
-    throw("failed to read raw data from '%s'", fname);
-
-  /* close the input file. */
-  fclose(fh);
-
-  /* return success. */
-  return 1;
-}
-
-/* bruker_fix_grpdelay(): corrects a hypercomplex array loaded from a bruker
- * raw data file for group delay.
- * @D: pointer to the datum to correct.
- */
-int bruker_fix_grpdelay (datum *D) {
-  /* declare a few required variables:
-   * @I: current absolute intensity value.
-   * @Ire: current real intensity value.
-   * @Iim: current imaginary intensity value.
-   * @Imax: maximum absolute intensity value.
-   * @gd: local variable used for group delay correction.
-   * @gdmax: first trace index having maximal absolute intensity.
-   * @sznew: array of new size values.
-   * @i: dimension loop counter.
-   * @x: datum array structure pointer.
-   */
-  real I, Ire, Iim, Imax;
-  int i, gd, gdmax, *sznew;
-  hx_array *x;
-
-  /* store the group delay value and array pointer locally. */
-  gd = (int) D->grpdelay;
-  x = &D->array;
-
-  /* check if the group delay value needs autodetection. */
-  if (gd == -1) {
-    /* loop until the trace intensity maximum is located. */
-    for (gd = 0, gdmax = 0, Imax = 0.0; gd < x->sz[0]; gd++) {
-      /* get the real and imaginary components of the trace. */
-      Ire = x->x[0 + gd * x->n];
-      Iim = x->x[1 + gd * x->n];
-
-      /* compute the trace magnitude. */
-      I = sqrt(Ire * Ire + Iim * Iim);
-
-      /* check if the current point has greater intensity than @Imax. */
-      if (I > Imax) {
-        /* store the new value. */
-        gdmax = gd;
-        Imax = I;
-      }
-    }
-
-    /* store the autodetected group delay. */
-    gd = gdmax;
-  }
-
-  /* allocate the new size array. */
-  sznew = hx_array_index_alloc(x->k);
-
-  /* check that the size array was allocated. */
-  if (!sznew)
-    throw("failed to allocate %d indices", x->k);
-
-  /* fill the new size array. */
-  for (i = 0; i < x->k; i++)
-    sznew[i] = x->sz[i];
-
-  /* left-shift each trace based on the group delay value. */
-  if (!hx_array_shift(x, 0, -gd))
-    throw("failed to correct bruker group delay");
-
-  /* correct the first dimension of the size array. */
-  sznew[0] -= gd;
-
-  /* crop the shifted array. */
-  if (!hx_array_resize(x, x->d, x->k, sznew))
-    throw("failed to crop bruker group delay points");
-
-  /* free the allocated size array. */
-  free(sznew);
-
-  /* correct the datum fields. */
-  D->dims[0].sz -= gd;
-  D->grpdelay = 0.0;
-
-  /* return success. */
-  return 1;
-}
-
-/* bruker_fill_datum(): completely loads bruker raw data into an NMR datum
- * structure.
+/* bruker_guess(): check whether a directory contains bruker-format data.
  * @dname: the input directory name.
- * @D: pointer to the datum struct to fill.
  */
-int bruker_fill_datum (const char *dname, datum *D) {
+int bruker_guess (const char *dname) {
+  /* declare a few required variables. */
+  int have_acqus, have_fid, have_ser;
+  unsigned int n_fname;
+  char *fname;
+
+  /* allocate a string for checking file existence. */
+  n_fname = strlen(dname) + 16;
+  fname = (char*) malloc(n_fname * sizeof(char));
+
+  /* check that the string was allocated. */
+  if (!fname)
+    throw("failed to allocate %u-char buffer", n_fname);
+
+  /* check if the acqus file exists. */
+  snprintf(fname, n_fname, "%s/acqus", dname);
+  have_acqus = bytes_fexist(fname);
+
+  /* check if the fid file exists. */
+  snprintf(fname, n_fname, "%s/fid", dname);
+  have_fid = bytes_fexist(fname);
+
+  /* check if the ser file exists. */
+  snprintf(fname, n_fname, "%s/ser", dname);
+  have_ser = bytes_fexist(fname);
+
+  /* free the filename string. */
+  free(fname);
+
+  /* return the result. */
+  return (have_acqus && (have_fid || have_ser));
+}
+
+/* bruker_decode(): decode bruker parameter data into a datum structure.
+ * @D: pointer to the destination datum structure.
+ * @dname: the input directory name.
+ */
+int bruker_decode (datum *D, const char *dname) {
   /* declare variables for filename generation:
    * @n_fname: buffer sizes of filename strings.
    * @fname_data: the 'fid' or 'ser' filename.
@@ -540,6 +457,129 @@ int bruker_fill_datum (const char *dname, datum *D) {
   /* store the datum type. */
   D->type = DATUM_TYPE_BRUKER;
   D->endian = endianness;
+
+  /* return success. */
+  return 1;
+}
+
+/* bruker_array(): read a bruker data file into a datum array.
+ * @D: the destination datum structure.
+ */
+int bruker_array (datum *D) {
+  /* declare a few required variables:
+   * @d: dimension loop counter.
+   * @szblk: the number of words per data block.
+   * @nblk: the number of data blocks.
+   * @fh: the input data file handle.
+   */
+  unsigned int d, szblk, nblk;
+  FILE *fh;
+
+  /* determine the block size. */
+  szblk = D->dims[0].td;
+
+  /* determine the block count. */
+  for (d = 1, nblk = 1; d < D->nd; d++)
+    nblk *= D->dims[d].td;
+
+  /* check that the input filename is valid. */
+  if (D->fname == NULL)
+    throw("invalid input filename");
+
+  /* open the input file for reading. */
+  fh = fopen(D->fname, "rb");
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", D->fname);
+
+  /* read data from the file into the output array. */
+  if (!hx_array_fread_raw(fh, &D->array, D->endian, 4, 0,
+                          0, 0, nblk, szblk, 1024))
+    throw("failed to read raw data from '%s'", D->fname);
+
+  /* close the input file. */
+  fclose(fh);
+
+  /* return success. */
+  return 1;
+}
+
+/* bruker_post(): correct a hypercomplex array loaded from a bruker raw data
+ * file for group delay.
+ * @D: pointer to the datum structure.
+ */
+int bruker_post (datum *D) {
+  /* declare a few required variables:
+   * @I: current absolute intensity value.
+   * @Ire: current real intensity value.
+   * @Iim: current imaginary intensity value.
+   * @Imax: maximum absolute intensity value.
+   * @gd: local variable used for group delay correction.
+   * @gdmax: first trace index having maximal absolute intensity.
+   * @sznew: array of new size values.
+   * @i: dimension loop counter.
+   * @x: datum array structure pointer.
+   */
+  real I, Ire, Iim, Imax;
+  int i, gd, gdmax, *sznew;
+  hx_array *x;
+
+  /* store the group delay value and array pointer locally. */
+  gd = (int) D->grpdelay;
+  x = &D->array;
+
+  /* check if the group delay value needs autodetection. */
+  if (gd == -1) {
+    /* loop until the trace intensity maximum is located. */
+    for (gd = 0, gdmax = 0, Imax = 0.0; gd < x->sz[0]; gd++) {
+      /* get the real and imaginary components of the trace. */
+      Ire = x->x[0 + gd * x->n];
+      Iim = x->x[1 + gd * x->n];
+
+      /* compute the trace magnitude. */
+      I = sqrt(Ire * Ire + Iim * Iim);
+
+      /* check if the current point has greater intensity than @Imax. */
+      if (I > Imax) {
+        /* store the new value. */
+        gdmax = gd;
+        Imax = I;
+      }
+    }
+
+    /* store the autodetected group delay. */
+    gd = gdmax;
+  }
+
+  /* allocate the new size array. */
+  sznew = hx_array_index_alloc(x->k);
+
+  /* check that the size array was allocated. */
+  if (!sznew)
+    throw("failed to allocate %d indices", x->k);
+
+  /* fill the new size array. */
+  for (i = 0; i < x->k; i++)
+    sznew[i] = x->sz[i];
+
+  /* left-shift each trace based on the group delay value. */
+  if (!hx_array_shift(x, 0, -gd))
+    throw("failed to correct bruker group delay");
+
+  /* correct the first dimension of the size array. */
+  sznew[0] -= gd;
+
+  /* crop the shifted array. */
+  if (!hx_array_resize(x, x->d, x->k, sznew))
+    throw("failed to crop bruker group delay points");
+
+  /* free the allocated size array. */
+  free(sznew);
+
+  /* correct the datum fields. */
+  D->dims[0].sz -= gd;
+  D->grpdelay = 0.0;
 
   /* return success. */
   return 1;

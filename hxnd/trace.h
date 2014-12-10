@@ -42,6 +42,14 @@
 #define throw(...) \
   return traceback_throw(__FILE__, __LINE__, __VA_ARGS__)
 
+/* trace(): just like raise, but this macro also prints the resulting stack
+ * trace and returns a value that indicates an error in main() functions.
+ */
+#define trace(...) \
+  { traceback_throw(__FILE__, __LINE__, __VA_ARGS__); \
+    traceback_print(); \
+    return 1; }
+
 /* function declarations: */
 
 void traceback_init (void);

@@ -23,44 +23,119 @@
 /* include the nmrview header. */
 #include <hxnd/nmr-nv.h>
 
-/* nv_check_magic(): checks the first "magic" bytes of a file and
- * returns whether they match the nmrview-format file magic number.
- * @fname: the input filename.
+/* define a magic string used to check existence of nmrview files. */
+#define NV_MAGIC      0x3418abcd
+
+/* define the maximum number of dimensions that may be stored in an nmrview
+ * format file.
  */
-int nv_check_magic (const char *fname) {
-  /* declare a few required variables:
-   * @fh: input file handle.
-   * @wd: first word of the file.
+#define NV_MAXDIM  8
+
+/* define the maximum block size (in data words) for nmrview files. */
+#define NV_MAX_TILE  8192
+
+/* define the possible values that @refunits may take in nmrview files.
+ */
+#define NV_REFUNIT_PTS  1
+#define NV_REFUNIT_HZ   2
+#define NV_REFUNIT_PPM  3
+
+/* define sizes of the string struct members of the nmrview header.
+ */
+#define NV_HDRSTR_SZ_SEQUENCE  32
+#define NV_HDRSTR_SZ_COMMENT  160
+#define NV_HDRSTR_SZ_LABEL     16
+
+/* nv_dim_header: dimension header of data contains in an nmrview
+ * format file.
+ */
+struct nv_dim_header {
+  /* (0) @sz: dimension point count.
+   * (1) @szblk: dimension block size.
+   * (2) @nblk: number of blocks along this dimension.
+   * (3) @offblk: block offset in this dimension.
+   * (4) @maskblk: block bit mask for indexing.
+   * (5) @ptoff: block point offset.
    */
-  int32_t wd;
-  FILE *fh;
+  int32_t sz;
+  int32_t szblk;
+  int32_t nblk;
+  int32_t offblk;
+  int32_t maskblk;
+  int32_t ptoff;
 
-  /* open the input file. */
-  fh = fopen(fname, "rb");
+  /* (6) @sf: spectrometer carrier frequency (MHz).
+   * (7) @sw: spectral witch (Hz).
+   * (8) @refpt: reference spectral point.
+   * (9) @ref: reference frequency value.
+   * (10) @refunits: reference frequency units.
+   */
+  float sf;
+  float sw;
+  float refpt;
+  float ref;
+  int32_t refunits;
 
-  /* check that the file was opened. */
-  if (!fh)
-    throw("failed to open '%s'", fname);
+  /* (11) @foldup: upfield spectral folding parameter.
+   * (12) @folddown: downfield spectral folding parameter.
+   */
+  float foldup;
+  float folddown;
 
-  /* read the first word. */
-  if (!fread(&wd, sizeof(int32_t), 1, fh))
-    throw("failed to read magic number");
+  /* (13..16) @label: dimension label string. */
+  char label[NV_HDRSTR_SZ_LABEL];
 
-  /* close the input file. */
-  fclose(fh);
+  /* (17..31) @pad_end */
+  int32_t pad_end[15];
+};
 
-  /* check the magic word, without swapping. */
-  if (wd == NV_MAGIC)
-    return 1;
+/* nv_header: 2048-byte file header of data contained in an nmrview
+ * format file. indices below relate to the structure padding, which
+ * is based on 32-bit integers.
+ */
+struct nv_header {
+  /* (0) @magic: magic number.
+   * (1..2) @pad0
+   * (3) @fhdrsz: file header size, in bytes.
+   * (4) @bhdrsz: block header size, in bytes.
+   * (5) @blkelem: number of block elements.
+   * (6) @ndims: number of dimensions.
+   * (7) @temp: collection temperature.
+   * (8..15) @sequence: pulse sequence string.
+   * (16..55) @comment: comment string.
+   * (56) @month: collection month.
+   * (57) @day: collection day of month.
+   * (58) @year: collection year.
+   */
+  int32_t magic;
+  int32_t pad0[2];
+  int32_t fhdrsz;
+  int32_t bhdrsz;
+  int32_t blkelem;
+  int32_t ndims;
+  float temp;
+  char sequence[NV_HDRSTR_SZ_SEQUENCE];
+  char comment[NV_HDRSTR_SZ_COMMENT];
+  int32_t month;
+  int32_t day;
+  int32_t year;
 
-  /* swap the word and check again. */
-  bytes_swap_u32((uint32_t*) &wd);
-  if (wd == NV_MAGIC)
-    return 1;
+  /* (59..255) @pad1 */
+  int32_t pad1[197];
 
-  /* no match. */
-  return 0;
-}
+  /* (256..511) @dims: dimension fields:
+   *
+   * (256..287) @dims[0]
+   * (288..319) @dims[1]
+   * (320..351) @dims[2]
+   * (352..383) @dims[3]
+   * (384..415) @dims[4]
+   * (416..447) @dims[5]
+   * (448..479) @dims[6]
+   * (480..511) @dims[7]
+   */
+  struct nv_dim_header dims[NV_MAXDIM];
+};
 
 /* nv_read_header(): read the contents of a header from an nmrview-format file.
  * @fname: the input filename.
@@ -132,7 +207,7 @@ void nv_copy_header (struct nv_header *dst, struct nv_header *src) {
 }
 
 /* nv_adjust_header(): adjust the dimension sizes of an nmrview file header
- * in an attempt to evenly them divide into the block sizes and to match
+ * in an attempt to evenly divide them into the block sizes and to match
  * the total file size with the expected file size.
  * @fname: the input filename.
  * @hdr: the header to adjust.
@@ -257,131 +332,59 @@ int nv_tiler (hx_array *x, struct nv_header *hdr, int dir) {
   return 1;
 }
 
-/* nv_linearize(): maps tiles to linear array data.
+/* nv_linearize(): map tiles to linear array data.
  */
 #define nv_linearize(x, hdr) \
   nv_tiler(x, hdr, HX_ARRAY_TILER_FORWARD)
 
-/* ucsf_tileize(): maps linear array data to tiles.
+/* ucsf_tileize(): map linear array data to tiles.
  */
 #define nv_tileize(x, hdr) \
   nv_tiler(x, hdr, HX_ARRAY_TILER_REVERSE)
 
-/* nv_read(): reads an nmrview-format data file into a real linear array.
- * @fname: the input data filename.
- * @x: the output array.
+/* nv_guess(): check whether a file contains nmrview-format data.
+ * @fname: the input filename.
  */
-int nv_read (const char *fname, hx_array *x) {
-  /* declare variables required to read header information:
-   * @endianness: the byte ordering of the data file.
-   * @hdr: the nmrview file header structure.
+int nv_guess (const char *fname) {
+  /* declare a few required variables:
+   * @fh: input file handle.
+   * @wd: first word of the file.
    */
-  enum byteorder endian = BYTES_ENDIAN_AUTO;
-  struct nv_header hdr;
-
-  /* declare variables for reading raw data bytes:
-   * @offset: byte offset where point data begins.
-   * @i: general purpose loop counter.
-   * @n: number of words to read.
-   */
-  unsigned int offset, i, n;
+  int32_t wd;
   FILE *fh;
 
-  /* read the header information from the data file. */
-  if (!nv_read_header(fname, &endian, &hdr))
-    throw("failed to read header of '%s'", fname);
-
-  /* adjust the file header, if necessary. */
-  if (!nv_adjust_header(fname, &hdr))
-    throw("failed to perform header adjustment");
-
-  /* compute the byte offset from which to begin reading point data. */
-  offset = sizeof(struct nv_header);
-
-  /* compute the number of words to read. */
-  for (i = 0, n = 1; i < hdr.ndims; i++)
-    n *= hdr.dims[i].sz;
-
-  /* open the input file for reading. */
+  /* open the input file. */
   fh = fopen(fname, "rb");
 
   /* check that the file was opened. */
   if (!fh)
     throw("failed to open '%s'", fname);
 
-  /* read data from the file into the output array. */
-  if (!hx_array_fread_raw(fh, x, endian, sizeof(float), 1,
-                          offset, 0, 1, n, 0))
-    throw("failed to read raw data from '%s'", fname);
+  /* read the first word. */
+  if (!fread(&wd, sizeof(int32_t), 1, fh))
+    throw("failed to read magic number");
 
   /* close the input file. */
   fclose(fh);
 
-  /* convert tiles to linear values. */
-  if (!nv_linearize(x, &hdr))
-    throw("failed to linearize tiled array");
-
-  /* return success. */
-  return 1;
-}
-
-/* nv_fix_adjustment(): undo any size adjustments made to the array of a
- * datum structure in order to successfully load an nmrview-format file.
- * @D: pointer to the datum structure.
- */
-int nv_fix_adjustment (datum *D) {
-  /* declare a few required variables:
-   * @d: dimension loop counter.
-   * @adjusted: whether the sizes have been adjusted.
-   * @sznew: array of new datum array sizes.
-   */
-  unsigned int d, adjusted;
-  int *sznew;
-
-  /* determine whether adjustment was performed. */
-  for (d = 0, adjusted = 0; d < D->nd; d++) {
-    /* if any single dimension contains differing @sz and @td values,
-     * then an adjustment was performed.
-     */
-    if (D->dims[d].sz != D->dims[d].td)
-      adjusted = 1;
-  }
-
-  /* return successfully if no adjustments were made. */
-  if (!adjusted)
+  /* check the magic word, without swapping. */
+  if (wd == NV_MAGIC)
     return 1;
 
-  /* allocate the new size array. */
-  sznew = hx_array_index_alloc(D->array.k);
+  /* swap the word and check again. */
+  bytes_swap_u32((uint32_t*) &wd);
+  if (wd == NV_MAGIC)
+    return 1;
 
-  /* check that the size array was allocated. */
-  if (!sznew)
-    throw("failed to allocate %d indices", D->array.k);
-
-  /* fill the new size array. */
-  for (d = 0; d < D->nd; d++) {
-    /* restore the size value and store its value. */
-    D->dims[d].sz = D->dims[d].td;
-    sznew[d] = (int) D->dims[d].sz;
-  }
-
-  /* resize the core array. */
-  if (!hx_array_resize(&D->array, D->array.d, D->array.k, sznew))
-    throw("failed to resize core datum array");
-
-  /* free the allocated size array. */
-  free(sznew);
-
-  /* return success. */
-  return 1;
+  /* no match. */
+  return 0;
 }
 
-/* nv_fill_datum(): intelligently parses nmrview parameters into an
- * NMR datum structure.
+/* nv_decode(): read nmrview parameters into a datum structure.
+ * @D: pointer to the destination datum structure.
  * @fname: the input filename.
- * @D: pointer to the datum struct to fill.
  */
-int nv_fill_datum (const char *fname, datum *D) {
+int nv_decode (datum *D, const char *fname) {
   /* declare variables required to read header information:
    * @endian: the byte ordering of the data file.
    * @hdr: the original file header structure.
@@ -481,22 +484,23 @@ int nv_fill_datum (const char *fname, datum *D) {
   return 1;
 }
 
-/* nv_fwrite_datum(): write an NMR datum structure in nmrview-format to
- * an opened file stream.
+/* nv_encode(): write a datum structure in nmrview-format to a file.
  * @D: pointer to the source structure.
- * @fh: the output file stream.
+ * @fname: the output filename.
  */
-int nv_fwrite_datum (datum *D, FILE *fh) {
+int nv_encode (datum *D, const char *fname) {
   /* declare variables required to write header information:
    * @d: dimension loop counter.
    * @i_div: current division to subdivide.
    * @n_tile: number of words per tile.
    * @hdr: the output file header structure.
    * @ts: calendar time structure.
+   * @fh: output file handle.
    */
   unsigned int i_div, n_tile;
   struct nv_header hdr;
   struct tm *ts;
+  FILE *fh;
 
   /* declare variables required for size adjustment:
    * @szadj: whether to adjust the array size.
@@ -626,6 +630,16 @@ int nv_fwrite_datum (datum *D, FILE *fh) {
   for (d = 0; d < D->nd; d++)
     hdr.dims[d].sz = sz[d];
 
+  /* open the output file. */
+  if (fname)
+    fh = fopen(fname, "wb");
+  else
+    fh = stdout;
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
   /* write the file header. */
   if (fwrite(&hdr, sizeof(struct nv_header), 1, fh) != 1)
     throw("failed to write file header");
@@ -634,11 +648,127 @@ int nv_fwrite_datum (datum *D, FILE *fh) {
   if (!hx_array_fwrite_raw(fh, &xout, bytes_get_native(), sizeof(float), 1))
     throw("failed to write core array data");
 
+  /* close the output file. */
+  if (fname)
+    fclose(fh);
+
   /* throw away the real copy of the datum array. */
   hx_array_free(&xout);
 
   /* free the allocated size arrays. */
   free(sz);
+  free(sznew);
+
+  /* return success. */
+  return 1;
+}
+
+/* nv_array(): read an nmrview-format data file into a datum array.
+ * @D: pointer to the destination datum structure.
+ */
+int nv_array (datum *D) {
+  /* declare variables required to read header information:
+   * @endianness: the byte ordering of the data file.
+   * @hdr: the nmrview file header structure.
+   */
+  enum byteorder endian = BYTES_ENDIAN_AUTO;
+  struct nv_header hdr;
+
+  /* declare variables for reading raw data bytes:
+   * @offset: byte offset where point data begins.
+   * @i: general purpose loop counter.
+   * @n: number of words to read.
+   */
+  unsigned int offset, i, n;
+  FILE *fh;
+
+  /* check that the input filename is valid. */
+  if (D->fname == NULL)
+    throw("invalid input filename");
+
+  /* read the header information from the data file. */
+  if (!nv_read_header(D->fname, &endian, &hdr))
+    throw("failed to read header of '%s'", D->fname);
+
+  /* adjust the file header, if necessary. */
+  if (!nv_adjust_header(D->fname, &hdr))
+    throw("failed to perform header adjustment");
+
+  /* compute the byte offset from which to begin reading point data. */
+  offset = sizeof(struct nv_header);
+
+  /* compute the number of words to read. */
+  for (i = 0, n = 1; i < hdr.ndims; i++)
+    n *= hdr.dims[i].sz;
+
+  /* open the input file for reading. */
+  fh = fopen(D->fname, "rb");
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", D->fname);
+
+  /* read data from the file into the output array. */
+  if (!hx_array_fread_raw(fh, &D->array, endian, sizeof(float), 1,
+                          offset, 0, 1, n, 0))
+    throw("failed to read raw data from '%s'", D->fname);
+
+  /* close the input file. */
+  fclose(fh);
+
+  /* convert tiles to linear values. */
+  if (!nv_linearize(&D->array, &hdr))
+    throw("failed to linearize tiled array");
+
+  /* return success. */
+  return 1;
+}
+
+/* nv_post(): undo any size adjustments made to the array of a datum structure
+ * in order to successfully load an nmrview-format file.
+ * @D: pointer to the datum structure.
+ */
+int nv_post (datum *D) {
+  /* declare a few required variables:
+   * @d: dimension loop counter.
+   * @adjusted: whether the sizes have been adjusted.
+   * @sznew: array of new datum array sizes.
+   */
+  unsigned int d, adjusted;
+  int *sznew;
+
+  /* determine whether adjustment was performed. */
+  for (d = 0, adjusted = 0; d < D->nd; d++) {
+    /* if any single dimension contains differing @sz and @td values,
+     * then an adjustment was performed.
+     */
+    if (D->dims[d].sz != D->dims[d].td)
+      adjusted = 1;
+  }
+
+  /* return successfully if no adjustments were made. */
+  if (!adjusted)
+    return 1;
+
+  /* allocate the new size array. */
+  sznew = hx_array_index_alloc(D->array.k);
+
+  /* check that the size array was allocated. */
+  if (!sznew)
+    throw("failed to allocate %d indices", D->array.k);
+
+  /* fill the new size array. */
+  for (d = 0; d < D->nd; d++) {
+    /* restore the size value and store its value. */
+    D->dims[d].sz = D->dims[d].td;
+    sznew[d] = (int) D->dims[d].sz;
+  }
+
+  /* resize the core array. */
+  if (!hx_array_resize(&D->array, D->array.d, D->array.k, sznew))
+    throw("failed to resize core datum array");
+
+  /* free the allocated size array. */
   free(sznew);
 
   /* return success. */

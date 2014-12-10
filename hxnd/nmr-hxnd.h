@@ -21,26 +21,30 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_NMR_BRUKER_H__
-#define __HXND_NMR_BRUKER_H__
+#ifndef __HXND_NMR_HXND_H__
+#define __HXND_NMR_HXND_H__
 
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
-/* include the byte-level data, string, and nmr datum headers. */
+/* include the byte-level data and nmr datum headers. */
 #include <hxnd/nmr-datum.h>
 #include <hxnd/bytes.h>
-#include <hxnd/str.h>
+
+/* define a magic number to use when determining byte order of binary-format
+ * NMR datum files. (in L.E. = 'HXNDDATA')
+ */
+#define HXND_MAGIC  0x41544144444e5848
 
 /* function declarations: */
 
-int bruker_guess (const char *dname);
+int hxnd_guess (const char *fname);
 
-int bruker_decode (datum *D, const char *dname);
+int hxnd_decode (datum *D, const char *fname);
 
-int bruker_array (datum *D);
+int hxnd_encode (datum *D, const char *fname);
 
-int bruker_post (datum *D);
+int hxnd_array (datum *D);
 
-#endif /* __HXND_NMR_BRUKER_H__ */
+#endif /* __HXND_NMR_HXND_H__ */
 

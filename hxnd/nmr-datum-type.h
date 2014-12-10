@@ -21,26 +21,36 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_NMR_BRUKER_H__
-#define __HXND_NMR_BRUKER_H__
+#ifndef __HXND_NMR_DATUM_TYPE_H__
+#define __HXND_NMR_DATUM_TYPE_H__
 
-/* include the n-dimensional math header. */
-#include <hxnd/hx.h>
-
-/* include the byte-level data, string, and nmr datum headers. */
-#include <hxnd/nmr-datum.h>
-#include <hxnd/bytes.h>
-#include <hxnd/str.h>
+/* include the nmr format headers. */
+#include <hxnd/nmr-hxnd.h>
+#include <hxnd/nmr-text.h>
+#include <hxnd/nmr-bruker.h>
+#include <hxnd/nmr-varian.h>
+#include <hxnd/nmr-pipe.h>
+#include <hxnd/nmr-ucsf.h>
+#include <hxnd/nmr-nv.h>
+#include <hxnd/nmr-rnmrtk.h>
 
 /* function declarations: */
 
-int bruker_guess (const char *dname);
+const char *datum_type_name (enum datum_type typ);
 
-int bruker_decode (datum *D, const char *dname);
+const char *datum_type_desc (enum datum_type typ);
 
-int bruker_array (datum *D);
+enum datum_type datum_type_lookup (const char *name);
 
-int bruker_post (datum *D);
+enum datum_type datum_type_guess (const char *fname);
 
-#endif /* __HXND_NMR_BRUKER_H__ */
+int datum_type_decode (datum *D, const char *fname, enum datum_type typ);
+
+int datum_type_encode (datum *D, const char *fname, enum datum_type typ);
+
+int datum_type_array (datum *D, enum datum_type typ);
+
+int datum_type_post (datum *D, enum datum_type typ);
+
+#endif /* __HXND_NMR_DATUM_TYPE_H__ */
 

@@ -31,71 +31,15 @@
 #include <hxnd/nmr-datum.h>
 #include <hxnd/bytes.h>
 
-/* define a magic string used to check existence of ucsf files. */
-#define UCSF_NUM_MAGIC  10
-#define UCSF_MAGIC      "UCSF NMR"
-
-/* define the maximum block size (in data words) for ucsf files. */
-#define UCSF_MAX_TILE  8192
-
-/* ucsf_file_header: 180-byte file header of data contained in a ucsf-format
- * file.
- */
-struct ucsf_file_header {
-  /* (0..9) @ftype: ucsf header string.
-   * (10) @ndims: dimensionality of spectrum.
-   * (11) @ncomp: number of data components.
-   * (12) @pad0
-   * (13) @fmtver: format version number.
-   */
-  char ftype[UCSF_NUM_MAGIC];
-  uint8_t ndims;
-  uint8_t ncomp;
-  uint8_t pad0;
-  uint8_t fmtver;
-
-  /* (14..179) @pad_end */
-  uint8_t pad_end[166];
-};
-
-/* ucsf_dim_header: 128-byte dimension header of data contains in a ucsf
- * format file.
- */
-struct ucsf_dim_header {
-  /* (0..7) @nuc: nucleus name string.
-   * (8..11) @npts: number of points.
-   * (12..15) @pad0
-   * (16..19) @sztile: tile size.
-   * (20..23) @carrier: spectrometer frequency.
-   * (24..27) @width: spectral width.
-   * (28..31) @center: spectral center.
-   */
-  char nuc[8];
-  uint32_t npts;
-  uint32_t pad0;
-  uint32_t sztile;
-  float carrier;
-  float width;
-  float center;
-
-  /* (32..127) @pad_end */
-  uint8_t pad_end[96];
-};
-
 /* function declarations: */
 
-int ucsf_check_magic (const char *fname);
+int ucsf_guess (const char *fname);
 
-int ucsf_read_header (const char *fname,
-                      enum byteorder *endianness,
-                      struct ucsf_file_header *hdr,
-                      struct ucsf_dim_header **dims);
+int ucsf_decode (datum *D, const char *fname);
 
-int ucsf_read (const char *fname, hx_array *x);
+int ucsf_encode (datum *D, const char *fname);
 
-int ucsf_fill_datum (const char *fname, datum *D);
-
-int ucsf_fwrite_datum (datum *D, FILE *fh);
+int ucsf_array (datum *D);
 
 #endif /* __HXND_NMR_UCSF_H__ */
 

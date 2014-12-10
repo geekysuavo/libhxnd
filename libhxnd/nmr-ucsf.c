@@ -23,39 +23,56 @@
 /* include the ucsf header. */
 #include <hxnd/nmr-ucsf.h>
 
-/* ucsf_check_magic(): checks the first "magic" bytes of a file and
- * returns whether they match the ucsf-format file magic number.
- * @fname: the input filename.
+/* define a magic string used to check existence of ucsf files. */
+#define UCSF_NUM_MAGIC  10
+#define UCSF_MAGIC      "UCSF NMR"
+
+/* define the maximum block size (in data words) for ucsf files. */
+#define UCSF_MAX_TILE  8192
+
+/* ucsf_file_header: 180-byte file header of data contained in a ucsf-format
+ * file.
  */
-int ucsf_check_magic (const char *fname) {
-  /* declare a few required variables:
-   * @fh: input file handle.
-   * @wd: first words of input file.
+struct ucsf_file_header {
+  /* (0..9) @ftype: ucsf header string.
+   * (10) @ndims: dimensionality of spectrum.
+   * (11) @ncomp: number of data components.
+   * (12) @pad0
+   * (13) @fmtver: format version number.
    */
-  char wd[UCSF_NUM_MAGIC];
-  FILE *fh;
+  char ftype[UCSF_NUM_MAGIC];
+  uint8_t ndims;
+  uint8_t ncomp;
+  uint8_t pad0;
+  uint8_t fmtver;
 
-  /* open the input file. */
-  fh = fopen(fname, "rb");
+  /* (14..179) @pad_end */
+  uint8_t pad_end[166];
+};
 
-  /* check that the file was opened. */
-  if (!fh)
-    throw("failed to open '%s'", fname);
+/* ucsf_dim_header: 128-byte dimension header of data contains in a ucsf
+ * format file.
+ */
+struct ucsf_dim_header {
+  /* (0..7) @nuc: nucleus name string.
+   * (8..11) @npts: number of points.
+   * (12..15) @pad0
+   * (16..19) @sztile: tile size.
+   * (20..23) @carrier: spectrometer frequency.
+   * (24..27) @width: spectral width.
+   * (28..31) @center: spectral center.
+   */
+  char nuc[8];
+  uint32_t npts;
+  uint32_t pad0;
+  uint32_t sztile;
+  float carrier;
+  float width;
+  float center;
 
-  /* read the first ten words. */
-  if (!fread(&wd, sizeof(char), UCSF_NUM_MAGIC, fh))
-    throw("failed to read magic numbers");
-
-  /* close the input file. */
-  fclose(fh);
-
-  /* check the magic string, without swapping. */
-  if (strncmp(wd, UCSF_MAGIC, UCSF_NUM_MAGIC) == 0)
-    return 1;
-
-  /* no match. */
-  return 0;
-}
+  /* (32..127) @pad_end */
+  uint8_t pad_end[96];
+};
 
 /* ucsf_read_header(): read the contents of a header from a ucsf-format file.
  * @fname: the input filename.
@@ -222,95 +239,67 @@ int ucsf_tiler (hx_array *x,
   return 1;
 }
 
-/* ucsf_linearize(): maps tiles to linear array data.
+/* ucsf_linearize(): map tiles to linear array data.
  */
 #define ucsf_linearize(x, fhdr, dhdr) \
   ucsf_tiler(x, fhdr, dhdr, HX_ARRAY_TILER_FORWARD)
 
-/* ucsf_tileize(): maps linear array data to tiles.
+/* ucsf_tileize(): map linear array data to tiles.
  */
 #define ucsf_tileize(x, fhdr, dhdr) \
   ucsf_tiler(x, fhdr, dhdr, HX_ARRAY_TILER_REVERSE)
 
-/* ucsf_read(): reads a ucsf-format data file into a real linear array.
- * @fname: the input data filename.
- * @x: the output array.
+/* ucsf_guess(): check whether a file contains ucsf-format data.
+ * @fname: the input filename.
  */
-int ucsf_read (const char *fname, hx_array *x) {
-  /* declare variables required to read headers.
-   * @endian: byte ordering of the input file.
-   * @fhdr: file header structure.
-   * @dhdr: array of dimension header structures.
+int ucsf_guess (const char *fname) {
+  /* declare a few required variables:
+   * @fh: input file handle.
+   * @wd: first words of input file.
    */
-  enum byteorder endian = BYTES_ENDIAN_AUTO;
-  struct ucsf_file_header fhdr;
-  struct ucsf_dim_header *dhdr;
-
-  /* declare variables for reading raw data bytes:
-   * @offset: byte offset where point data begins.
-   * @i: general purpose loop counter.
-   * @n: number of words to read.
-   */
-  unsigned int offset, i, n;
+  char wd[UCSF_NUM_MAGIC];
   FILE *fh;
 
-  /* attempt to read the file and dimension headers from the file. */
-  if (!ucsf_read_header(fname, &endian, &fhdr, &dhdr))
-    throw("failed to read header of '%s'", fname);
-
-  /* compute the byte offset from which to begin reading point data. */
-  offset = sizeof(struct ucsf_file_header);
-  offset += fhdr.ndims * sizeof(struct ucsf_dim_header);
-
-  /* compute the number of words to read. */
-  for (i = 0, n = 1; i < fhdr.ndims; i++)
-    n *= dhdr[i].npts;
-
-  /* open the input file for reading. */
+  /* open the input file. */
   fh = fopen(fname, "rb");
 
   /* check that the file was opened. */
   if (!fh)
     throw("failed to open '%s'", fname);
 
-  /* read data from the file into the output array. */
-  if (!hx_array_fread_raw(fh, x, endian, sizeof(float), 1,
-                          offset, 0, 1, n, 0))
-    throw("failed to read raw data from '%s'", fname);
+  /* read the first ten words. */
+  if (!fread(&wd, sizeof(char), UCSF_NUM_MAGIC, fh))
+    throw("failed to read magic numbers");
 
   /* close the input file. */
   fclose(fh);
 
-  /* convert tiles to linear values. */
-  if (!ucsf_linearize(x, &fhdr, dhdr))
-    throw("failed to linearize tiled array");
+  /* check the magic string, without swapping. */
+  if (strncmp(wd, UCSF_MAGIC, UCSF_NUM_MAGIC) == 0)
+    return 1;
 
-  /* free the dimension header array. */
-  free(dhdr);
-
-  /* return success. */
-  return 1;
+  /* no match. */
+  return 0;
 }
 
-/* ucsf_fill_datum(): intelligently parses ucsf parameters into an
- * NMR datum structure.
+/* ucsf_decode(): read ucsf parameters into a datum structure.
+ * @D: pointer to the destination datum structure.
  * @fname: the input filename.
- * @D: pointer to the datum struct to fill.
  */
-int ucsf_fill_datum (const char *fname, datum *D) {
+int ucsf_decode (datum *D, const char *fname) {
   /* declare variables required to read header information:
-   * @endianness: the byte ordering of the data file.
+   * @endian: the byte ordering of the data file.
    * @fhdr: the ucsf file header structure.
    * @dhdr: an array of ucsf dimension header structures.
    * @d: dimension loop counter.
    */
-  enum byteorder endianness = BYTES_ENDIAN_AUTO;
+  enum byteorder endian = BYTES_ENDIAN_AUTO;
   struct ucsf_file_header fhdr;
   struct ucsf_dim_header *dhdr;
   unsigned int d;
 
   /* attempt to read the file and dimension headers from the file. */
-  if (!ucsf_read_header(fname, &endianness, &fhdr, &dhdr))
+  if (!ucsf_read_header(fname, &endian, &fhdr, &dhdr))
     throw("failed to read header of '%s'", fname);
 
   /* check the component count. */
@@ -360,27 +349,28 @@ int ucsf_fill_datum (const char *fname, datum *D) {
 
   /* store the datum type. */
   D->type = DATUM_TYPE_UCSF;
-  D->endian = endianness;
+  D->endian = endian;
 
   /* return success. */
   return 1;
 }
 
-/* ucsf_fwrite_datum(): writes an NMR datum structure in ucsf-format to
- * an opened file stream.
+/* ucsf_encode(): write a datum structure in ucsf-format to a file.
  * @D: pointer to the source structure.
- * @fh: the output file stream.
+ * @fname: the output filename.
  */
-int ucsf_fwrite_datum (datum *D, FILE *fh) {
+int ucsf_encode (datum *D, const char *fname) {
   /* declare variables required for header output.
    * @fhdr: output file header.
    * @dhdr: array of dimension headers.
    * @i_div: current dimension to subdivide.
    * @n_tile: number of words per tile.
+   * @fh: output file handle.
    */
   struct ucsf_file_header fhdr;
   struct ucsf_dim_header *dhdr;
   unsigned int i_div, n_tile;
+  FILE *fh;
 
   /* declare a dimension loop counter. */
   unsigned int d;
@@ -465,6 +455,16 @@ int ucsf_fwrite_datum (datum *D, FILE *fh) {
   if (!ucsf_tileize(&xout, &fhdr, dhdr))
     throw("failed to delinearize array into tiles");
 
+  /* open the output file. */
+  if (fname)
+    fh = fopen(fname, "wb");
+  else
+    fh = stdout;
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
   /* write the file header. */
   if (fwrite(&fhdr, sizeof(struct ucsf_file_header), 1, fh) != 1)
     throw("failed to write file header");
@@ -476,6 +476,10 @@ int ucsf_fwrite_datum (datum *D, FILE *fh) {
   /* write the array data. */
   if (!hx_array_fwrite_raw(fh, &xout, bytes_get_native(), sizeof(float), 1))
     throw("failed to write core array data");
+
+  /* close the output file. */
+  if (fname)
+    fclose(fh);
 
   /* check if the datum array was used directly. */
   if (D->array.d == 0) {
@@ -489,6 +493,69 @@ int ucsf_fwrite_datum (datum *D, FILE *fh) {
     /* throw away the real copy of the datum array. */
     hx_array_free(&xout);
   }
+
+  /* free the dimension header array. */
+  free(dhdr);
+
+  /* return success. */
+  return 1;
+}
+
+/* ucsf_array(): read a ucsf-format data file into a datum array.
+ * @D: pointer to the destination datum structure.
+ */
+int ucsf_array (datum *D) {
+  /* declare variables required to read headers.
+   * @endian: byte ordering of the input file.
+   * @fhdr: file header structure.
+   * @dhdr: array of dimension header structures.
+   */
+  enum byteorder endian = BYTES_ENDIAN_AUTO;
+  struct ucsf_file_header fhdr;
+  struct ucsf_dim_header *dhdr;
+
+  /* declare variables for reading raw data bytes:
+   * @offset: byte offset where point data begins.
+   * @i: general purpose loop counter.
+   * @n: number of words to read.
+   */
+  unsigned int offset, i, n;
+  FILE *fh;
+
+  /* check that the input filename is valid. */
+  if (D->fname == NULL)
+    throw("invalid input filename");
+
+  /* attempt to read the file and dimension headers from the file. */
+  if (!ucsf_read_header(D->fname, &endian, &fhdr, &dhdr))
+    throw("failed to read header of '%s'", D->fname);
+
+  /* compute the byte offset from which to begin reading point data. */
+  offset = sizeof(struct ucsf_file_header);
+  offset += fhdr.ndims * sizeof(struct ucsf_dim_header);
+
+  /* compute the number of words to read. */
+  for (i = 0, n = 1; i < fhdr.ndims; i++)
+    n *= dhdr[i].npts;
+
+  /* open the input file for reading. */
+  fh = fopen(D->fname, "rb");
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", D->fname);
+
+  /* read data from the file into the output array. */
+  if (!hx_array_fread_raw(fh, &D->array, endian, sizeof(float), 1,
+                          offset, 0, 1, n, 0))
+    throw("failed to read raw data from '%s'", D->fname);
+
+  /* close the input file. */
+  fclose(fh);
+
+  /* convert tiles to linear values. */
+  if (!ucsf_linearize(&D->array, &fhdr, dhdr))
+    throw("failed to linearize tiled array");
 
   /* free the dimension header array. */
   free(dhdr);

@@ -63,9 +63,8 @@ int fn_execute_add (datum *D, const int dim, const char *argstr) {
   /* check if a file argument was provided. */
   if (fadd) {
     /* attempt to load the file into a new datum. */
-    datum_init(&Dadd);
-    if (!datum_load(&Dadd, fadd, 1))
-      throw("failed to read hx-format file '%s'", fadd);
+    if (!datum_load(&Dadd, fadd))
+      throw("failed to read '%s'", fadd);
 
     /* add the two arrays together. */
     if (!hx_array_add_array(&D->array, &Dadd.array, fscale, &D->array))

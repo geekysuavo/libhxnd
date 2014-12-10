@@ -108,12 +108,10 @@ int main (int argc, char **argv) {
    * @fmt_out: output file format.
    * @fname_out: output filename.
    * @fname_in: input filename.
-   * @fh: output file handle.
    */
   enum datum_type fmt_out = DATUM_TYPE_HXND;
   char *fname_out = NULL;
   char *fname_in = NULL;
-  FILE *fh;
 
   /* declare variables for behavior determination:
    * @ndnew: number of dimensions to create if @mknew is raised.
@@ -174,15 +172,11 @@ int main (int argc, char **argv) {
       /* F: output format. */
       case 'F':
         /* determine which output type was specified. */
-        fmt_out = datum_lookup_type(argv[argi - 1]);
+        fmt_out = datum_type_lookup(argv[argi - 1]);
 
         /* check that the datum type is supported. */
-        if (fmt_out == DATUM_TYPE_UNDEFINED) {
-          /* raise an error an end execution. */
-          raise("unsupported output format '%s'", argv[argi - 1]);
-          traceback_print();
-          return 1;
-        }
+        if (fmt_out == DATUM_TYPE_UNDEFINED)
+          trace("unsupported output format '%s'", argv[argi - 1]);
 
         /* break the switch. */
         break;
@@ -195,24 +189,16 @@ int main (int argc, char **argv) {
       /* f: processing function. */
       case 'f':
         /* parse the processing function argument string. */
-        if (!opts_parse_arg(argv[argi - 1], ":", &lval, &rval, &dval)) {
-          /* raise an exception and end execution. */
-          raise("failed to parse function argument '%s'", argv[argi - 1]);
-          traceback_print();
-          return 1;
-        }
+        if (!opts_parse_arg(argv[argi - 1], ":", &lval, &rval, &dval))
+          trace("failed to parse function argument '%s'", argv[argi - 1]);
 
         /* reallocate the array of functions. */
         procs = (struct parsed_arg*)
           realloc(procs, ++n_procs * sizeof(struct parsed_arg));
 
         /* check that the reallocation succeeded. */
-        if (!procs) {
-          /* raise an error and end execution. */
-          raise("failed to reallocate processing function array");
-          traceback_print();
-          return 1;
-        }
+        if (!procs)
+          trace("failed to reallocate processing function array");
 
         /* store the processing information. */
         procs[n_procs - 1].lstr = lval;
@@ -223,32 +209,20 @@ int main (int argc, char **argv) {
       /* v: dimension parameter correction. */
       case 'v':
         /* parse the modifier argument string. */
-        if (!opts_parse_arg(argv[argi - 1], "=", &lval, &rval, &dval)) {
-          /* raise an exception and end execution. */
-          raise("failed to parse value argument '%s'", argv[argi - 1]);
-          traceback_print();
-          return 1;
-        }
+        if (!opts_parse_arg(argv[argi - 1], "=", &lval, &rval, &dval))
+          trace("failed to parse value argument '%s'", argv[argi - 1]);
 
         /* check for the required right-value string. */
-        if (strcmp(rval, "") == 0) {
-          /* raise an exception and end execution. */
-          raise("value argument '%s' lacks required right-hand value", lval);
-          traceback_print();
-          return 1;
-        }
+        if (strcmp(rval, "") == 0)
+          trace("value argument '%s' lacks required right-hand value", lval);
 
         /* reallocate the array of corrections. */
         corrs = (struct parsed_arg*)
           realloc(corrs, ++n_corrs * sizeof(struct parsed_arg));
 
         /* check that the reallocation succeeded. */
-        if (!corrs) {
-          /* raise an error and end execution. */
-          raise("failed to reallocate correction array");
-          traceback_print();
-          return 1;
-        }
+        if (!corrs)
+          trace("failed to reallocate correction array");
 
         /* store the correction information. */
         corrs[n_corrs - 1].lstr = lval;
@@ -258,10 +232,7 @@ int main (int argc, char **argv) {
 
       /* unknown option or argument. */
       default:
-        /* raise an error and quit parsing. */
-        raise("failed to parse arguments");
-        traceback_print();
-        return 1;
+        trace("failed to parse arguments");
     }
   }
 
@@ -278,92 +249,50 @@ int main (int argc, char **argv) {
     D.dims = (datum_dim*) calloc(D.nd, sizeof(datum_dim));
 
     /* check that allocation succeeded. */
-    if (D.dims == NULL) {
-      /* raise an error and end execution. */
-      raise("failed to allocate datum dimensions");
-      traceback_print();
-      return 1;
-    }
+    if (D.dims == NULL)
+      trace("failed to allocate datum dimensions");
 
     /* apply parameter corrections. */
-    if (!main_apply_corrs(&D, corrs, n_corrs)) {
-      /* raise an error and end execution. */
-      raise("failed to apply parameter corrections");
-      traceback_print();
-      return 1;
-    }
+    if (!main_apply_corrs(&D, corrs, n_corrs))
+      trace("failed to apply parameter corrections");
 
     /* allocate the array to match the datum parameters. */
-    if (!datum_alloc_array(&D)) {
-      /* raise an error and end execution. */
-      raise("failed to allocate new datum array");
-      traceback_print();
-      return 1;
-    }
-  }
-  else if (fname_in) {
-    /* determine the type of input data. */
-    D.type = datum_guess_type(fname_in);
-
-    /* ensure that the file format is supported. */
-    if (D.type == DATUM_TYPE_UNDEFINED) {
-      /* raise an error and end execution. */
-      raise("unsupported data type in '%s'", fname_in);
-      traceback_print();
-      return 1;
-    }
-
-    /* fill the datum structure */
-    if (!datum_fill(&D, fname_in)) {
-      /* raise an error and end execution. */
-      raise("failed to generate hx-format metadata from '%s'", fname_in);
-      traceback_print();
-      return 1;
-    }
-
-    /* apply parameter corrections at this point. */
-    if (!main_apply_corrs(&D, corrs, n_corrs)) {
-      /* raise an error and end execution. */
-      raise("failed to apply parameter corrections");
-      traceback_print();
-      return 1;
-    }
-
-    /* load the array data. */
-    if (!datum_read_array(&D)) {
-      /* raise an error and end execution. */
-      raise("failed to generate hx-format data from '%s'", fname_in);
-      traceback_print();
-      return 1;
-    }
+    if (!datum_alloc_array(&D))
+      trace("failed to allocate new datum array");
   }
   else {
-    /* standard input mode only supports hx-formatted binary files. */
-    D.type = DATUM_TYPE_HXND;
+    /* determine the type of input data. */
+    if (fname_in)
+      D.type = datum_type_guess(fname_in);
+    else
+      D.type = DATUM_TYPE_HXND;
 
-    /* fill the datum structure from standard input. */
-    if (!datum_fread(&D, stdin, 1)) {
-      /* raise an error and end execution. */
-      raise("failed to read hx-format data from stdin");
-      traceback_print();
-      return 1;
-    }
+    /* ensure that the file format is supported. */
+    if (D.type == DATUM_TYPE_UNDEFINED)
+      trace("unsupported data type in '%s'", fname_in);
+
+    /* decode the file parameters into the datum structure. */
+    if (!datum_type_decode(&D, fname_in, D.type))
+      trace("failed to read %s-format data from '%s'",
+            datum_type_name(D.type), fname_in);
+
+    /* apply parameter corrections at this point. */
+    if (!main_apply_corrs(&D, corrs, n_corrs))
+      trace("failed to apply parameter corrections");
+
+    /* load the array data. */
+    if (!datum_read_array(&D))
+      trace("failed to generate hx-format data from '%s'", fname_in);
   }
 
   /* check if we're only pretending to read the data. */
   if (pretend) {
     /* print the datum metadata to the terminal. */
-    if (!datum_print(&D, fname_out)) {
-      /* raise an error. */
-      raise("failed to print hx-format metadata to %s%s%s",
+    if (!datum_print(&D, fname_out))
+      trace("failed to print hx-format metadata to %s%s%s",
             fname_out ? "'" : "",
-            fname_out ? fname_out : "stdout",
+            fname_out ? fname_out : "standard output",
             fname_out ? "'" : "");
-
-      /* end execution. */
-      traceback_print();
-      return 1;
-    }
 
     /* free the datum structure. */
     datum_free(&D);
@@ -373,31 +302,18 @@ int main (int argc, char **argv) {
   }
 
   /* apply processing functions at this point. */
-  if (!main_apply_procs(&D, procs, n_procs)) {
-    /* raise an exception and end execution. */
-    raise("failed to apply processing functions");
-    traceback_print();
-    return 1;
-  }
+  if (!main_apply_procs(&D, procs, n_procs))
+    trace("failed to apply processing functions");
 
-  /* determine how to write data out. */
-  if (fname_out)
-    fh = fopen(fname_out, "wb");
-  else
-    fh = stdout;
-
-  /* write the data out. */
-  if (!datum_fwrite_formatted(&D, fh, fmt_out)) {
-    /* raise an error. */
-    raise("failed to write data to %s%s%s",
+  /* encode the data into the output file. datum formats that support writing
+   * to standard output must accept @fname as NULL.
+   */
+  if (!datum_type_encode(&D, fname_out, fmt_out))
+    trace("failed to write '%s'-format data to %s%s%s",
+          datum_type_name(fmt_out),
           fname_out ? "'" : "",
-          fname_out ? fname_out : "stdout",
+          fname_out ? fname_out : "standard output",
           fname_out ? "'" : "");
-
-    /* end execution. */
-    traceback_print();
-    return 1;
-  }
 
   /* free the datum structure. */
   datum_free(&D);

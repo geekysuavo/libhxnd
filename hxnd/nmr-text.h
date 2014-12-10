@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_NMR_BRUKER_H__
-#define __HXND_NMR_BRUKER_H__
+#ifndef __HXND_NMR_TEXT_H__
+#define __HXND_NMR_TEXT_H__
 
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
@@ -34,13 +34,7 @@
 
 /* function declarations: */
 
-int bruker_guess (const char *dname);
+int text_encode (datum *D, const char *dname);
 
-int bruker_decode (datum *D, const char *dname);
-
-int bruker_array (datum *D);
-
-int bruker_post (datum *D);
-
-#endif /* __HXND_NMR_BRUKER_H__ */
+#endif /* __HXND_NMR_TEXT_H__ */
 

@@ -27,6 +27,101 @@
  */
 #define N_BUF  256
 
+/* define all possible parameter file statement strings supported by rnmrtk.
+ */
+#define RNMRTK_PARLINE_FORMAT  "format"
+#define RNMRTK_PARLINE_DOM     "dom"
+#define RNMRTK_PARLINE_N       "n"
+#define RNMRTK_PARLINE_LAYOUT  "layout"
+#define RNMRTK_PARLINE_SF      "sf"
+#define RNMRTK_PARLINE_PPM     "ppm"
+#define RNMRTK_PARLINE_QUAD    "quad"
+#define RNMRTK_PARLINE_SW      "sw"
+
+/* define all possible endianness strings in rnmrtk 'format' lines.
+ */
+#define RNMRTK_ENDIAN_BIG     "big-endian"
+#define RNMRTK_ENDIAN_LITTLE  "little-endian"
+
+/* define all possible word-type strings in rnmrtk 'format' lines.
+ */
+#define RNMRTK_WTYPE_INT  "int-32"
+#define RNMRTK_WTYPE_FLT  "ieee-float"
+
+/* define all possible quadrature strings in rnmrtk 'quad' lines.
+ */
+#define RNMRTK_QUADSTR_TPPI        "tppi"
+#define RNMRTK_QUADSTR_STATES      "states"
+#define RNMRTK_QUADSTR_STATESTPPI  "states-tppi"
+
+/* define all possible real/complex strings in rnmrtk 'n' lines.
+ */
+#define RNMRTK_NTYPE_REAL     "r"
+#define RNMRTK_NTYPE_COMPLEX  "c"
+
+/* define the maximum number of dimensions supported by rnmrtk files.
+ */
+#define RNMRTK_MAXDIM   4
+#define RNMRTK_MAXSUB  10
+
+/* rnmrtk_quad: enumerated type describing the quadrature mode of a given
+ * dimension in an RNMRTK data file.
+ */
+enum rnmrtk_quad {
+  RNMRTK_QUAD_REAL       = 0x00,
+  RNMRTK_QUAD_TPPI       = 0x01,
+  RNMRTK_QUAD_STATES     = 0x02,
+  RNMRTK_QUAD_STATESTPPI = 0x03
+};
+
+/* rnmrtk_parms: structure containing parsed parameters that correspond to
+ * an RNMRTK data file.
+ */
+struct rnmrtk_parms {
+  /* arguments parsed from parfile 'format' lines:
+   * @endian: raw data byte ordering, little or big.
+   * @isflt: whether the data is floating-point or integer.
+   * @nheader: number of bytes in the data file header.
+   * @reclen: number of real points per record.
+   * @nbegin: number of bytes padding each data record.
+   * @nend: number of bytes padding the end of the file.
+   */
+  enum byteorder endian;
+  unsigned int isflt;
+  unsigned int nheader;
+  unsigned int reclen;
+  unsigned int nbegin;
+  unsigned int nend;
+
+  /* arguments parsed from parfile 'dom' lines:
+   * @ord: dimension ordering array, one-based.
+   * @nd: dimension count.
+   */
+  int ord[RNMRTK_MAXDIM];
+  unsigned int nd;
+
+  /* arguments parsed from parfile 'n' lines:
+   * @sz: array of sizes for each dimension.
+   * @cx: array of complex flags for each dimension.
+   */
+  int sz[RNMRTK_MAXDIM], cx[RNMRTK_MAXDIM];
+
+  /* arguments parsed from parfile 'layout' lines:
+   * @layout: matrix of dimension,subdimension sizes.
+   */
+  int layout[RNMRTK_MAXDIM][RNMRTK_MAXSUB];
+
+  /* arguments parsed from optional parfile lines:
+   * @sf: spectrometer carrier frequencies.
+   * @ppm: carrier offset values, in ppm.
+   * @sw: spectral widths.
+   */
+  float sf[RNMRTK_MAXDIM];
+  float ppm[RNMRTK_MAXDIM];
+  float sw[RNMRTK_MAXDIM];
+  enum rnmrtk_quad quad[RNMRTK_MAXDIM];
+};
+
 /* rnmrtk_parfile(): build a parameter filename string.
  * @fname: the input data file name.
  */
@@ -58,38 +153,6 @@ char *rnmrtk_parfile (const char *fname) {
 
   /* return the allocated filename. */
   return pfname;
-}
-
-/* rnmrtk_check_file(): check a file for the requisite properties that may
- * define it as an RNMRTK data file.
- * @fname: the input data file name.
- */
-int rnmrtk_check_file (const char *fname) {
-  /* declare a few required variables. */
-  int have_dat, have_par;
-  char *pfname;
-
-  /* check if the data file exists. */
-  have_dat = bytes_fexist(fname);
-
-  /* build the parameter filename string. */
-  pfname = rnmrtk_parfile(fname);
-
-  /* check that the string was created successfully. */
-  if (!pfname)
-    return 0;
-
-  /* check if the parameter file exists. */
-  have_par = bytes_fexist(pfname);
-
-  /* free the parameter filename string. */
-  free(pfname);
-
-  /* clear any errors that may have popped up. */
-  traceback_clear();
-
-  /* return whether both files exist. */
-  return (have_dat && have_par);
 }
 
 /* rnmrtk_read_parms(): read the parameter file corresponding to an RNMRTK
@@ -304,121 +367,40 @@ int rnmrtk_read_parms (const char *fname, struct rnmrtk_parms *par) {
   return 1;
 }
 
-/* rnmrtk_read(): read an RNMRTK data file into a real linear array.
- * @fname: the input data filename.
- * @x: the output array.
+/* rnmrtk_guess(): check a file contains rnmrtk-format data.
+ * @fname: the input data file name.
  */
-int rnmrtk_read (const char *fname, hx_array *x) {
-  /* declare a structure to hold parameter information. */
-  struct rnmrtk_parms par;
+int rnmrtk_guess (const char *fname) {
+  /* declare a few required variables. */
+  int have_dat, have_par;
+  char *pfname;
 
-  /* declare variables required for array raw input:
-   * @wordsz: number of bytes per data word.
-   * @isflt: whether the words are floats.
-   * @ntrue: number of bytes in the input file.
-   * @ncalc: estimated value of @ntrue.
-   * @offhead: file header byte offset.
-   * @offblk: block header byte offset.
-   * @offend: block footer byte offset.
-   * @nblks: number of data blocks.
-   * @nwords: number of words per block.
-   * @nalign: block alignment byte count.
-   * @fh: input file handle.
-   */
-  unsigned int wordsz;
-  unsigned int isflt;
-  unsigned int ntrue;
-  unsigned int ncalc;
-  unsigned int offhead;
-  unsigned int offblk;
-  unsigned int offend;
-  unsigned int nblks;
-  unsigned int nwords;
-  unsigned int nalign;
-  FILE *fh;
+  /* check if the data file exists. */
+  have_dat = bytes_fexist(fname);
 
-  /* read the parameter file. */
-  if (!rnmrtk_read_parms(fname, &par))
-    throw("failed to read rnmrtk parameter file");
+  /* build the parameter filename string. */
+  pfname = rnmrtk_parfile(fname);
 
-  /* check the word type. */
-  if (par.isflt) {
-    /* set the float flag and the word size. */
-    wordsz = sizeof(float);
-    isflt = 1;
-  }
-  else {
-    /* set the int flag and the word size. */
-    wordsz = sizeof(int32_t);
-    isflt = 0;
-  }
+  /* check that the string was created successfully. */
+  if (!pfname)
+    return 0;
 
-  /* get the header and block byte offsets. */
-  offhead = par.nheader;
-  offblk = par.nbegin;
-  offend = par.nend;
+  /* check if the parameter file exists. */
+  have_par = bytes_fexist(pfname);
 
-  /* get the total file size. */
-  ntrue = bytes_size(fname);
+  /* free the parameter filename string. */
+  free(pfname);
 
-  /* check that the file size is valid. */
-  if (ntrue <= offhead)
-    throw("invalid data file size of %u bytes", ntrue);
-
-  /* get (or compute) the number of words per block. */
-  if (par.reclen) {
-    /* get the number from the parm structure. */
-    nwords = par.reclen;
-
-    /* determine how many blocks are in the file. */
-    nblks = (ntrue - offhead) / (offblk + nwords * wordsz + offend);
-  }
-  else {
-    /* assume a single data block. */
-    nblks = 1;
-
-    /* determine the size of the data block. */
-    nwords = (ntrue - offhead - offblk - offend) / wordsz;
-  }
-
-  /* check that the computed blocking information matches the file size. */
-  ncalc = offhead + nblks * (offblk + nwords * wordsz + offend);
-  if (ncalc != ntrue)
-    throw("expected file size %uB does not match actual %uB", ncalc, ntrue);
-
-  /* check if block alignment is required. */
-  if (offend) {
-    /* build the block alignment size. */
-    nalign = offblk + nwords * wordsz + offend;
-  }
-  else
-    nalign = 0;
-
-  /* open the input file for reading. */
-  fh = fopen(fname, "rb");
-
-  /* check that the file was opened. */
-  if (!fh)
-    throw("failed to open '%s'", fname);
-
-  /* read data from the file into the output array. */
-  if (!hx_array_fread_raw(fh, x, par.endian, wordsz, isflt, offhead,
-                          offblk, nblks, nwords, nalign))
-    throw("failed to read raw data from '%s'", fname);
-
-  /* close the input file. */
-  fclose(fh);
-
-  /* return success. */
-  return 1;
+  /* return whether both files exist. */
+  return (have_dat && have_par);
 }
 
-/* rnmrtk_fill_datum(): load parameter information accompanying an RNMRTK
- * data file into an NMR datum structure.
+/* rnmrtk_decode(): read parameter information accompanying an rnmrtk
+ * data file into a datum structure.
+ * @D: pointer to the destination datum structure.
  * @fname: the input data file name.
- * @D: pointer to the datum struct to fill.
  */
-int rnmrtk_fill_datum (const char *fname, datum *D) {
+int rnmrtk_decode (datum *D, const char *fname) {
   /* @par: structure to hold parameter information.
    * @ord: dimension ordering array.
    * @d: dimension loop counter.
@@ -495,6 +477,134 @@ int rnmrtk_fill_datum (const char *fname, datum *D) {
   /* store the datum type. */
   D->type = DATUM_TYPE_RNMRTK;
   D->endian = par.endian;
+
+  /* return success. */
+  return 1;
+}
+
+/* rnmrtk_encode(): write a datum structure in rnmrtk-format to a file.
+ * @D: pointer to the source datum structure.
+ * @fname: the output filename.
+ */
+int rnmrtk_encode (datum *D, const char *fname) {
+  /* declare variables required for parameter output:
+   * @par: structure to hold all data file parameters.
+   */
+  struct rnmrtk_parms par;
+
+  /* FIXME: implement rnmrtk_encode() */
+
+  /* return success. */
+  return 1;
+}
+
+/* rnmrtk_array(): read an rnmrtk data file into a datum array.
+ * @D: pointer to the source datum structure.
+ */
+int rnmrtk_array (datum *D) {
+  /* declare a structure to hold parameter information. */
+  struct rnmrtk_parms par;
+
+  /* declare variables required for array raw input:
+   * @wordsz: number of bytes per data word.
+   * @isflt: whether the words are floats.
+   * @ntrue: number of bytes in the input file.
+   * @ncalc: estimated value of @ntrue.
+   * @offhead: file header byte offset.
+   * @offblk: block header byte offset.
+   * @offend: block footer byte offset.
+   * @nblks: number of data blocks.
+   * @nwords: number of words per block.
+   * @nalign: block alignment byte count.
+   * @fh: input file handle.
+   */
+  unsigned int wordsz;
+  unsigned int isflt;
+  unsigned int ntrue;
+  unsigned int ncalc;
+  unsigned int offhead;
+  unsigned int offblk;
+  unsigned int offend;
+  unsigned int nblks;
+  unsigned int nwords;
+  unsigned int nalign;
+  FILE *fh;
+
+  /* check that the input filename is valid. */
+  if (D->fname == NULL)
+    throw("invalid input filename");
+
+  /* read the parameter file. */
+  if (!rnmrtk_read_parms(D->fname, &par))
+    throw("failed to read rnmrtk parfile for '%s'", D->fname);
+
+  /* check the word type. */
+  if (par.isflt) {
+    /* set the float flag and the word size. */
+    wordsz = sizeof(float);
+    isflt = 1;
+  }
+  else {
+    /* set the int flag and the word size. */
+    wordsz = sizeof(int32_t);
+    isflt = 0;
+  }
+
+  /* get the header and block byte offsets. */
+  offhead = par.nheader;
+  offblk = par.nbegin;
+  offend = par.nend;
+
+  /* get the total file size. */
+  ntrue = bytes_size(D->fname);
+
+  /* check that the file size is valid. */
+  if (ntrue <= offhead)
+    throw("invalid data file size of %u bytes", ntrue);
+
+  /* get (or compute) the number of words per block. */
+  if (par.reclen) {
+    /* get the number from the parm structure. */
+    nwords = par.reclen;
+
+    /* determine how many blocks are in the file. */
+    nblks = (ntrue - offhead) / (offblk + nwords * wordsz + offend);
+  }
+  else {
+    /* assume a single data block. */
+    nblks = 1;
+
+    /* determine the size of the data block. */
+    nwords = (ntrue - offhead - offblk - offend) / wordsz;
+  }
+
+  /* check that the computed blocking information matches the file size. */
+  ncalc = offhead + nblks * (offblk + nwords * wordsz + offend);
+  if (ncalc != ntrue)
+    throw("expected file size %uB does not match actual %uB", ncalc, ntrue);
+
+  /* check if block alignment is required. */
+  if (offend) {
+    /* build the block alignment size. */
+    nalign = offblk + nwords * wordsz + offend;
+  }
+  else
+    nalign = 0;
+
+  /* open the input file for reading. */
+  fh = fopen(D->fname, "rb");
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", D->fname);
+
+  /* read data from the file into the output array. */
+  if (!hx_array_fread_raw(fh, &D->array, par.endian, wordsz, isflt, offhead,
+                          offblk, nblks, nwords, nalign))
+    throw("failed to read raw data from '%s'", D->fname);
+
+  /* close the input file. */
+  fclose(fh);
 
   /* return success. */
   return 1;

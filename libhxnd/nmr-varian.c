@@ -27,41 +27,71 @@
  */
 #define N_BUF  256
 
-/* varian_check_dir(): checks a directory for the requisite files for
- * loading varian-formatted raw data.
- * @dname: the input directory name.
+/* define constant parameter type characters for procpar file parsing.
  */
-int varian_check_dir (const char *dname) {
-  /* declare a few required variables. */
-  int have_procpar, have_fid;
-  unsigned int n_fname;
-  char *fname;
+#define VARIAN_PARMTYPE_INT     'i'
+#define VARIAN_PARMTYPE_INTS    'I'
+#define VARIAN_PARMTYPE_FLOAT   'f'
+#define VARIAN_PARMTYPE_STRING  's'
 
-  /* allocate a string for checking file existence. */
-  n_fname = strlen(dname) + 16;
-  fname = (char*) malloc(n_fname * sizeof(char));
+/* define bit masks for file header status words.
+ */
+#define VARIAN_HDR_S_DATA     0x0001
+#define VARIAN_HDR_S_SPEC     0x0002
+#define VARIAN_HDR_S_32       0x0004
+#define VARIAN_HDR_S_FLOAT    0x0008
+#define VARIAN_HDR_S_COMPLEX  0x0010
+#define VARIAN_HDR_S_HYPERCX  0x0020
+#define VARIAN_HDR_S_ACQPAR   0x0080
+#define VARIAN_HDR_S_SECND    0x0100
+#define VARIAN_HDR_S_TRANSF   0x0200
+#define VARIAN_HDR_S_NP       0x0800
+#define VARIAN_HDR_S_NF       0x1000
+#define VARIAN_HDR_S_NI       0x2000
+#define VARIAN_HDR_S_NI2      0x4000
 
-  /* check that the string was allocated. */
-  if (!fname)
-    throw("failed to allocate %u-char buffer", n_fname);
+/* varian_hdr_file: structure definition for varian file headers.
+ */
+struct varian_hdr_file {
+  uint32_t nblocks;  /* number of data blocks. */
+  uint32_t ntraces;  /* number of traces per block. */
+  uint32_t np;       /* number of elements per trace. */
+  uint32_t ebytes;   /* number of bytes per element. */
+  uint32_t tbytes;   /* number of bytes per trace. */
+  uint32_t bbytes;   /* number of bytes per block. */
+  uint16_t vers_id;  /* software version, file_id status bits. */
+  uint16_t status;   /* status of whole file. */
+  uint32_t nheaders; /* number of block headers per block. */
+};
 
-  /* check if the procpar file exists. */
-  snprintf(fname, n_fname, "%s/procpar", dname);
-  have_procpar = bytes_fexist(fname);
+/* varian_hdr_blk: structure definition for varian block headers.
+ */
+struct varian_hdr_blk {
+  uint16_t scale;    /* scaling factor. */
+  uint16_t status;   /* status of data in block. */
+  uint16_t index;    /* block index. */
+  uint16_t mode;     /* mode of data in block. */
+  uint32_t ctcount;  /* ct value for fid. */
+  float lpval;       /* f2 (2D-f1) left phase in phasefile. */
+  float rpval;       /* f2 (2D-f1) right phase in phasefile. */
+  float lvl;         /* level drift compensation. */
+  float tlt;         /* tilt drift compensation. */
+};
 
-  /* check if the fid file exists.. */
-  snprintf(fname, n_fname, "%s/fid", dname);
-  have_fid = bytes_fexist(fname);
+/* varian_hdr_ext: structure definition for varian extended block headers.
+ */
+struct varian_hdr_ext {
+  uint16_t s_spare1;
+  uint16_t status;    /* status word for block header. */
+  uint16_t s_spare2;
+  uint16_t s_spare3;
+  uint32_t l_spare1;
+  float lpval1;       /* 2D-f2 left phase. */
+  float rpval1;       /* 2D-f2 right phase. */
+  float f_spare1;
+  float f_spare2;
+};
 
-  /* free the filename string. */
-  free(fname);
-
-  /* clear any errors that may have popped up. */
-  traceback_clear();
-
-  /* return the result. */
-  return (have_procpar && have_fid);
-}
 /* varian_read_parms(): read any number of parameters from a varian
  * 'procpar' file. each parameter requested must be provided as a
  * type char, a key string, and a result pointer.
@@ -236,13 +266,14 @@ int varian_read_parms (const char *fname, unsigned int n, ...) {
   return nid;
 }
 
-/* varian_read_hdr_file(): reads a varian data file header into a struct.
+/* varian_read_header(): reads a varian data file header into a struct.
  * @fname: the data filename.
  * @endianness: byte order result pointer.
  * @hdr: header result pointer.
  */
-int varian_read_hdr_file (const char *fname, enum byteorder *endianness,
-                          struct varian_hdr_file *hdr) {
+int varian_read_header (const char *fname,
+                        enum byteorder *endianness,
+                        struct varian_hdr_file *hdr) {
   /* declare a few required variables. */
   uint8_t *bytes;
 
@@ -291,11 +322,42 @@ int varian_read_hdr_file (const char *fname, enum byteorder *endianness,
   return 1;
 }
 
-/* varian_read(): reads a varian data file into a real linear array.
- * @fname: the input data filename.
- * @x: the output array.
+/* varian_guess(): check whether a directory contains varian-format raw data.
+ * @dname: the input directory name.
  */
-int varian_read (const char *fname, hx_array *x) {
+int varian_guess (const char *dname) {
+  /* declare a few required variables. */
+  int have_procpar, have_fid;
+  unsigned int n_fname;
+  char *fname;
+
+  /* allocate a string for checking file existence. */
+  n_fname = strlen(dname) + 16;
+  fname = (char*) malloc(n_fname * sizeof(char));
+
+  /* check that the string was allocated. */
+  if (!fname)
+    throw("failed to allocate %u-char buffer", n_fname);
+
+  /* check if the procpar file exists. */
+  snprintf(fname, n_fname, "%s/procpar", dname);
+  have_procpar = bytes_fexist(fname);
+
+  /* check if the fid file exists.. */
+  snprintf(fname, n_fname, "%s/fid", dname);
+  have_fid = bytes_fexist(fname);
+
+  /* free the filename string. */
+  free(fname);
+
+  /* return the result. */
+  return (have_procpar && have_fid);
+}
+
+/* varian_array(): read a varian raw data file into a datum array.
+ * @D: the datum structure to populate.
+ */
+int varian_array (datum *D) {
   /* declare a few required variables.
    */
   unsigned int isflt, nblk, szblk, offblk, offhead;
@@ -303,9 +365,13 @@ int varian_read (const char *fname, hx_array *x) {
   enum byteorder endian;
   FILE *fh;
 
+  /* check that the filename is valid. */
+  if (D->fname == NULL)
+    throw("invalid input filename");
+
   /* read the file header. */
-  if (!varian_read_hdr_file(fname, &endian, &hdr))
-    throw("failed to read header from '%s'", fname);
+  if (!varian_read_header(D->fname, &endian, &hdr))
+    throw("failed to read header from '%s'", D->fname);
 
   /* compute block and header sizes for data loading. */
   nblk = hdr.nblocks;
@@ -317,17 +383,17 @@ int varian_read (const char *fname, hx_array *x) {
   isflt = (hdr.status & VARIAN_HDR_S_FLOAT ? 1 : 0);
 
   /* open the input file for reading. */
-  fh = fopen(fname, "rb");
+  fh = fopen(D->fname, "rb");
 
   /* check that the file was opened. */
   if (!fh)
-    throw("failed to open '%s'", fname);
+    throw("failed to open '%s'", D->fname);
 
   /* read data from the file into the output array. */
-  if (!hx_array_fread_raw(fh, x, endian, hdr.ebytes, isflt,
+  if (!hx_array_fread_raw(fh, &D->array, endian, hdr.ebytes, isflt,
                           offhead, offblk, nblk,
                           szblk / hdr.ebytes, 0))
-    throw("failed to read raw data from '%s'", fname);
+    throw("failed to read raw data from '%s'", D->fname);
 
   /* close the input file. */
   fclose(fh);
@@ -432,12 +498,12 @@ time_t varian_parse_date (const char *fname) {
   return t;
 }
 
-/* varian_fill_datum(): semi-intelligently parses varian acquisition
- * parameters into an NMR datum structure.
+/* varian_decode(): decode varian acquisition parameters into a datum
+ * structure.
+ * @D: pointer to the destination datum structure.
  * @dname: the input directory name.
- * @D: pointer to the datum struct to fill.
  */
-int varian_fill_datum (const char *dname, datum *D) {
+int varian_decode (datum *D, const char *dname) {
   /* declare variables for filename generation:
    * @n_fname: buffer sizes of filename strings.
    * @fname_data: the 'fid' filename string.

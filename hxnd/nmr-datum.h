@@ -30,11 +30,6 @@
 /* include the byte-level data header. */
 #include <hxnd/bytes.h>
 
-/* define a magic number to use when determining byte order of binary-format
- * NMR datum files. (in L.E. = 'HXNDDATA')
- */
-#define NMR_DATUM_MAGIC  0x41544144444e5848
-
 /* define a value for datum core array dimension indices that indicates no
  * corresponding array dimension exists.
  */
@@ -134,47 +129,10 @@ typedef struct {
 }
 datum;
 
-/* include the nmr format headers. */
-#include <hxnd/nmr-bruker.h>
-#include <hxnd/nmr-varian.h>
-#include <hxnd/nmr-pipe.h>
-#include <hxnd/nmr-ucsf.h>
-#include <hxnd/nmr-nv.h>
-#include <hxnd/nmr-rnmrtk.h>
+/* include the nmr format conversion header. */
+#include <hxnd/nmr-datum-type.h>
 
-/* function declarations: */
-
-void datum_init (datum *D);
-
-void datum_free (datum *D);
-
-enum datum_type datum_lookup_type (const char *name);
-
-enum datum_type datum_guess_type (const char *fname);
-
-int datum_print (datum *D, const char *fname);
-
-int datum_check_magic (const char *fname);
-
-int datum_fwrite_formatted (datum *D, FILE *fh, enum datum_type fmt);
-
-int datum_fwrite_text (datum *D, FILE *fh);
-
-int datum_fwrite (datum *D, FILE *fh);
-
-int datum_fread (datum *D, FILE *fh, int read_array);
-
-int datum_save (datum *D, const char *fname);
-
-int datum_load (datum *D, const char *fname, int load_array);
-
-int datum_get_dim_parameter (datum *D, const char *name, unsigned int d,
-                             void *parm);
-
-int datum_set_dim_parameter (datum *D, const char *name, unsigned int d,
-                             const char *parm);
-
-int datum_reorder_dims (datum *D, int *order);
+/* function declarations (nmr-datum.c): */
 
 int datum_refactor_array (datum *D);
 
@@ -190,7 +148,27 @@ int datum_resize_array (datum *D, int *sz);
 
 int datum_slice_array (datum *D, int *lower, int *upper);
 
-int datum_fill (datum *D, const char *fname);
+/* function declarations (nmr-datum-mem.c): */
+
+void datum_init (datum *D);
+
+void datum_free (datum *D);
+
+/* function declarations (nmr-datum-io.c): */
+
+int datum_load (datum *D, const char *fname);
+
+int datum_print (datum *D, const char *fname);
+
+/* function declarations (nmr-datum-dims.c): */
+
+int datum_get_dim_parameter (datum *D, const char *name, unsigned int d,
+                             void *parm);
+
+int datum_set_dim_parameter (datum *D, const char *name, unsigned int d,
+                             const char *parm);
+
+int datum_reorder_dims (datum *D, int *order);
 
 #endif /* __HXND_NMR_DATUM_H__ */
 
