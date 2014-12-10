@@ -813,9 +813,9 @@ int pipe_decode (datum *D, const char *fname) {
   return 1;
 }
 
-/* pipe_fwrite_dim(): convert the contents of a datum core array into an
- * array of pipe-format coefficients. recursively drop from cubes, to
- * planes, to traces, and finally to points.
+/* pipe_fwrite_dim(): write the contents of a datum core array into an
+ * output file stream of pipe-format coefficients. recursively drop from
+ * cubes, to planes, to traces, and finally to points.
  * @D: pointer to the source datum structure.
  * @dim: current datum dimension in the recursion.
  * @n0: current coefficient offset in the recursion.
@@ -845,10 +845,10 @@ int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr, FILE *fh) {
   num = D->array.sz[k];
 
   /* check if we've reached the lowest dimension. */
-  if (dim == 0) {
+  if (k == 0) {
     /* store the real points of the current trace. */
-    for (arr[dim] = 0; arr[dim] < num; arr[dim]++) {
-      /* pack the linear index and store the coefficient. */
+    for (arr[k] = 0; arr[k] < num; arr[k]++) {
+      /* pack the linear index and get the coefficient. */
       hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
       f = (float) D->array.x[D->array.n * idx + n0];
 
@@ -860,8 +860,8 @@ int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr, FILE *fh) {
     /* check if the trace is complex. */
     if (D->dims[dim].cx) {
       /* store the imaginary points of the current trace. */
-      for (arr[dim] = 0; arr[dim] < num; arr[dim]++) {
-        /* pack the linear index and store the coefficient. */
+      for (arr[k] = 0; arr[k] < num; arr[k]++) {
+        /* pack the linear index and get the coefficient. */
         hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
         f = (float) D->array.x[D->array.n * idx + n0 + n];
 
@@ -873,13 +873,14 @@ int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr, FILE *fh) {
   }
   else {
     /* recurse into the lower dimensions. */
-    for (arr[dim] = 0; arr[dim] < num; arr[dim]++) {
+    for (arr[k] = 0; arr[k] < num; arr[k]++) {
       /* recurse the real component. */
-      pipe_fwrite_dim(D, dim - 1, n0, arr, fh);
+      if (!pipe_fwrite_dim(D, dim - 1, n0, arr, fh))
+        return 0;
 
       /* recurse the imaginary component. */
-      if (D->dims[dim].cx)
-        pipe_fwrite_dim(D, dim - 1, n0 + n, arr, fh);
+      if (D->dims[dim].cx && !pipe_fwrite_dim(D, dim - 1, n0 + n, arr, fh))
+        return 0;
     }
   }
 

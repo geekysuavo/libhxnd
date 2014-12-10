@@ -367,6 +367,137 @@ int rnmrtk_read_parms (const char *fname, struct rnmrtk_parms *par) {
   return 1;
 }
 
+/* rnmrtk_write_parms(): write the parameter file corresponding to an RNMRTK
+ * data file.
+ * @fname: the data filename.
+ * @par: pointer to the input parameter structure.
+ */
+int rnmrtk_write_parms (const char *fname, struct rnmrtk_parms *par) {
+  /* declare a few required variables:
+   * @i: general-purpose loop counter.
+   * @pfname: parameter file name.
+   * @fh: parameter file handle.
+   */
+  unsigned int i;
+  char *pfname;
+  FILE *fh;
+
+  /* build the parameter filename string. */
+  pfname = rnmrtk_parfile(fname);
+
+  /* check that the string was created successfully. */
+  if (!pfname)
+    throw("failed to allocate parameter filename");
+
+  /* open the parameter file. */
+  fh = fopen(pfname, "wb");
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", pfname);
+
+  /* write the format line required fields. */
+  fprintf(fh, "%s %s %s", RNMRTK_PARLINE_FORMAT,
+          par->endian == BYTES_ENDIAN_BIG ? RNMRTK_ENDIAN_BIG :
+          par->endian == BYTES_ENDIAN_LITTLE ? RNMRTK_ENDIAN_LITTLE :
+          bytes_native(BYTES_ENDIAN_BIG)
+            ? RNMRTK_ENDIAN_BIG
+            : RNMRTK_ENDIAN_LITTLE,
+          par->isflt ? RNMRTK_WTYPE_FLT : RNMRTK_WTYPE_INT);
+
+  /* write the format line header size. */
+  if (par->nheader || par->reclen || par->nbegin || par->nend)
+    fprintf(fh, " %u", par->nheader);
+
+  /* write the format line record length. */
+  if (par->reclen || par->nbegin || par->nend)
+    fprintf(fh, " %u", par->reclen);
+
+  /* write the format line block header size. */
+  if (par->nbegin || par->nend)
+    fprintf(fh, " %u", par->nbegin);
+
+  /* write the format line block footer size. */
+  if (par->nend)
+    fprintf(fh, " %u", par->nend);
+
+  /* end the format line. */
+  fprintf(fh, "\n");
+
+  /* write the 'dom' line. */
+  fprintf(fh, "%s", RNMRTK_PARLINE_DOM);
+  for (i = 0; i < par->nd; i++)
+    fprintf(fh, " t%d", par->ord[i]);
+
+  /* end the 'dom' line. */
+  fprintf(fh, "\n");
+
+  /* white the 'n' line. */
+  fprintf(fh, "%s", RNMRTK_PARLINE_N);
+  for (i = 0; i < par->nd; i++)
+    fprintf(fh, " %d %s", par->sz[i],
+            par->cx[i]
+              ? RNMRTK_NTYPE_COMPLEX
+              : RNMRTK_NTYPE_REAL);
+
+  /* end the 'n' line. */
+  fprintf(fh, "\n");
+
+  /* write the 'layout' line. */
+  fprintf(fh, "%s", RNMRTK_PARLINE_LAYOUT);
+  for (i = 0; i < par->nd; i++)
+    fprintf(fh, " t%d:%d", i + 1, par->layout[i][1]);
+
+  /* end the 'layout' line. */
+  fprintf(fh, "\n");
+
+  /* write the 'sf' line. */
+  fprintf(fh, "%s", RNMRTK_PARLINE_SF);
+  for (i = 0; i < par->nd; i++)
+    fprintf(fh, " %f", par->sf[i]);
+
+  /* end the 'sf' line. */
+  fprintf(fh, "\n");
+
+  /* write the 'ppm' line. */
+  fprintf(fh, "%s", RNMRTK_PARLINE_PPM);
+  for (i = 0; i < par->nd; i++)
+    fprintf(fh, " %f", par->ppm[i]);
+
+  /* end the 'ppm' line. */
+  fprintf(fh, "\n");
+
+  /* write the 'quad' line. */
+  fprintf(fh, "%s", RNMRTK_PARLINE_QUAD);
+  for (i = 0; i < par->nd; i++)
+    fprintf(fh, " %s",
+      par->quad[i] == RNMRTK_QUAD_REAL ? "real" :
+      par->quad[i] == RNMRTK_QUAD_TPPI ? RNMRTK_QUADSTR_TPPI :
+      par->quad[i] == RNMRTK_QUAD_STATES ? RNMRTK_QUADSTR_STATES :
+      par->quad[i] == RNMRTK_QUAD_STATESTPPI ? RNMRTK_QUADSTR_STATESTPPI :
+      RNMRTK_QUADSTR_STATES);
+
+  /* end the 'quad' line. */
+  fprintf(fh, "\n");
+
+  /* write the 'sw' line. */
+  fprintf(fh, "%s", RNMRTK_PARLINE_SW);
+  for (i = 0; i < par->nd; i++)
+    fprintf(fh, " %f", par->sw[i]);
+
+  /* end the 'sw' line. */
+  fprintf(fh, "\n");
+
+  /* close the parameter file. */
+  fclose(fh);
+
+  /* free the parameter filename. */
+  free(pfname);
+
+  /* return success. */
+  return 1;
+}
+
 /* rnmrtk_guess(): check a file contains rnmrtk-format data.
  * @fname: the input data file name.
  */
@@ -476,17 +607,156 @@ int rnmrtk_decode (datum *D, const char *fname) {
   return 1;
 }
 
+/* rnmrtk_fwrite_dim(): write the contents of a datum core array into an
+ * output file stream of rnmrtk-format coefficients. recursively drop from
+ * cubes, to planes, to traces, and finally to points.
+ * @D: pointer to the source datum structure.
+ * @dim: current datum dimension in the recursion.
+ * @n0: current coefficient offset in the resursion.
+ * @arr: index array for looping though the datum core array.
+ * @fh: the output file handle.
+ */
+int rnmrtk_fwrite_dim (datum *D, unsigned int dim,
+                       int n0, int *arr,
+                       FILE *fh) {
+  /* declare a few required variables:
+   * @d: current array algebraic dimension index.
+   * @k: current array topological dimension index.
+   * @n: current array coefficient imaginary offset.
+   * @num: size along current array dimension.
+   * @idx: array linear scalar index.
+   * @f: float output value.
+   */
+  int d, k, n, num, idx;
+  float f;
+
+  /* determine the array dimension indices. */
+  d = D->dims[dim].d;
+  k = D->dims[dim].k;
+
+  /* determine the coefficient index. */
+  n = (d == DATUM_DIM_INVALID ? 0 : 1 << d);
+
+  /* compute the number of points in the dimension. */
+  num = D->array.sz[k];
+
+  /* check if we've reached the lowest dimension. */
+  if (k == 0) {
+    /* store the points of the current trace. */
+    for (arr[k] = 0; arr[k] < num; arr[k]++) {
+      /* pack the linear index. */
+      hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
+
+      /* get the real coefficient and write it out. */
+      f = (float) D->array.x[D->array.n * idx + n0];
+      if (fwrite(&f, sizeof(float), 1, fh) != 1)
+        return 0;
+
+      /* check if the trace is complex. */
+      if (D->dims[dim].cx) {
+        /* get the imaginary coefficient and write it out. */
+        f = (float) D->array.x[D->array.n * idx + n0 + n];
+        if (fwrite(&f, sizeof(float), 1, fh) != 1)
+          return 0;
+      }
+    }
+  }
+  else {
+    /* recurse into the lower dimensions. */
+    for (arr[k] = 0; arr[k] < num; arr[k]++) {
+      /* recurse the real component. */
+      if (!rnmrtk_fwrite_dim(D, dim - 1, n0, arr, fh))
+        return 0;
+
+      /* recurse the imaginary component. */
+      if (D->dims[dim].cx && !rnmrtk_fwrite_dim(D, dim - 1, n0 + n, arr, fh))
+        return 0;
+    }
+  }
+
+  /* return success. */
+  return 1;
+}
+
 /* rnmrtk_encode(): write a datum structure in rnmrtk-format to a file.
  * @D: pointer to the source datum structure.
- * @fname: the output filename.
+ * @fname: the output data filename.
  */
 int rnmrtk_encode (datum *D, const char *fname) {
   /* declare variables required for parameter output:
    * @par: structure to hold all data file parameters.
+   * @d: dimension loop counter.
+   * @fh: output data file handle.
    */
+  int n, arr[RNMRTK_MAXDIM], ord[RNMRTK_MAXDIM];
   struct rnmrtk_parms par;
+  unsigned int d;
+  FILE *fh;
 
-  /* FIXME: implement rnmrtk_encode() */
+  /* check the output filename. */
+  if (!fname)
+    throw("invalid output filename");
+
+  /* initialize the header structure. */
+  memset(&par, 0, sizeof(struct rnmrtk_parms));
+
+  /* set up the format fields in the parameter structure. */
+  par.endian = bytes_get_native();
+  par.isflt = 1;
+  par.nheader = 0;
+  par.reclen = 0;
+  par.nbegin = 0;
+  par.nend = 0;
+
+  /* set up the dimensionality in the parameter structure. */
+  par.nd = D->nd;
+
+  /* set up the dimension information. */
+  for (d = 0; d < D->nd; d++) {
+    /* set the ordering information. */
+    ord[d] = D->nd - d - 1;
+    par.ord[d] = d + 1;
+
+    /* set the dimension size. */
+    par.sz[ord[d]] = D->dims[d].sz;
+
+    /* set the dimension complex flag. */
+    par.cx[ord[d]] = D->dims[d].cx;
+
+    /* set the layout information. */
+    par.layout[ord[d]][1] = (D->dims[d].cx ? 2 : 1) * D->dims[d].sz;
+
+    /* set the spectral parameters. */
+    par.sf[ord[d]] = D->dims[d].carrier;
+    par.sw[ord[d]] = D->dims[d].width;
+    par.ppm[ord[d]] = D->dims[d].offset / D->dims[d].carrier;
+
+    /* set the quadrature parameter. */
+    par.quad[ord[d]] = RNMRTK_QUAD_STATES;
+    if (D->dims[d].alt) par.quad[ord[d]] &= RNMRTK_QUAD_TPPI;
+  }
+
+  /* write a parameter file to accompany the output data. */
+  if (!rnmrtk_write_parms(fname, &par))
+    throw("failed to write parameters for '%s'", fname);
+
+  /* initialize the data buffer index. */
+  arr[0] = arr[1] = arr[2] = arr[3] = 0;
+  n = 0;
+
+  /* open the output data file. */
+  fh = fopen(fname, "wb");
+
+  /* check that the file was opened. */
+  if (!fh)
+    throw("failed to open '%s'", fname);
+
+  /* write coefficients out from the datum core array. */
+  if (!rnmrtk_fwrite_dim(D, D->nd - 1, n, arr, fh))
+    throw("failed to convert core array to rnmrtk format");
+
+  /* close the output file. */
+  fclose(fh);
 
   /* return success. */
   return 1;
