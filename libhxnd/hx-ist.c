@@ -360,6 +360,7 @@ int hx_array_istnd (hx_array *x, int dsched, int nsched, int *sched,
  * @niter: number of iterations to perform.
  * @thresh: threshold magnitude.
  */
+/* FIXME: correct all failures in hx_array_ist() */
 int hx_array_ist (hx_array *x, int dsched, int nsched, int *sched,
                   int niter, real thresh) {
   /* determine which reconstruction function to use. */
