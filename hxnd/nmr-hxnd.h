@@ -31,11 +31,6 @@
 #include <hxnd/nmr-datum.h>
 #include <hxnd/bytes.h>
 
-/* define a magic number to use when determining byte order of binary-format
- * NMR datum files. (in L.E. = 'HXNDDATA')
- */
-#define HXND_MAGIC  0x41544144444e5848
-
 /* function declarations: */
 
 int hxnd_guess (const char *fname);

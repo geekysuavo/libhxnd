@@ -23,6 +23,11 @@
 /* include the hx native format header. */
 #include <hxnd/nmr-hxnd.h>
 
+/* define a magic number to use when determining byte order of binary-format
+ * NMR datum files. (in L.E. = 'HXNDDATA')
+ */
+#define HXND_MAGIC  0x41544144444e5848
+
 /* define the number of (u64) members in the header and dimension sections of
  * binary datum files.
  */
