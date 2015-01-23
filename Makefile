@@ -85,6 +85,11 @@ dist: clean
 	 gzip -9 $${projdir}-$${isodate}.tar && \
 	 cd $${projdir} >/dev/null
 
+# diff: target to diff all tracked changes in the git repo.
+diff:
+	@echo " GIT diff"
+	@git diff --color
+
 # git: target to commit and push all changes to github.
 git: clean
 	@echo " GIT commit"

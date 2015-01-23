@@ -36,20 +36,23 @@ int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest,
   int i, j, n, xd, xn;
   real maxnorm, tau;
 
-  /* determine the number of norm elements. */
-  n = xsrc->len / xsrc->n;
-
   /* locally store some array features. */
   xd = xsrc->d;
   xn = xsrc->n;
 
-  /* compute the 'inverse' of the threshold value. */
+  /* determine the number of norm elements. */
+  n = xsrc->len / xn;
+
+  /* compute the 'inverse' of the threshold value. this is the factor by
+   * which the thresholded source values are multiplied each time, thus
+   * it must be negative.
+   */
   tau = -(1.0 - thresh);
 
   /* loop over the elements to compute the norms. */
-  for (i = 0, maxnorm = 0.0; i < n; i++) {
+  for (i = 0, j = 0, maxnorm = 0.0; i < n; i++, j += xn) {
     /* compute the norm. */
-    norms[i] = hx_data_real_norm(xsrc->x + i * xsrc->n, xsrc->d, xsrc->n);
+    norms[i] = hx_data_real_norm(xsrc->x + j, xd, xn);
 
     /* see if the new norm is the largest so far. */
     if (norms[i] > maxnorm)
@@ -79,7 +82,8 @@ int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest,
  * two-dimensional array using iterative soft thresholding.
  * see hx_array_ist() for details.
  */
-int hx_array_ist1d (hx_array *x, int nsched, int *sched,
+int hx_array_ist1d (hx_array *x, int *dx, int *kx,
+                    int nsched, int *sched,
                     int niter, real thresh) {
   /* declare a few required variables:
    * @iiter: iteration loop counter.
@@ -90,6 +94,7 @@ int hx_array_ist1d (hx_array *x, int nsched, int *sched,
   /* @nnorms: number of scalar elements in @y.
    * @nzeros: number of unscheduled elements in @y.
    * @nbytes: number of bytes per hypercomplex scalar.
+   * @zeros: linear indices of all unscheduled elements in @y.
    */
   int d, k, sz, nnorms, nzeros, nbytes, *zeros;
 
@@ -98,7 +103,7 @@ int hx_array_ist1d (hx_array *x, int nsched, int *sched,
   k = 1;
 
   /* get the slice length. */
-  sz = x->sz[1];
+  sz = x->sz[kx[1]];
 
   /* get the byte count per hypercomplex scalar. */
   nbytes = x->n * sizeof(real);
@@ -121,21 +126,18 @@ int hx_array_ist1d (hx_array *x, int nsched, int *sched,
   #pragma omp parallel
   {
     /* declare a few required thread-local variables:
+     * @w: temporary twiddle-factor scalar.
+     * @swp: temporary swap value scalar.
+     * @y: currently sliced sub-array.
+     * @z: output result sub-array.
      * @j: array skipped iteration master index.
      * @l: unscheduled array loop index.
      * @idx: packed linear array index.
-     */
-    int j, l, idx;
-
-    /* @y: currently sliced sub-array.
-     * @z: output result sub-array.
+     * @ynorms: norms of all values in @y.
      */
     hx_scalar w, swp;
     hx_array y, z;
-
-    /* @ynorms: norms of all values in @y.
-     * @zeros: linear indices of all unscheduled elements in @y.
-     */
+    int j, l, idx;
     real *ynorms;
 
     /* allocate temporary scalars for use in the fft. */
@@ -164,7 +166,7 @@ int hx_array_ist1d (hx_array *x, int nsched, int *sched,
       /* loop over the iterations. */
       for (iiter = 0; iiter < niter; iiter++) {
         /* fourier transform the sliced vector array. */
-        if (!hx_array_fft1d(&y, 1, HX_FFT_FORWARD, &w, &swp))
+        if (!hx_array_fft1d(&y, dx[1], HX_FFT_FORWARD, &w, &swp))
           raise("failed to execute forward fft");
 
         /* threshold the frequency-domain vector. */
@@ -172,7 +174,7 @@ int hx_array_ist1d (hx_array *x, int nsched, int *sched,
           raise("failed to threshold sub-array %d", j);
 
         /* inverse fourier transform the sliced vector array. */
-        if (!hx_array_fft1d(&y, 1, HX_FFT_REVERSE, &w, &swp))
+        if (!hx_array_fft1d(&y, dx[1], HX_FFT_REVERSE, &w, &swp))
           raise("failed to execute inverse fft");
 
         /* reset the time-domain non-sampled points. */
@@ -180,9 +182,16 @@ int hx_array_ist1d (hx_array *x, int nsched, int *sched,
           memset(y.x + y.n * zeros[l], 0, nbytes);
       }
 
-      /* store the modified sliced vector back into the array. */
+      /* inverse fourier transform the reconstructed vector. */
+      if (!hx_array_fft1d(&z, dx[1], HX_FFT_REVERSE, &w, &swp))
+        raise("failed to execute final inverse fft");
+
+      /* store the reconstructed vector back into the array. */
       if (!hx_array_store_vector(x, &z, 1, idx))
         raise("failed to store vector %d", j);
+
+      /* re-initialize the contents of the reconstructed vector. */
+      hx_array_zero(&z);
     }
 
     /* free the d-norm array. */
@@ -208,7 +217,9 @@ int hx_array_ist1d (hx_array *x, int nsched, int *sched,
  * an array having at least three dimensions using iterative soft thresholding.
  * see hx_array_ist() for details.
  */
-int hx_array_istnd (hx_array *x, int dsched, int nsched, int *sched,
+/* FIXME: correct any errors in hx_array_istnd() */
+int hx_array_istnd (hx_array *x, int *dx, int *kx,
+                    int dsched, int nsched, int *sched,
                     int niter, real thresh) {
   /* declare a few required variables:
    * @iiter: iteration loop counter.
@@ -307,7 +318,7 @@ int hx_array_istnd (hx_array *x, int dsched, int nsched, int *sched,
       /* loop over the sliced dimensions. */
       for (j = 1; j < k; j++) {
         /* forward Fourier-transform the slice. */
-        if (!hx_array_fft(&y, j, j))
+        if (!hx_array_fft(&y, dx[j], kx[j]))
           throw("failed to apply forward fft");
       }
 
@@ -318,7 +329,7 @@ int hx_array_istnd (hx_array *x, int dsched, int nsched, int *sched,
       /* loop over the sliced dimensions. */
       for (j = 1; j < k; j++) {
         /* inverse Fourier-transform the slice. */
-        if (!hx_array_ifft(&y, j, j))
+        if (!hx_array_ifft(&y, dx[j], kx[j]))
           throw("failed to apply inverse fft");
       }
 
@@ -330,6 +341,9 @@ int hx_array_istnd (hx_array *x, int dsched, int nsched, int *sched,
     /* store the reconstructed slice back into the input array. */
     if (!hx_array_store(x, &z, lower, upper))
       throw("failed to store in sub-array %d", i);
+
+    /* re-initialize the reconstructed slice for the next round. */
+    hx_array_zero(&z);
   }
 
   /* free the array of un-scheduled indices. */
@@ -354,23 +368,25 @@ int hx_array_istnd (hx_array *x, int dsched, int nsched, int *sched,
 /* hx_array_ist(): performs iterative soft thresholding to reconstruct
  * nonuniformly subsampled time-domain data in a hypercomplex array.
  * @x: pointer to the array to reconstruct.
+ * @dx: array of algebraic dimension indices in @x.
+ * @kx: array of topological dimension indices in @x.
  * @dsched: number of reconstruction dimensions.
  * @nsched: number of sampled @dsched-dimensional points.
  * @sched: array of @nsched @nnus-dimensional indices.
  * @niter: number of iterations to perform.
  * @thresh: threshold magnitude.
  */
-/* FIXME: correct all failures in hx_array_ist() */
-int hx_array_ist (hx_array *x, int dsched, int nsched, int *sched,
+int hx_array_ist (hx_array *x, int *dx, int *kx,
+                  int dsched, int nsched, int *sched,
                   int niter, real thresh) {
   /* determine which reconstruction function to use. */
   if (dsched == 1) {
     /* execute the one-dimensional function. */
-    return hx_array_ist1d(x, nsched, sched, niter, thresh);
+    return hx_array_ist1d(x, dx, kx, nsched, sched, niter, thresh);
   }
   else if (dsched > 1) {
     /* execute the multidimensional function. */
-    return hx_array_istnd(x, dsched, nsched, sched, niter, thresh);
+    return hx_array_istnd(x, dx, kx, dsched, nsched, sched, niter, thresh);
   }
 
   /* return failure, because @dsched < 1 */

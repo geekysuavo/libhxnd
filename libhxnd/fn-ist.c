@@ -44,7 +44,8 @@ int fn_execute_ist (datum *D, const int dim, const char *argstr) {
 
   /* declare a few required variables. */
   unsigned int d;
-  int nnus;
+  int ncx, nnus;
+  int *dv, *kv;
 
   /* parse the function argument string. */
   if (!fn_scan_args(argstr, fn_argdef_ist, &thresh, &iters))
@@ -58,21 +59,44 @@ int fn_execute_ist (datum *D, const int dim, const char *argstr) {
   for (d = 0, nnus = 0; d < D->nd; d++)
     nnus += (D->dims[d].nus ? 1 : 0);
 
+  /* count the number of complex dimensions. */
+  for (d = 1, ncx = 0; d < D->nd; d++)
+    ncx += (D->dims[d].cx ? 1 : 0);
+
   /* check that the nonuniform dimension indices match expectations:
-   * a. first dimension is uniformly sampled.
-   * b. all other dimensions are subsampled.
+   * a. first dimension is uniformly sampled, and either real or complex.
+   * b. all other dimensions are subsampled and complex.
    */
-  if (D->dims[0].nus || nnus != D->nd - 1)
+  if (D->dims[0].nus || nnus != D->nd - 1 || ncx != D->nd - 1)
     throw("unexpected initial conditions for nus reconstruction");
 
   /* check that the nonuniform dimension count matches the schedule. */
   if (nnus != D->d_sched)
     throw("unexpected nus dimension count (%d != %d)", nnus, D->d_sched);
 
+  /* allocate the topological and algebraic dimension index arrays. */
+  dv = hx_array_index_alloc(D->nd);
+  kv = hx_array_index_alloc(D->nd);
+
+  /* ensure the index arrays were allocated. */
+  if (!dv || !kv)
+    throw("failed to allocate dimension index arrays");
+
+  /* store dimension information into the index arrays. */
+  for (d = 0; d < D->nd; d++) {
+    /* store the algebraic and topological dimension indices. */
+    dv[d] = D->dims[d].d;
+    kv[d] = D->dims[d].k;
+  }
+
   /* execute the reconstruction. */
-  if (!hx_array_ist(&D->array, D->d_sched, D->n_sched,
-                    D->sched, iters, thresh))
+  if (!hx_array_ist(&D->array, dv, kv, D->d_sched, D->n_sched, D->sched,
+                    iters, thresh))
     throw("failed to perform ist reconstruction");
+
+  /* free the allocated index arrays. */
+  free(dv);
+  free(kv);
 
   /* return success. */
   return 1;
