@@ -217,7 +217,6 @@ int hx_array_ist1d (hx_array *x, int *dx, int *kx,
  * an array having at least three dimensions using iterative soft thresholding.
  * see hx_array_ist() for details.
  */
-/* FIXME: correct any errors in hx_array_istnd() */
 int hx_array_istnd (hx_array *x, int *dx, int *kx,
                     int dsched, int nsched, int *sched,
                     int niter, real thresh) {
@@ -247,7 +246,7 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
   int nbytes, nzeros, *zeros;
 
   /* get the number of reconstructions required. */
-  n = x->sz[0];
+  n = x->sz[kx[0]];
 
   /* get the slice dimensionalities. */
   d = x->d;
@@ -265,7 +264,7 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
 
   /* build the slice size array. */
   for (i = 1, sz[0] = 1; i < k; i++)
-    sz[i] = x->sz[i];
+    sz[i] = x->sz[kx[i]];
 
   /* allocate the bounding array indices. */
   lower = hx_array_index_alloc(k);
@@ -299,7 +298,7 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
   /* build the bounding arrays. */
   for (i = 1; i < k; i++) {
     /* store the upper and lower bound. */
-    upper[i] = x->sz[i] - 1;
+    upper[i] = x->sz[kx[i]] - 1;
     lower[i] = 0;
   }
 
@@ -317,7 +316,7 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
     for (iiter = 0; iiter < niter; iiter++) {
       /* loop over the sliced dimensions. */
       for (j = 1; j < k; j++) {
-        /* forward Fourier-transform the slice. */
+        /* forward fourier transform the slice. */
         if (!hx_array_fft(&y, dx[j], kx[j]))
           throw("failed to apply forward fft");
       }
@@ -328,7 +327,7 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
 
       /* loop over the sliced dimensions. */
       for (j = 1; j < k; j++) {
-        /* inverse Fourier-transform the slice. */
+        /* inverse fourier transform the slice. */
         if (!hx_array_ifft(&y, dx[j], kx[j]))
           throw("failed to apply inverse fft");
       }
@@ -336,6 +335,13 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
       /* reset the time-domain non-sampled points. */
       for (j = 0; j < nzeros; j++)
         memset(y.x + y.n * zeros[j], 0, nbytes);
+    }
+
+    /* loop over the sliced dimensions. */
+    for (j = 1; j < k; j++) {
+      /* inverse fourier transform the reconstructed slice. */
+      if (!hx_array_ifft(&z, dx[j], kx[j]))
+        throw("failed to apply final inverse fft");
     }
 
     /* store the reconstructed slice back into the input array. */
