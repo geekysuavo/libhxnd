@@ -23,42 +23,181 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_def: function definition structure for holding all available function
- * names and pointers.
+/* include the function argument definitions header. */
+#include <hxnd/fn-args.h>
+
+/* functions: local table of all available function names, pointers
+ * and argument definitions.
  */
-struct fn_def {
-  /* @name: the function name string.
-   * @fn: the function pointer.
+static fn functions[] = {
+  { FN_NAME_ABS,      &fn_abs,      NULL },
+  { FN_NAME_ADD,      &fn_add,      fn_args_add },
+  { FN_NAME_COMPLEX,  &fn_complex,  NULL },
+  { FN_NAME_CUT,      &fn_cut,      fn_args_cut },
+  { FN_NAME_FFT,      &fn_fft,      fn_args_fft },
+  { FN_NAME_HT,       &fn_ht,       NULL },
+  { FN_NAME_IST,      &fn_ist,      fn_args_ist },
+  { FN_NAME_PHASE,    &fn_phase,    fn_args_phase },
+  { FN_NAME_REAL,     &fn_real,     NULL },
+  { FN_NAME_RESIZE,   &fn_resize,   fn_args_resize },
+  { FN_NAME_SCALE,    &fn_scale,    fn_args_scale },
+  { FN_NAME_SHIFT,    &fn_shift,    fn_args_shift },
+  { FN_NAME_WINDOW,   &fn_window,   fn_args_window },
+  { FN_NAME_ZEROFILL, &fn_zerofill, fn_args_zerofill },
+  { NULL,             NULL,         NULL }
+};
+
+/* fn_args_get(): retrieve an argument value from an argument definition
+ * array.
+ * @argdef: the argument definition array.
+ * @i: the argument index to retrieve.
+ * @val: pointer to the output value.
+ */
+int fn_args_get (const fn_arg *argdef, const int i, void *val) {
+  /* declare a required variable. */
+  int n;
+
+  /* ensure the argdef array index is in bounds. */
+  for (n = 0; argdef[n].name; n++) {}
+  if (i >= n)
+    throw("argument index %d out of bounds [0,%d)", i, n);
+
+  /* determine the type of the argument value. */
+  switch (argdef[i].type) {
+    /* integer. */
+    case FN_VALTYPE_INT:
+      *((int*) val) = argdef[i].val.i;
+      break;
+
+    /* int-array. */
+    case FN_VALTYPE_INTS:
+      *((int**) val) = argdef[i].val.iv;
+      break;
+
+    /* boolean. */
+    case FN_VALTYPE_BOOL:
+      *((int*) val) = argdef[i].val.b;
+      break;
+
+    /* float. */
+    case FN_VALTYPE_FLOAT:
+      *((real*) val) = argdef[i].val.f;
+      break;
+
+    /* float-array. */
+    case FN_VALTYPE_FLOATS:
+      *((real**) val) = argdef[i].val.fv;
+      break;
+
+    /* string. */
+    case FN_VALTYPE_STRING:
+      *((char**) val) = argdef[i].val.s;
+      break;
+
+    /* other. */
+    default:
+      throw("unsupported argument type");
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* fn_args_set(): store an argument value into an argument definition array.
+ * @argdef: the argument definition array.
+ * @i: the argument index to retrieve.
+ * @val: pointer to the output value.
+ */
+int fn_args_set (fn_arg *argdef, const int i, void *val) {
+  /* declare a required variable. */
+  int n;
+
+  /* ensure the argdef array index is in bounds. */
+  for (n = 0; argdef[n].name; n++) {}
+  if (i >= n)
+    throw("argument index %d out of bounds [0,%d)", i, n);
+
+  /* determine the type of the argument value. */
+  switch (argdef[i].type) {
+    /* integer. */
+    case FN_VALTYPE_INT:
+      argdef[i].val.i = *((int*) val);
+      break;
+
+    /* int-array. */
+    case FN_VALTYPE_INTS:
+      argdef[i].val.iv = *((int**) val);
+      break;
+
+    /* boolean. */
+    case FN_VALTYPE_BOOL:
+      argdef[i].val.b = *((int*) val);
+      break;
+
+    /* float. */
+    case FN_VALTYPE_FLOAT:
+      argdef[i].val.f = *((real*) val);
+      break;
+
+    /* float-array. */
+    case FN_VALTYPE_FLOATS:
+      argdef[i].val.fv = *((real**) val);
+      break;
+
+    /* string. */
+    case FN_VALTYPE_STRING:
+      argdef[i].val.s = *((char**) val);
+      break;
+
+    /* other. */
+    default:
+      throw("unsupported argument type");
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* fn_args_get_all(): retrieve the values of every argument in an argument
+ * definition array.
+ * @argdef: the argument definition array to pull values from.
+ * @...: result pointers to store argument values into.
+ */
+int fn_args_get_all (const fn_arg *argdef, ...) {
+  /* declare a few required variables:
+   * @vl: variable argument list structure.
+   * @val: result pointer of the currently indexed argument.
+   * @defi: argument definition array index.
    */
-  const char *name;
-  int (*fn) (datum *D, const int dim, const char *argstr);
-};
+  va_list vl;
+  void *val;
+  int defi;
 
-/* functions: local table of all available function names and pointers.
- */
-static const struct fn_def functions[] = {
-  { FN_NAME_ABS,      &fn_execute_abs },
-  { FN_NAME_ADD,      &fn_execute_add },
-  { FN_NAME_COMPLEX,  &fn_execute_complex },
-  { FN_NAME_CUT,      &fn_execute_cut },
-  { FN_NAME_FFT,      &fn_execute_fft },
-  { FN_NAME_HT,       &fn_execute_ht },
-  { FN_NAME_IST,      &fn_execute_ist },
-  { FN_NAME_PHASE,    &fn_execute_phase },
-  { FN_NAME_REAL,     &fn_execute_real },
-  { FN_NAME_RESIZE,   &fn_execute_resize },
-  { FN_NAME_SCALE,    &fn_execute_scale },
-  { FN_NAME_SHIFT,    &fn_execute_shift },
-  { FN_NAME_WINDOW,   &fn_execute_window },
-  { FN_NAME_ZEROFILL, &fn_execute_zerofill },
-  { NULL, NULL }
-};
+  /* initialize the variable arguments list. */
+  va_start(vl, argdef);
 
-/* fn_parse_arg_int(): parses an integer from a key-value string array.
+  /* loop over the argument definition array elements. */
+  for (defi = 0; argdef[defi].name; defi++) {
+    /* pull another result pointer from the variables arguments list. */
+    val = va_arg(vl, void*);
+
+    /* get the value from the array and store it in the result pointer. */
+    if (!fn_args_get(argdef, defi, val))
+      throw("failed to get value of argument '%s'", argdef[defi].name);
+  }
+
+  /* clean up the variable arguments list. */
+  va_end(vl);
+
+  /* return success. */
+  return 1;
+}
+
+/* fn_args_parse_int(): parses an integer from a key-value string array.
  * @v: the string array.
  * @c: the string array length.
  */
-int fn_parse_arg_int (char **v, int c) {
+int fn_args_parse_int (char **v, int c) {
   /* check the array length. */
   if (c != 2)
     throw("r-value required for integer parsing");
@@ -67,12 +206,12 @@ int fn_parse_arg_int (char **v, int c) {
   return atoi(v[1]);
 }
 
-/* fn_parse_arg_intarray(): parses an array of integers from a key-value
+/* fn_args_parse_intarray(): parses an array of integers from a key-value
  * string array.
  * @v: the string array.
  * @c: the string array length.
  */
-int *fn_parse_arg_intarray (char **v, int c) {
+int *fn_args_parse_intarray (char **v, int c) {
   /* declare a few required variables:
    */
   unsigned int i, n;
@@ -96,7 +235,7 @@ int *fn_parse_arg_intarray (char **v, int c) {
     v[1][n] = ' ';
 
   /* split the value from the string array into a new string array. */
-  strv = strsplit(v[1], ".", &n);
+  strv = strsplit(v[1], ";", &n);
 
   /* check that the split was successful. */
   if (!strv || n < 1) {
@@ -129,12 +268,12 @@ int *fn_parse_arg_intarray (char **v, int c) {
   return intv;
 }
 
-/* fn_parse_arg_bool(): parses a boolean (in the form of an integer) from
+/* fn_args_parse_bool(): parses a boolean (in the form of an integer) from
  * a key-value string array.
  * @v: the string array.
  * @c: the string array length.
  */
-int fn_parse_arg_bool (char **v, int c) {
+int fn_args_parse_bool (char **v, int c) {
   /* check the array length. */
   if (c == 1) {
     /* placing a boolean without an r-value in the arguments shall flag a
@@ -156,12 +295,12 @@ int fn_parse_arg_bool (char **v, int c) {
   return 0;
 }
 
-/* fn_parse_arg_float(): parses a floating-point number from a key-value
+/* fn_args_parse_float(): parses a floating-point number from a key-value
  * string array.
  * @v: the string array.
  * @c: the string array length.
  */
-real fn_parse_arg_float (char **v, int c) {
+real fn_args_parse_float (char **v, int c) {
   /* check the array length. */
   if (c != 2)
     throw("r-value required for float parsing");
@@ -171,13 +310,75 @@ real fn_parse_arg_float (char **v, int c) {
   return atof(v[1]);
 }
 
-/* fn_parse_arg_str(): parses a string argument from a key-value string array.
+/* fn_args_parse_floatarray(): parses an array of floating-point numbers from
+ * a key-value string array.
+ * @v: the string array.
+ * @c: the string array length.
+ */
+real *fn_args_parse_floatarray (char **v, int c) {
+  /* declare a few required variables.
+   */
+  unsigned int i, n;
+  char **strv;
+  real *fltv;
+
+  /* check the array length. */
+  if (c != 2) {
+    /* raise an exception and return nothing. */
+    raise("r-value required for float-array parsing");
+    return NULL;
+  }
+
+  /* convert the leading character to removable whitespace. */
+  if (v[1][0] == '(' || v[1][0] == '{')
+    v[1][0] = ' ';
+
+  /* convert the trailing character to removable whitespace. */
+  n = (strlen(v[1]) > 0 ? strlen(v[1]) - 1 : 0);
+  if (v[1][n] == ')' || v[1][n] == '}')
+    v[1][n] = ' ';
+
+  /* split the value from the string array into a new string array. */
+  strv = strsplit(v[1], ";", &n);
+
+  /* check that the split was successful. */
+  if (!strv || n < 1) {
+    /* raise an exception and return nothing. */
+    raise("failed to split float-array string");
+    return NULL;
+  }
+
+  /* trim whitespace from the string array. */
+  strvtrim(strv, n);
+
+  /* allocate an array of floats having the same number of elements as
+   * the string array.
+   */
+  fltv = (real*) calloc(n + 1, sizeof(real));
+  if (!fltv) {
+    /* raise an exception and return nothing. */
+    raise("failed to allocate float-array");
+    return NULL;
+  }
+
+  /* loop over the strings in the string array. */
+  for (i = 0, fltv[0] = (real) n; i < n; i++)
+    fltv[i + 1] = atof(strv[i]);
+
+  /* free the string array. */
+  strvfree(strv, n);
+
+  /* return the complete array of floats. */
+  return fltv;
+}
+
+/* fn_args_parse_str(): parses a string argument from a key-value string array.
  * this allocates a new string in memory, which needs to be freed by the
  * calling function of fn_scan_args().
  * @v: the string array.
  * @c: the string array length.
  */
-char *fn_parse_arg_str (char **v, int c) {
+char *fn_args_parse_str (char **v, int c) {
   /* declare a few required variables. */
   unsigned int n;
   char *str;
@@ -201,27 +402,19 @@ char *fn_parse_arg_str (char **v, int c) {
   return str;
 }
 
-/* fn_scan_args(): scans a processing function string and extracts all known
- * function arguments. throws an error when unknown arguments or invalid
- * argument values are supplied.
- * @argstr: the processing function string to scan.
- * @argdef: the argument definition structure. must be null-terminated.
- * @...: pointers to accepted arguments, in the order their definitions
- *       appear in @argdef.
+/* fn_args_from_string(): scan a processing function string and extract all
+ * known function arguments. when unknown arguments or invalid argument values
+ * are supplied, an error is thrown.
+ * @argdef: the argument definition array to fill from the string.
+ * @argstr: the processing function string to parse.
  */
-int fn_scan_args (const char *argstr, const fn_args *argdef, ...) {
-  /* declare variables for variable argument handling:
-   * @argi: the argument index.
-   * @vl: the variable arguments list.
-   */
-  unsigned int argi;
-  va_list vl;
-
+int fn_args_from_string (fn_arg *argdef, const char *argstr) {
   /* declare variables for argument list parsing:
    * @argv: the argument string array.
    * @argc: the argument string array length.
+   * @argi: the argument string array index.
    */
-  unsigned int argc;
+  unsigned int argc, argi;
   char **argv;
 
   /* declare variables for individual argument parsing:
@@ -231,7 +424,10 @@ int fn_scan_args (const char *argstr, const fn_args *argdef, ...) {
    */
   unsigned int valc, defi, found;
   char **valv, *noname;
-  void *ptr;
+
+  /* do not attempt to fill a null argdef array. */
+  if (!argdef)
+    return 1;
 
   /* parse the argument string into an array. */
   argv = strsplit(argstr, ",", &argc);
@@ -243,17 +439,13 @@ int fn_scan_args (const char *argstr, const fn_args *argdef, ...) {
   /* trim the string array elements. */
   strvtrim(argv, argc);
 
-  /* initialize the variable arguments list. */
-  va_start(vl, argdef);
-  valv = NULL;
-
-  /* loop over the argument definition structure entries. */
+  /* loop over the argument definition entries. */
   for (defi = 0; argdef[defi].name; defi++) {
     /* initialize the negated argument name. */
     noname = NULL;
 
     /* check if a negated argument should be searched for as well. */
-    if (argdef[defi].type == FN_ARGTYPE_BOOL) {
+    if (argdef[defi].type == FN_VALTYPE_BOOL) {
       /* build the negated string. */
       noname = (char*) malloc((strlen(argdef[defi].name) + 4) * sizeof(char));
       if (noname)
@@ -285,79 +477,112 @@ int fn_scan_args (const char *argstr, const fn_args *argdef, ...) {
       strvfree(valv, valc);
     }
 
-    /* the search was successful. pull another pointer out of the
-     * variable arguments list for result storage.
-     */
-    ptr = va_arg(vl, void*);
+    /* check if a value was found for the current argument. */
+    if (found) {
+      /* act based on the expected type of the argument. */
+      switch (argdef[defi].type) {
+        /* signed int. */
+        case FN_VALTYPE_INT:
+          argdef[defi].val.i = fn_args_parse_int(valv, valc);
+          break;
 
-    /* act based on the expected type of the argument. */
-    switch (argdef[defi].type) {
-      /* signed int. */
-      case FN_ARGTYPE_INT:
-        *((int*) ptr) = (found ? fn_parse_arg_int(valv, valc) :
-                                 atoi(argdef[defi].def));
-        break;
+        /* int array. */
+        case FN_VALTYPE_INTS:
+          argdef[defi].val.iv = fn_args_parse_intarray(valv, valc);
+          break;
 
-      /* int array. */
-      case FN_ARGTYPE_INTS:
-        *((int**) ptr) = (found ? fn_parse_arg_intarray(valv, valc) : NULL);
-        break;
+        /* boolean. */
+        case FN_VALTYPE_BOOL:
+          argdef[defi].val.b = fn_args_parse_bool(valv, valc);
+          break;
 
-      /* boolean. */
-      case FN_ARGTYPE_BOOL:
-        *((int*) ptr) = (found ? fn_parse_arg_bool(valv, valc) :
-                                 atoi(argdef[defi].def));
-        break;
+        /* float. */
+        case FN_VALTYPE_FLOAT:
+          argdef[defi].val.f = fn_args_parse_float(valv, valc);
+          break;
 
-      /* float. */
-      case FN_ARGTYPE_FLOAT:
-        *((real*) ptr) = (found ? fn_parse_arg_float(valv, valc) :
-                                  atof(argdef[defi].def));
-        break;
+        /* float array. */
+        case FN_VALTYPE_FLOATS:
+          argdef[defi].val.fv = fn_args_parse_floatarray(valv, valc);
+          break;
 
-      /* string. */
-      case FN_ARGTYPE_STRING:
-        *((char**) ptr) = (found ? fn_parse_arg_str(valv, valc) : NULL);
-        break;
+        /* string. */
+        case FN_VALTYPE_STRING:
+          argdef[defi].val.s = fn_args_parse_str(valv, valc);
+          break;
 
-      /* other... */
-      default:
-        throw("unsupported argument type '%c'", argdef[defi].type);
-    }
+        /* other... */
+        default:
+          throw("unsupported argument type '%c'", argdef[defi].type);
+      }
 
-    /* free the values string array, if required. */
-    if (found)
+      /* free the values string array, if required. */
       strvfree(valv, valc);
+    }
 
     /* free the negated value string, if required. */
     if (noname)
       free(noname);
   }
 
-  /* free the variable arguments list and the argument string array. */
+  /* free the argument string array. */
   strvfree(argv, argc);
-  va_end(vl);
 
   /* return success. */
   return 1;
 }
 
-/* fn_execute(): global processing function executor. runs the appropriate
- * fn_execute_*() processing function on the datum pointer @D, which will
- * be modified in-place.
+/* fn_args_copy(): copy an argument definition (argdef) array to a newly
+ * allocated location in memory.
+ * @argsrc: source argdef array to duplicate.
  */
-int fn_execute (datum *D,
-                const char *name,
-                const int dim,
-                const char *argstr) {
+fn_arg *fn_args_copy (const fn_arg *argsrc) {
+  /* declare a few required variables. */
+  fn_arg *args;
+  int n;
+
+  /* return nothing if the source argdef array is null. */
+  if (!argsrc)
+    return NULL;
+
+  /* compute the size of the argdef array. */
+  for (n = 0; argsrc[n].name; n++) {}
+  n = (n + 1) * sizeof(fn_arg);
+
+  /* allocate memory for the array duplicate. */
+  args = (fn_arg*) malloc(n);
+
+  /* ensure allocation was successful. */
+  if (!args) {
+    /* raise an error and return nothing. */
+    raise("failed to allocate duplicate argdef array");
+    return NULL;
+  }
+
+  /* copy the argdef contents onto the allocated memory. */
+  memcpy(args, argsrc, n);
+
+  /* return the newly allocated, duplicated argdef array. */
+  return args;
+}
+
+/* fn_lookup(): execute a name-lookup of a processing function based on
+ * a complete or partial string match.
+ * @name: function name string to search with.
+ */
+fn *fn_lookup (const char *name) {
   /* declare a few required variables. */
   int i, len1, len2, len, matches, last_match;
+  fn *func;
 
   /* initialize the match counter and index. */
   matches = 0;
   last_match = 0;
 
-  /* loop over the array of possible function names. */
+  /* initialize the function address. */
+  func = NULL;
+
+  /* loop over the array of available function names. */
   for (i = 0; functions[i].name; i++) {
     /* get the length of the strings in the comparison. */
     len1 = strlen(name);
@@ -376,19 +601,65 @@ int fn_execute (datum *D,
 
   /* check if a match was identified. */
   if (matches == 1) {
-    /* awesome. execute the function. */
-    return functions[last_match].fn(D, dim, argstr);
+    /* set the function address to the last matched address. */
+    func = &functions[last_match];
   }
   else if (matches == 0) {
     /* no match. */
-    throw("no functions matching name '%s'", name);
+    raise("no functions matching name '%s'", name);
   }
   else if (matches > 1) {
     /* multiple matches. */
-    throw("function name '%s' is ambiguous", name);
+    raise("function name '%s' is ambiguous", name);
   }
 
-  /* this should never occur. */
-  throw("unknown error calling function '%s'", name);
+  /* return the identified function. */
+  return func;
+}
+
+/* fn_execute(): global processing function executor. runs the appropriate
+ * fn_execute_*() processing function on the datum pointer @D, which will
+ * be modified in-place.
+ * @D: pointer to the datum structure to modify.
+ * @dim: dimension to apply the function along, or -1.
+ * @argstr: string of function arguments to parse.
+ */
+int fn_execute (datum *D,
+                const char *name,
+                const int dim,
+                const char *argstr) {
+  /* declare variables to hold parsed function arguments. */
+  fn_arg *args = NULL;
+  fn *func = NULL;
+  int ret;
+
+  /* look up the function address by its name. */
+  func = fn_lookup(name);
+
+  /* check if a match was identified. */
+  if (!func)
+    throw("failed to look up function '%s'", name);
+
+  /* allocate a copy of the function's argdef array. */
+  args = fn_args_copy(func->args);
+
+  /* parse the argument string into the temporary argdef array. */
+  if (!fn_args_from_string(args, argstr)) {
+    /* free the allocated argdef array. */
+    free(args);
+
+    /* throw an exception. */
+    throw("failed to parse argument string");
+  }
+
+  /* awesome. execute the function. */
+  ret = func->ptr(D, dim, args);
+
+  /* free the allocated argdef array. */
+  if (args)
+    free(args);
+
+  /* return the result of the function call. */
+  return ret;
 }
 

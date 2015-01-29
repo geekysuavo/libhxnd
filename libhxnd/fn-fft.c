@@ -23,29 +23,19 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_argdef_fft: define all accepted arguments for the 'fft' function.
- */
-static const fn_args fn_argdef_fft[] = {
-  { "alternate", FN_ARGTYPE_BOOL, "0" },
-  { "negate",    FN_ARGTYPE_BOOL, "0" },
-  { "inverse",   FN_ARGTYPE_BOOL, "0" },
-  { NULL, '\0', NULL }
-};
-
-/* fn_execute_fft(): applies a complex radix-2 fast Fourier transform.
+/* fn_fft(): applies a complex radix-2 fast Fourier transform.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_fft (datum *D, const int dim, const char *argstr) {
-  /* declare variables to hold argument values.
-   */
+int fn_fft (datum *D, const int dim, const fn_arg *args) {
+  /* declare variables to hold argument values. */
   int alt, neg, inv;
   real dir;
 
-  /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_fft, &alt, &neg, &inv))
-    throw("failed to parse fft arguments");
+  /* get the argument values from the argdef array. */
+  if (!fn_args_get_all(args, &alt, &neg, &inv))
+    throw("failed to get fft arguments");
 
   /* check the dimension index. */
   if (dim < 0 || dim >= D->nd)

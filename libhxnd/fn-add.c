@@ -23,22 +23,12 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_argdef_add: define all accepted arguments for the 'add' function.
- */
-static const fn_args fn_argdef_add[] = {
-  { "const",    FN_ARGTYPE_FLOAT,  "0.0" },
-  { "file",     FN_ARGTYPE_STRING, NULL },
-  { "scale",    FN_ARGTYPE_FLOAT,  "1.0" },
-  { "subtract", FN_ARGTYPE_BOOL,   "0" },
-  { NULL, '\0', NULL }
-};
-
-/* fn_execute_add(): adds a constant, or another file to a datum structure.
+/* fn_add(): adds a constant, or another file to a datum structure.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_add (datum *D, const int dim, const char *argstr) {
+int fn_add (datum *D, const int dim, const fn_arg *args) {
   /* declare variables to hold argument values.
    * @Dadd: datum structure (or NULL) of added hx-format file.
    * @fadd: filename string (or NULL) of added hx-format file.
@@ -52,9 +42,9 @@ int fn_execute_add (datum *D, const int dim, const char *argstr) {
   datum Dadd;
   char *fadd;
 
-  /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_add, &cadd, &fadd, &fscale, &sub))
-    throw("failed to parse add arguments");
+  /* get the argument values from the argdef array. */
+  if (!fn_args_get_all(args, &cadd, &fadd, &fscale, &sub))
+    throw("failed to get add arguments");
 
   /* check if a subtraction was specified. */
   if (sub)

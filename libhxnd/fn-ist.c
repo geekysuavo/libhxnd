@@ -23,21 +23,13 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_argdef_ist: define all accepted arguments for the 'ist' function.
- */
-static const fn_args fn_argdef_ist[] = {
-  { "thresh", FN_ARGTYPE_FLOAT, "0.9" },
-  { "iters",  FN_ARGTYPE_INT,   "200" },
-  { NULL, '\0', NULL }
-};
-
-/* fn_execute_ist(): reconstructs a nonuniformly sampled dimension using
+/* fn_ist(): reconstructs a nonuniformly sampled dimension using
  * iterative soft thresholding.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_ist (datum *D, const int dim, const char *argstr) {
+int fn_ist (datum *D, const int dim, const fn_arg *args) {
   /* declare variables to hold argument values. */
   real thresh;
   int iters;
@@ -47,9 +39,9 @@ int fn_execute_ist (datum *D, const int dim, const char *argstr) {
   int ncx, nnus;
   int *dv, *kv;
 
-  /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_ist, &thresh, &iters))
-    throw("failed to parse ist arguments");
+  /* get the argument values from the argdef array. */
+  if (!fn_args_get_all(args, &thresh, &iters))
+    throw("failed to get ist arguments");
 
   /* check that no dimension was specified. */
   if (dim >= 0)

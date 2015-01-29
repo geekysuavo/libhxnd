@@ -23,21 +23,12 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_argdef_cut: define all accepted arguments for the 'cut' function.
- */
-static const fn_args fn_argdef_cut[] = {
-  { "trace", FN_ARGTYPE_INTS, NULL },
-  { "plane", FN_ARGTYPE_INTS, NULL },
-  { NULL, '\0', NULL }
-};
-
-/* fn_execute_cut(): cut a trace or a plane from the array of a
- * datum structure.
+/* fn_cut(): cut a trace or a plane from the array of a datum structure.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_cut (datum *D, const int dim, const char *argstr) {
+int fn_cut (datum *D, const int dim, const fn_arg *args) {
   /* declare variables to hold argument values.
    * @ivtr: int-array for extracting traces.
    * @ivpl: int-array for extracting planes.
@@ -57,9 +48,9 @@ int fn_execute_cut (datum *D, const int dim, const char *argstr) {
   if (dim >= 0)
     throw("dimension index specification not supported");
 
-  /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_cut, &ivtr, &ivpl))
-    throw("failed to parse cut arguments");
+  /* get the argument values from the argdef array. */
+  if (!fn_args_get_all(args, &ivtr, &ivpl))
+    throw("failed to get cut arguments");
 
   /* ensure that both modes were not specified. */
   if (ivtr && ivpl) {

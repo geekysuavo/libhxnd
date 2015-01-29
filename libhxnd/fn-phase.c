@@ -23,24 +23,12 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_argdef_phase: define all accepted arguments for the 'phase' function.
- */
-static const fn_args fn_argdef_phase[] = {
-  { "ph0",     FN_ARGTYPE_FLOAT, "0.0" },
-  { "ph1",     FN_ARGTYPE_FLOAT, "0.0" },
-  { "pivot",   FN_ARGTYPE_FLOAT, "0.5" },
-  { "ppm",     FN_ARGTYPE_BOOL,  "0" },
-  { "hz",      FN_ARGTYPE_BOOL,  "0" },
-  { "inverse", FN_ARGTYPE_BOOL,  "0" },
-  { NULL, '\0', NULL }
-};
-
-/* fn_execute_phase(): applies a single-dimension phase correction operation.
+/* fn_phase(): applies a single-dimension phase correction operation.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_phase (datum *D, const int dim, const char *argstr) {
+int fn_phase (datum *D, const int dim, const fn_arg *args) {
   /* declare variables to hold argument values. */
   real ph0, ph1, piv;
   int inv, ppm, hz;
@@ -52,10 +40,9 @@ int fn_execute_phase (datum *D, const int dim, const char *argstr) {
   hx_array ph;
   int k, szk;
 
-  /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_phase,
-         &ph0, &ph1, &piv, &ppm, &hz, &inv))
-    throw("failed to parse phase arguments");
+  /* get the argument values from the argdef array */
+  if (!fn_args_get_all(args, &ph0, &ph1, &piv, &ppm, &hz, &inv))
+    throw("failed to get phase arguments");
 
   /* check the dimension index. */
   if (dim < 0 || dim >= D->nd)

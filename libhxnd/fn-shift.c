@@ -23,24 +23,12 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_argdef_shift: define all accepted arguments for the 'shift' function.
- */
-static const fn_args fn_argdef_shift[] = {
-  { "points", FN_ARGTYPE_BOOL, "0" },
-  { "sec",    FN_ARGTYPE_BOOL, "0" },
-  { "ppm",    FN_ARGTYPE_BOOL, "0" },
-  { "hz",     FN_ARGTYPE_BOOL, "0" },
-  { "round",  FN_ARGTYPE_BOOL, "0" },
-  { "amount", FN_ARGTYPE_FLOAT, "0.0" },
-  { NULL, '\0', NULL }
-};
-
-/* fn_execute_shift(): applies a single-dimension point-shift operation.
+/* fn_shift(): applies a single-dimension point-shift operation.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_shift (datum *D, const int dim, const char *argstr) {
+int fn_shift (datum *D, const int dim, const fn_arg *args) {
   /* declare variables to hold argument values.
    */
   int pts, sec, ppm, hz, doround, nset;
@@ -52,10 +40,9 @@ int fn_execute_shift (datum *D, const int dim, const char *argstr) {
   real famt, fsz;
   int iamt;
 
-  /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_shift,
-         &pts, &sec, &ppm, &hz, &doround, &famt))
-    throw("failed to parse shift arguments");
+  /* get the argument values from the argdef array. */
+  if (!fn_args_get_all(args, &pts, &sec, &ppm, &hz, &doround, &famt))
+    throw("failed to get shift arguments");
 
   /* check the dimension index. */
   if (dim < 0 || dim >= D->nd)

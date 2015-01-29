@@ -23,15 +23,6 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_argdef_scale: define all accepted arguments for the 'scale' function.
- */
-static const fn_args fn_argdef_scale[] = {
-  { "first",   FN_ARGTYPE_FLOAT,  "1.0" },
-  { "factor",  FN_ARGTYPE_FLOAT,  "1.0" },
-  { "invert",  FN_ARGTYPE_BOOL,   "0" },
-  { NULL, '\0', NULL }
-};
-
 /* fn_scale_first(): callback function for first-point scaling operations.
  *
  * args:
@@ -60,12 +51,12 @@ int fn_scale_first (hx_array *x, hx_array *y,
   return 1;
 }
 
-/* fn_execute_scale(): scales a datum structure by a constant factor.
+/* fn_scale(): scales a datum structure by a constant factor.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_scale (datum *D, const int dim, const char *argstr) {
+int fn_scale (datum *D, const int dim, const fn_arg *args) {
   /* declare variables to hold argument values.
    * @hxscale: hypercomplex scalar for scaling..
    * @fscale: whole-array scaling factor.
@@ -75,9 +66,9 @@ int fn_execute_scale (datum *D, const int dim, const char *argstr) {
   real fscale, f0;
   int inv, d;
 
-  /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_scale, &f0, &fscale, &inv))
-    throw("failed to parse scale arguments");
+  /* get the argument values from the argdef array. */
+  if (!fn_args_get_all(args, &f0, &fscale, &inv))
+    throw("failed to get scale arguments");
 
   /* check if an inversion was specified. */
   if (inv)

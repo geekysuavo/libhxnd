@@ -23,20 +23,12 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_argdef_zerofill: define all accepted arguments for the 'zerofill'
- * function.
- */
-static const fn_args fn_argdef_zerofill[] = {
-  { "times", FN_ARGTYPE_INT, "0" },
-  { NULL, '\0', NULL }
-};
-
-/* fn_execute_zerofill(): zero-fill the array of a datum structure.
+/* fn_zerofill(): zero-fill the array of a datum structure.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_zerofill (datum *D, const int dim, const char *argstr) {
+int fn_zerofill (datum *D, const int dim, const fn_arg *args) {
   /* declare variables to hold argument values.
    * @sznew: new size array for the core hypercomplex array.
    * @szv: new size values (with array count) for reshapes.
@@ -47,9 +39,9 @@ int fn_execute_zerofill (datum *D, const int dim, const char *argstr) {
   int *sznew, nzf, i, k;
   unsigned int n, nx;
 
-  /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_zerofill, &nzf))
-    throw("failed to parse zerofill arguments");
+  /* get the argument values from the argdef array. */
+  if (!fn_args_get_all(args, &nzf))
+    throw("failed to get zerofill arguments");
 
   /* allocate the size array. */
   sznew = hx_array_index_alloc(D->array.k);;

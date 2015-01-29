@@ -27,15 +27,6 @@
 /* include the nmr datum header. */
 #include <hxnd/nmr-datum.h>
 
-/* define argument type characters used when parsing processing function
- * strings.
- */
-#define FN_ARGTYPE_INT     'i'
-#define FN_ARGTYPE_INTS    'I'
-#define FN_ARGTYPE_BOOL    'b'
-#define FN_ARGTYPE_FLOAT   'f'
-#define FN_ARGTYPE_STRING  's'
-
 /* define string names for all available processing functions.
  */
 #define FN_NAME_ABS       "abs"
@@ -53,57 +44,103 @@
 #define FN_NAME_WINDOW    "window"
 #define FN_NAME_ZEROFILL  "zerofill"
 
-/* fn_args: structure for holding information on arguments accepted by any
- * given processing function.
+/* fn_valtype: enumerated type for all accepted function argument value types.
+ */
+enum fn_valtype {
+  FN_VALTYPE_UNKNOWN = 0,
+  FN_VALTYPE_INT     = 1,  /* integer:     @i  */
+  FN_VALTYPE_INTS    = 2,  /* int-array:   @iv */
+  FN_VALTYPE_BOOL    = 3,  /* boolean:     @b  */
+  FN_VALTYPE_FLOAT   = 4,  /* float:       @f  */
+  FN_VALTYPE_FLOATS  = 5,  /* float-array: @fv */
+  FN_VALTYPE_STRING  = 6   /* string:      @s  */
+};
+
+/* fn_val: union of all values that function arguments may hold.
+ */
+union fn_val {
+  int i, *iv, b;
+  real f, *fv;
+  char *s;
+};
+
+/* fn_arg: structure holding a single function argument, useful for defining
+ * and lexing function arguments to and from strings.
  */
 typedef struct {
   /* @name: argument name string.
-   * @type: argument type character.
+   * @val: argument value union.
    */
   const char *name;
-  char type;
+  union fn_val val;
 
-  /* @def: default argument value (string-representation).
-   */
-  const char *def;
+  /* @type: argument type. */
+  enum fn_valtype type;
 }
-fn_args;
+fn_arg;
+
+/* fn_pointer: callback function prototype for all macro-executable
+ * processing functions.
+ * @D: pointer to the datum structure to manipulate.
+ * @dim: dimensional to apply the function along, or -1.
+ * @args: array of argument definitions and values.
+ */
+typedef int (*fn_pointer) (datum *D, const int dim,
+                           const fn_arg *args);
+
+/* fn: structure holding a function pointer and an array of argument
+ * definitions, i.e. a complete processing function definition.
+ */
+typedef struct {
+  /* @name: function name string used for function lookup and display.
+   * @ptr: function pointer to call when applying the function.
+   * @args: array of argument definition structures.
+   */
+  const char *name;
+  fn_pointer ptr;
+  fn_arg *args;
+}
+fn;
 
 /* function declarations: */
 
-int fn_scan_args (const char *argstr, const fn_args *argdef, ...);
+int fn_args_get (const fn_arg *argdef, const int i, void *val);
+
+int fn_args_set (fn_arg *argdef, const int i, void *val);
+
+int fn_args_get_all (const fn_arg *argdef, ...);
 
 int fn_execute (datum *D, const char *name, const int dim, const char *argstr);
 
 /* function declarations, processing: */
 
-int fn_execute_abs (datum *D, const int dim, const char *argstr);
+int fn_abs (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_add (datum *D, const int dim, const char *argstr);
+int fn_add (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_complex (datum *D, const int dim, const char *argstr);
+int fn_complex (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_cut (datum *D, const int dim, const char *argstr);
+int fn_cut (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_fft (datum *D, const int dim, const char *argstr);
+int fn_fft (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_ht (datum *D, const int dim, const char *argstr);
+int fn_ht (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_ist (datum *D, const int dim, const char *argstr);
+int fn_ist (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_phase (datum *D, const int dim, const char *argstr);
+int fn_phase (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_real (datum *D, const int dim, const char *argstr);
+int fn_real (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_resize (datum *D, const int dim, const char *argstr);
+int fn_resize (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_scale (datum *D, const int dim, const char *argstr);
+int fn_scale (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_shift (datum *D, const int dim, const char *argstr);
+int fn_shift (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_window (datum *D, const int dim, const char *argstr);
+int fn_window (datum *D, const int dim, const fn_arg *args);
 
-int fn_execute_zerofill (datum *D, const int dim, const char *argstr);
+int fn_zerofill (datum *D, const int dim, const fn_arg *args);
 
 #endif /* __HXND_FN_H__ */
 

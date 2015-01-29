@@ -23,18 +23,12 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_argdef_real: define all accepted arguments for the 'real' function.
- */
-static const fn_args fn_argdef_real[] = {
-  { NULL, '\0', NULL }
-};
-
-/* fn_execute_real(): drop imaginaries from the array of a datum structure.
+/* fn_real(): drop imaginaries from the array of a datum structure.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_real (datum *D, const int dim, const char *argstr) {
+int fn_real (datum *D, const int dim, const fn_arg *args) {
   /* declare a required variable:
    * @drm: array algebraic dimension to be removed.
    * @d: dimension loop counter.

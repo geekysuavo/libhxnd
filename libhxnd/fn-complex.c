@@ -23,19 +23,12 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_argdef_complex: define all accepted arguments for the 'complex'
- * function.
- */
-static const fn_args fn_argdef_complex[] = {
-  { NULL, '\0', NULL }
-};
-
-/* fn_execute_complex(): add imaginaries into the array of a datum structure.
+/* fn_complex(): add imaginaries into the array of a datum structure.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_complex (datum *D, const int dim, const char *argstr) {
+int fn_complex (datum *D, const int dim, const fn_arg *args) {
   /* declare a required variable:
    * @allcx: flag that it set if all dimensions are complex.
    * @d: dimension loop counter.

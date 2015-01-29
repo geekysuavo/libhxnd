@@ -23,12 +23,12 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_execute_ht(): applies a Hilbert transform to reconstruct imaginaries.
+/* fn_ht(): applies a Hilbert transform to reconstruct imaginaries.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_ht (datum *D, const int dim, const char *argstr) {
+int fn_ht (datum *D, const int dim, const fn_arg *args) {
   /* check the dimension index. */
   if (dim < 0 || dim >= D->nd)
     throw("dimension index %d out of bounds [0,%u)", dim, D->nd);

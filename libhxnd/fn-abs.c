@@ -23,12 +23,12 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_execute_abs(): compute the magnitude of the array of a datum structure.
+/* fn_abs(): compute the magnitude of the array of a datum structure.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_abs (datum *D, const int dim, const char *argstr) {
+int fn_abs (datum *D, const int dim, const fn_arg *args) {
   /* declare a required variable:
    * @d: local copy of the dimension index.
    */

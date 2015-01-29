@@ -26,34 +26,12 @@
 /* include the window function header. */
 #include <hxnd/hx-window.h>
 
-/* fn_argdef_window: define all accepted arguments for the 'window' function.
- */
-static const fn_args fn_argdef_window[] = {
-  /* @type: string specifying the window type. */
-  { "type", FN_ARGTYPE_STRING, NULL },
-
-  /* @start, @end, @order: sine and trapezoidal window options.
-   */
-  { "start", FN_ARGTYPE_FLOAT, "0.0" },
-  { "end",   FN_ARGTYPE_FLOAT, "1.0" },
-  { "order", FN_ARGTYPE_FLOAT, "1.0" },
-
-  /* @lb, @invlb: line-broadening and inverse line-broadening options.
-   */
-  { "lb",     FN_ARGTYPE_FLOAT, "0.0" },
-  { "invlb",  FN_ARGTYPE_FLOAT, "0.0" },
-  { "center", FN_ARGTYPE_FLOAT, "0.0" },
-
-  /* null-termination. */
-  { NULL, '\0', NULL }
-};
-
-/* fn_execute_widow(): applies a window function to a datum structure.
+/* fn_window(): applies a window function to a datum structure.
  * @D: pointer to the datum to manipulate (in-place).
- * @dim: dimension of function application.
- * @args: function argument string.
+ * @dim: dimension of function application, or -1.
+ * @args: function argument definition array.
  */
-int fn_execute_window (datum *D, const int dim, const char *argstr) {
+int fn_window (datum *D, const int dim, const fn_arg *args) {
   /* declare a few required variables:
    * @type: the window function enumerated type to apply.
    * @ldim: a local (thus mutable) copy of the @dim value.
@@ -73,10 +51,10 @@ int fn_execute_window (datum *D, const int dim, const char *argstr) {
   real start, end, order, lb, invlb, center;
   char *stype;
 
-  /* parse the function argument string. */
-  if (!fn_scan_args(argstr, fn_argdef_window, &stype, &start,
-                    &end, &order, &lb, &invlb, &center))
-    throw("failed to parse window arguments");
+  /* get the argument values from the argdef array. */
+  if (!fn_args_get_all(args, &stype, &start, &end, &order,
+                       &lb, &invlb, &center))
+    throw("failed to get window arguments");
 
   /* store the dimensionality into a local variable. */
   ldim = dim;
