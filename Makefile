@@ -1,8 +1,14 @@
 
-# CC, CFLAGS, LD: compilation and linkage flags.
+# CC: compiler binary filename.
 CC=gcc
+
+# CFLAGS: compilation flags.
 CFLAGS=-g -O2 -std=c99 -Wall -Wformat -I. -fopenmp
+CFLAGS+= $(shell pkg-config --cflags gtk+-3.0)
+
+# LIBS, GLIBS: linkage flags.
 LIBS=-lm
+GLIBS=$(shell pkg-config --libs gtk+-3.0)
 
 # LIBSRC: library source basenames: hypercomplex data structures.
 LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-array-mem hx-array-io
@@ -24,16 +30,20 @@ LIBSRC+= nmr-rnmrtk
 LIBSRC+= fn fn-abs fn-add fn-complex fn-cut fn-fft fn-ht fn-ist fn-phase
 LIBSRC+= fn-real fn-resize fn-scale fn-shift fn-window fn-zerofill
 
-# LIBOBJ: library object filenames.
+# GUISRC: graphical interface source basenames.
+GUISRC=ghx-proc-main
+
+# LIBOBJ, GUIOBJ: library and graphical interface object filenames.
 LIBOBJ=$(addprefix libhxnd/,$(addsuffix .o,$(LIBSRC)))
+GUIOBJ=$(addprefix ghx/,$(addsuffix .o,$(GUISRC)))
 
 # BIN, BINBIN, BINOBJ: binary source, output and object filenames.
-BIN=hx
+BIN=hx ghx
 BINBIN=$(addprefix bin/,$(BIN))
 BINOBJ=$(addprefix bin/,$(addsuffix .o,$(BIN)))
 
 # OBJ: all object files that need compilation from source.
-OBJ=$(LIBOBJ)
+OBJ=$(LIBOBJ) $(GUIOBJ)
 
 # registered suffixes for make rules.
 .SUFFIXES: .c .o
@@ -42,9 +52,14 @@ OBJ=$(LIBOBJ)
 all: $(OBJ) $(BINBIN)
 
 # bin/hx: binary linkage target for command-line hx multi-tool.
-bin/hx: $(OBJ) bin/hx.o
+bin/hx: $(LIBOBJ) bin/hx.o
 	@echo " LD $@"
 	@$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
+
+# bin/ghx: binary linkage target for graphical hx application.
+bin/ghx: $(OBJ) bin/ghx.o
+	@echo " LD $@"
+	@$(CC) $(CFLAGS) $^ -o $@ $(LIBS) $(GLIBS)
 
 # .c.o: general compilation target for C source files.
 .c.o:
