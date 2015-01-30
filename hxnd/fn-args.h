@@ -88,14 +88,14 @@ static fn_arg fn_args_shift[] = {
 };
 
 static fn_arg fn_args_window[] = {
-  { "type", { .s = NULL }, FN_VALTYPE_STRING },
-  { "start", { .f = 0.0 }, FN_VALTYPE_FLOAT },
-  { "end",   { .f = 1.0 }, FN_VALTYPE_FLOAT },
-  { "order", { .f = 1.0 }, FN_VALTYPE_FLOAT },
-  { "lb",     { .f = 0.0 }, FN_VALTYPE_FLOAT },
-  { "invlb",  { .f = 0.0 }, FN_VALTYPE_FLOAT },
-  { "center", { .f = 0.0 }, FN_VALTYPE_FLOAT },
-  { NULL, {}, FN_VALTYPE_UNKNOWN }
+  { "type",   { .s = NULL }, FN_VALTYPE_STRING },
+  { "start",  { .f = 0.0  }, FN_VALTYPE_FLOAT },
+  { "end",    { .f = 1.0  }, FN_VALTYPE_FLOAT },
+  { "order",  { .f = 1.0  }, FN_VALTYPE_FLOAT },
+  { "lb",     { .f = 0.0  }, FN_VALTYPE_FLOAT },
+  { "invlb",  { .f = 0.0  }, FN_VALTYPE_FLOAT },
+  { "center", { .f = 0.0  }, FN_VALTYPE_FLOAT },
+  { NULL,     {},            FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_zerofill[] = {

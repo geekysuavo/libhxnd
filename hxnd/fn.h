@@ -110,7 +110,11 @@ int fn_args_set (fn_arg *argdef, const int i, void *val);
 
 int fn_args_get_all (const fn_arg *argdef, ...);
 
-int fn_execute (datum *D, const char *name, const int dim, const char *argstr);
+int fn_execute (datum *D, const int dim, fn *func, fn_arg *args);
+
+int fn_execute_from_strings (datum *D, const int dim,
+                             const char *fnname,
+                             const char *argstr);
 
 /* function declarations, processing: */
 

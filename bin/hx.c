@@ -334,7 +334,7 @@ int main_apply_procs (datum *D, struct parsed_arg *lst, unsigned int n) {
   /* loop over the array of function arguments. */
   for (i = 0; i < n; i++) {
     /* apply the currently indexed processing function. */
-    if (!fn_execute(D, lst[i].lstr, lst[i].d - 1, lst[i].rstr))
+    if (!fn_execute_from_strings(D, lst[i].d - 1, lst[i].lstr, lst[i].rstr))
       throw("failed to apply function '%s' (#%u)", lst[i].lstr, i);
 
     /* free the allocated processing function strings. */

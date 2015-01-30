@@ -617,28 +617,38 @@ fn *fn_lookup (const char *name) {
   return func;
 }
 
-/* fn_execute(): global processing function executor. runs the appropriate
- * fn_execute_*() processing function on the datum pointer @D, which will
- * be modified in-place.
- * @D: pointer to the datum structure to modify.
+/* fn_execute(): execute a processing function using a function pointer
+ * and an argument definition array.
+ * @D: pointer to the datum structure to manipulate in-place.
+ * @dim: dimension to apply the function along, or -1.
+ * @func: function structure pointer.
+ * @args: function arguments.
+ */
+int fn_execute (datum *D, const int dim, fn *func, fn_arg *args) {
+  /* execute the function. pretty easy, eh? */
+  return func->ptr(D, dim, args);
+}
+
+/* fn_execute_from_strings(): execute a processing function using string
+ * representations of both the function name and arguments.
+ * @D: pointer to the datum structure to manipulate in-place.
  * @dim: dimension to apply the function along, or -1.
  * @argstr: string of function arguments to parse.
  */
-int fn_execute (datum *D,
-                const char *name,
-                const int dim,
-                const char *argstr) {
+int fn_execute_from_strings (datum *D, const int dim,
+                             const char *fnname,
+                             const char *argstr) {
   /* declare variables to hold parsed function arguments. */
   fn_arg *args = NULL;
   fn *func = NULL;
   int ret;
 
   /* look up the function address by its name. */
-  func = fn_lookup(name);
+  func = fn_lookup(fnname);
 
   /* check if a match was identified. */
   if (!func)
-    throw("failed to look up function '%s'", name);
+    throw("failed to look up function '%s'", fnname);
 
   /* allocate a copy of the function's argdef array. */
   args = fn_args_copy(func->args);
@@ -649,11 +659,11 @@ int fn_execute (datum *D,
     free(args);
 
     /* throw an exception. */
-    throw("failed to parse argument string");
+    throw("failed to parse argument string for '%s'", fnname);
   }
 
-  /* awesome. execute the function. */
-  ret = func->ptr(D, dim, args);
+  /* execute the function. */
+  ret = fn_execute(D, dim, func, args);
 
   /* free the allocated argdef array. */
   if (args)
