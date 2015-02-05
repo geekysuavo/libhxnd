@@ -508,17 +508,17 @@ int bruker_array (datum *D) {
  */
 int bruker_post (datum *D) {
   /* declare a few required variables:
-   * @I: current absolute intensity value.
-   * @Ire: current real intensity value.
-   * @Iim: current imaginary intensity value.
-   * @Imax: maximum absolute intensity value.
+   * @A: current absolute intensity value.
+   * @Are: current real intensity value.
+   * @Aim: current imaginary intensity value.
+   * @Amax: maximum absolute intensity value.
    * @gd: local variable used for group delay correction.
    * @gdmax: first trace index having maximal absolute intensity.
    * @sznew: array of new size values.
    * @i: dimension loop counter.
    * @x: datum array structure pointer.
    */
-  real I, Ire, Iim, Imax;
+  real A, Are, Aim, Amax;
   int i, gd, gdmax, *sznew;
   hx_array *x;
 
@@ -529,19 +529,19 @@ int bruker_post (datum *D) {
   /* check if the group delay value needs autodetection. */
   if (gd == -1) {
     /* loop until the trace intensity maximum is located. */
-    for (gd = 0, gdmax = 0, Imax = 0.0; gd < x->sz[0]; gd++) {
+    for (gd = 0, gdmax = 0, Amax = 0.0; gd < x->sz[0]; gd++) {
       /* get the real and imaginary components of the trace. */
-      Ire = x->x[0 + gd * x->n];
-      Iim = x->x[1 + gd * x->n];
+      Are = x->x[0 + gd * x->n];
+      Aim = x->x[1 + gd * x->n];
 
       /* compute the trace magnitude. */
-      I = sqrt(Ire * Ire + Iim * Iim);
+      A = sqrt(Are * Are + Aim * Aim);
 
       /* check if the current point has greater intensity than @Imax. */
-      if (I > Imax) {
+      if (A > Amax) {
         /* store the new value. */
         gdmax = gd;
-        Imax = I;
+        Amax = A;
       }
     }
 

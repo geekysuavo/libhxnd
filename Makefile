@@ -7,13 +7,14 @@ CFLAGS=-g -O2 -std=c99 -Wall -Wformat -I. -fopenmp
 CFLAGS+= $(shell pkg-config --cflags gtk+-3.0)
 
 # LIBS, GLIBS: linkage flags.
-LIBS=-lm
+LIBS=-lm -lcblas -llapack
 GLIBS=$(shell pkg-config --libs gtk+-3.0)
 
 # LIBSRC: library source basenames: hypercomplex data structures.
 LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-array-mem hx-array-io
 LIBSRC+= hx-array-rawio hx-array-topo hx-array-resize hx-array-slice
-LIBSRC+= hx-array-tile hx-cmp hx-arith hx-phasor hx-fourier hx-window hx-ist
+LIBSRC+= hx-array-tile hx-cmp hx-arith hx-blas hx-phasor hx-fourier
+LIBSRC+= hx-window hx-ist
 
 # LIBSRC: library source basenames: auxiliary library routines.
 LIBSRC+= trace opts str bytes

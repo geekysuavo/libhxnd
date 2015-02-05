@@ -21,23 +21,38 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_HX_REAL_H__
-#define __HXND_HX_REAL_H__
+#ifndef __HXND_HX_BLAS_H__
+#define __HXND_HX_BLAS_H__
 
-/* HX_DOUBLE_PRECISION: preprocessor declaration indicating that all real
- * scalar floating-point values are to be double-precision.
- */
-// #define HX_DOUBLE_PRECISION  1
+/* function declarations, blas level 1: */
 
-/* real: type definition of a real scalar floating-point value.
- */
-#ifdef HX_DOUBLE_PRECISION
-  /* use double-precision floats. */
-  typedef double real;
-#else
-  /* use single-precision floats. */
-  typedef float real;
-#endif
+real hx_blas_dot (hx_array *x, hx_array *y);
 
-#endif /* __HXND_HX_REAL_H__ */
+real hx_blas_nrm2 (hx_array *x);
+
+real hx_blas_asum (hx_array *x);
+
+int hx_blas_iamax (hx_array *x);
+
+void hx_blas_swap (hx_array *x, hx_array *y);
+
+void hx_blas_copy (hx_array *x, hx_array *y);
+
+void hx_blas_scal (real alpha, hx_array *x);
+
+void hx_blas_axpy (real alpha, hx_array *x, hx_array *y);
+
+/* function declarations, blas level 2: */
+
+void hx_blas_gemv (int tA, real alpha, hx_array *A, hx_array *x,
+                   real beta, hx_array *y);
+
+void hx_blas_ger (real alpha, hx_array *x, hx_array *y, hx_array *A);
+
+/* function declarations, blas level 3: */
+
+void hx_blas_gemm (int tA, int tB, real alpha, hx_array *A, hx_array *B,
+                   real beta, hx_array *C);
+
+#endif /* __HXND_HX_BLAS_H__ */
 

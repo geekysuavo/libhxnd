@@ -37,6 +37,10 @@
 /* include the openmp library header. */
 #include <omp.h>
 
+/* include the blas and lapack library headers. */
+#include <cblas.h>
+#include <lapacke.h>
+
 /* define 'pi' if needed. */
 #ifndef M_PI
 #define M_PI 3.1415926539
@@ -55,6 +59,7 @@
 #include <hxnd/hx-array.h>
 #include <hxnd/hx-cmp.h>
 #include <hxnd/hx-arith.h>
+#include <hxnd/hx-blas.h>
 #include <hxnd/hx-phasor.h>
 #include <hxnd/hx-fourier.h>
 #include <hxnd/hx-ist.h>
