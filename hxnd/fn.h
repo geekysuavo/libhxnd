@@ -81,11 +81,11 @@ fn_arg;
 
 /* fn_pointer: callback function prototype for all macro-executable
  * processing functions.
- * @D: pointer to the datum structure to manipulate.
+ * @fndata: pointer to the datum or dataset structure to manipulate.
  * @dim: dimensional to apply the function along, or -1.
  * @args: array of argument definitions and values.
  */
-typedef int (*fn_pointer) (datum *D, const int dim,
+typedef int (*fn_pointer) (void *fndata, const int dim,
                            const fn_arg *args);
 
 /* fn: structure holding a function pointer and an array of argument
@@ -102,7 +102,28 @@ typedef struct {
 }
 fn;
 
-/* function declarations: */
+/* fn_list: structure holding an array of functions, used as a means of
+ * describing the total data handling path from raw data to processed
+ * spectra, or from processed spectra to data matrices, etc.
+ */
+typedef struct {
+  /* @v: array of function structures.
+   * @n: number of elements in the array.
+   */
+  fn *v;
+  int n;
+}
+fn_list;
+
+/* function declarations (fn.c): */
+
+int fn_execute (void *fndata, const int dim, fn *func, fn_arg *args);
+
+int fn_execute_from_strings (void *fndata, const int dim,
+                             const char *fnname,
+                             const char *argstr);
+
+/* function declarations (fn-args.c): */
 
 int fn_args_get (const fn_arg *argdef, const int i, void *val);
 
@@ -110,13 +131,17 @@ int fn_args_set (fn_arg *argdef, const int i, void *val);
 
 int fn_args_get_all (const fn_arg *argdef, ...);
 
-int fn_execute (datum *D, const int dim, fn *func, fn_arg *args);
+int fn_args_from_string (fn_arg *argdef, const char *argstr);
 
-int fn_execute_from_strings (datum *D, const int dim,
-                             const char *fnname,
-                             const char *argstr);
+fn_arg *fn_args_copy (const fn_arg *argsrc);
 
-/* function declarations, processing: */
+/* function declarations (fn-list.c): */
+
+void fn_list_init (fn_list *fl);
+
+void fn_list_free (fn_list *fl);
+
+/* function declarations, datum handlers: */
 
 int fn_abs (datum *D, const int dim, const fn_arg *args);
 
