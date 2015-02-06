@@ -29,7 +29,7 @@ LIBSRC+= nmr-rnmrtk
 
 # LIBSRC: library source basenames: processing functions.
 LIBSRC+= fn fn-args fn-list fn-abs fn-add fn-complex fn-cut fn-fft fn-ht fn-ist
-LIBSRC+= fn-phase fn-real fn-resize fn-scale fn-shift fn-window fn-zerofill
+LIBSRC+= fn-multiply fn-phase fn-real fn-resize fn-shift fn-window fn-zerofill
 
 # GUISRC: graphical interface source basenames.
 GUISRC=ghx-proc-main

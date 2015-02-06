@@ -54,6 +54,13 @@ static fn_arg fn_args_ist[] = {
   { NULL,     {},           FN_VALTYPE_UNKNOWN }
 };
 
+static fn_arg fn_args_multiply[] = {
+  { "first",  { .f = 0.0 }, FN_VALTYPE_FLOAT },
+  { "factor", { .f = 1.0 }, FN_VALTYPE_FLOAT },
+  { "invert", { .b = 0   }, FN_VALTYPE_BOOL },
+  { NULL,     {},           FN_VALTYPE_UNKNOWN }
+};
+
 static fn_arg fn_args_phase[] = {
   { "ph0",     { .f = 0.0 }, FN_VALTYPE_FLOAT },
   { "ph1",     { .f = 0.0 }, FN_VALTYPE_FLOAT },
@@ -68,13 +75,6 @@ static fn_arg fn_args_resize[] = {
   { "size",  { .i = 0     }, FN_VALTYPE_INT },
   { "shape", { .iv = NULL }, FN_VALTYPE_INTS },
   { NULL,    {},             FN_VALTYPE_UNKNOWN }
-};
-
-static fn_arg fn_args_scale[] = {
-  { "first",  { .f = 0.0 }, FN_VALTYPE_FLOAT },
-  { "factor", { .f = 1.0 }, FN_VALTYPE_FLOAT },
-  { "invert", { .b = 0   }, FN_VALTYPE_BOOL },
-  { NULL,     {},           FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_shift[] = {

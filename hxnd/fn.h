@@ -36,10 +36,10 @@
 #define FN_NAME_FFT       "fft"
 #define FN_NAME_HT        "ht"
 #define FN_NAME_IST       "ist"
+#define FN_NAME_MULTIPLY  "multiply"
 #define FN_NAME_PHASE     "phase"
 #define FN_NAME_REAL      "real"
 #define FN_NAME_RESIZE    "resize"
-#define FN_NAME_SCALE     "scale"
 #define FN_NAME_SHIFT     "shift"
 #define FN_NAME_WINDOW    "window"
 #define FN_NAME_ZEROFILL  "zerofill"
@@ -157,13 +157,13 @@ int fn_ht (datum *D, const int dim, const fn_arg *args);
 
 int fn_ist (datum *D, const int dim, const fn_arg *args);
 
+int fn_multiply (datum *D, const int dim, const fn_arg *args);
+
 int fn_phase (datum *D, const int dim, const fn_arg *args);
 
 int fn_real (datum *D, const int dim, const fn_arg *args);
 
 int fn_resize (datum *D, const int dim, const fn_arg *args);
-
-int fn_scale (datum *D, const int dim, const fn_arg *args);
 
 int fn_shift (datum *D, const int dim, const fn_arg *args);
 

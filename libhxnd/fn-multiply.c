@@ -23,7 +23,7 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
-/* fn_scale_first(): callback function for first-point scaling operations.
+/* fn_multiply_first(): callback function for first-point scaling operations.
  *
  * args:
  *  see hx_array_vector_cb().
@@ -31,9 +31,9 @@
  * varargs:
  *  @hxscale: first-point scaling factor.
  */
-int fn_scale_first (hx_array *x, hx_array *y,
-                    int *arr, int idx,
-                    va_list *vl) {
+int fn_multiply_first (hx_array *x, hx_array *y,
+                       int *arr, int idx,
+                       va_list *vl) {
   /* extract the vararg. */
   hx_scalar *hxscale = va_arg(*vl, hx_scalar*);
 
@@ -51,12 +51,12 @@ int fn_scale_first (hx_array *x, hx_array *y,
   return 1;
 }
 
-/* fn_scale(): scales a datum structure by a constant factor.
+/* fn_multiply(): scales a datum structure by a constant factor.
  * @D: pointer to the datum to manipulate (in-place).
  * @dim: dimension of function application, or -1.
  * @args: function argument definition array.
  */
-int fn_scale (datum *D, const int dim, const fn_arg *args) {
+int fn_multiply (datum *D, const int dim, const fn_arg *args) {
   /* declare variables to hold argument values.
    * @hxscale: hypercomplex scalar for scaling..
    * @fscale: whole-array scaling factor.
@@ -96,7 +96,7 @@ int fn_scale (datum *D, const int dim, const fn_arg *args) {
 
     /* perform the first-point scaling. */
     if (!hx_array_vector_op(&D->array, D->dims[d].k,
-                            &fn_scale_first, &hxscale))
+                            &fn_multiply_first, &hxscale))
       throw("failed to execute first-point scaling");
 
     /* free the allocated temporary scalar. */

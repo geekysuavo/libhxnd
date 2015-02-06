@@ -260,6 +260,21 @@ iteration.
 \fBiters\fR (integer) [200]
 number of iterations to perform.
 
+.SS multiply
+The \fBmultiply\fR command multiplies the current datum by a scalar constant.
+.TP
+\fBfirst\fR (float) [1.0]
+real scalar constant to scale each first point by. specifying \fID\fR sets
+which array dimension the first-point scaling is applied to. an unspecified
+value indicates the first array dimension.
+.TP
+\fBfactor\fR (float) [1.0]
+real scalar constant to scale the data by; always applied as a real value,
+regardless of the value of \fID\fR.
+.TP
+\fBinvert\fR (boolean) [false]
+inverts the value of \fBfactor\fR prior to multiplication when set.
+
 .SS phase
 The \fBphase\fR command applies a zero-order and first-order phase correction
 to the current datum along a given dimension \fID\fR.
@@ -298,21 +313,6 @@ new dimension size, when a dimension \fID\fR is specified.
 \fBshape\fR (int-array) [empty]
 new dimension size array, when no dimension is specified. must contain a size
 value for each datum dimension.
-
-.SS scale
-The \fBscale\fR command multiplies the current datum by a scalar constant.
-.TP
-\fBfirst\fR (float) [1.0]
-real scalar constant to scale each first point by. specifying \fID\fR sets
-which array dimension the first-point scaling is applied to. an unspecified
-value indicates the first array dimension.
-.TP
-\fBfactor\fR (float) [1.0]
-real scalar constant to scale the data by; always applied as a real value,
-regardless of the value of \fID\fR.
-.TP
-\fBinvert\fR (boolean) [false]
-inverts the value of \fBfactor\fR prior to multiplication when set.
 
 .SS shift
 The \fBshift\fR command shifts the current datum along dimension \fID\fR by
