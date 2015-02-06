@@ -24,8 +24,8 @@
 #ifndef __HXND_FN_H__
 #define __HXND_FN_H__
 
-/* include the nmr datum header. */
-#include <hxnd/nmr-datum.h>
+/* include the hypercomplex math headers. */
+#include <hxnd/hx.h>
 
 /* define string names for all available processing functions.
  */
@@ -43,6 +43,11 @@
 #define FN_NAME_SHIFT     "shift"
 #define FN_NAME_WINDOW    "window"
 #define FN_NAME_ZEROFILL  "zerofill"
+
+/* define string names for all available multivariate functions.
+ */
+#define FN_NAME_NORM   "norm"
+#define FN_NAME_SCALE  "scale"
 
 /* fn_valtype: enumerated type for all accepted function argument value types.
  */
@@ -115,6 +120,12 @@ typedef struct {
 }
 fn_list;
 
+/* include the nmr datum header. */
+#include <hxnd/nmr-datum.h>
+
+/* include the nmr dataset header. */
+#include <hxnd/mx-dataset.h>
+
 /* function declarations (fn.c): */
 
 int fn_execute (void *fndata, const int dim, fn *func, fn_arg *args);
@@ -170,6 +181,12 @@ int fn_shift (datum *D, const int dim, const fn_arg *args);
 int fn_window (datum *D, const int dim, const fn_arg *args);
 
 int fn_zerofill (datum *D, const int dim, const fn_arg *args);
+
+/* function declarations, dataset handlers: */
+
+int fn_norm (dataset *Dset, const int dim, const fn_arg *args);
+
+int fn_scale (dataset *Dset, const int dim, const fn_arg *args);
 
 #endif /* __HXND_FN_H__ */
 
