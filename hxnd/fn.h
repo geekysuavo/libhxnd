@@ -58,7 +58,8 @@ enum fn_valtype {
   FN_VALTYPE_BOOL    = 3,  /* boolean:     @b  */
   FN_VALTYPE_FLOAT   = 4,  /* float:       @f  */
   FN_VALTYPE_FLOATS  = 5,  /* float-array: @fv */
-  FN_VALTYPE_STRING  = 6   /* string:      @s  */
+  FN_VALTYPE_STRING  = 6,  /* string:      @s  */
+  FN_VALTYPE_CHUNK   = 7   /* chunk:       @p  */
 };
 
 /* fn_val: union of all values that function arguments may hold.
@@ -67,6 +68,7 @@ union fn_val {
   int i, *iv, b;
   real f, *fv;
   char *s;
+  void *p;
 };
 
 /* fn_arg: structure holding a single function argument, useful for defining
@@ -75,9 +77,11 @@ union fn_val {
 typedef struct {
   /* @name: argument name string.
    * @val: argument value union.
+   * @sz: value size, in bytes.
    */
   const char *name;
   union fn_val val;
+  size_t sz;
 
   /* @type: argument type. */
   enum fn_valtype type;
@@ -136,11 +140,13 @@ int fn_execute_from_strings (void *fndata, const int dim,
 
 /* function declarations (fn-args.c): */
 
-int fn_args_get (const fn_arg *argdef, const int i, void *val);
+int fn_args_get (const fn_arg *argdef, const int i, void *val, size_t *sz);
 
-int fn_args_set (fn_arg *argdef, const int i, void *val);
+int fn_args_set (fn_arg *argdef, const int i, void *val, size_t sz);
 
 int fn_args_get_all (const fn_arg *argdef, ...);
+
+int fn_args_get_sizes (const fn_arg *argdef, ...);
 
 int fn_args_from_string (fn_arg *argdef, const char *argstr);
 

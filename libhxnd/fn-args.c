@@ -28,8 +28,9 @@
  * @argdef: the argument definition array.
  * @i: the argument index to retrieve.
  * @val: pointer to the output value.
+ * @sz: pointer to the output size.
  */
-int fn_args_get (const fn_arg *argdef, const int i, void *val) {
+int fn_args_get (const fn_arg *argdef, const int i, void *val, size_t *sz) {
   /* declare a required variable. */
   int n;
 
@@ -70,10 +71,19 @@ int fn_args_get (const fn_arg *argdef, const int i, void *val) {
       *((char**) val) = argdef[i].val.s;
       break;
 
+    /* chunk. */
+    case FN_VALTYPE_CHUNK:
+      *((void**) val) = argdef[i].val.p;
+      break;
+
     /* other. */
     default:
       throw("unsupported argument type");
   }
+
+  /* return the argument size, if requested. */
+  if (sz)
+    *sz = argdef[i].sz;
 
   /* return success. */
   return 1;
@@ -83,8 +93,9 @@ int fn_args_get (const fn_arg *argdef, const int i, void *val) {
  * @argdef: the argument definition array.
  * @i: the argument index to retrieve.
  * @val: pointer to the output value.
+ * @sz: output size.
  */
-int fn_args_set (fn_arg *argdef, const int i, void *val) {
+int fn_args_set (fn_arg *argdef, const int i, void *val, size_t sz) {
   /* declare a required variable. */
   int n;
 
@@ -125,10 +136,18 @@ int fn_args_set (fn_arg *argdef, const int i, void *val) {
       argdef[i].val.s = *((char**) val);
       break;
 
+    /* chunk. */
+    case FN_VALTYPE_CHUNK:
+      argdef[i].val.p = *((void**) val);
+      break;
+
     /* other. */
     default:
       throw("unsupported argument type");
   }
+
+  /* store the argument size. */
+  argdef[i].sz = sz;
 
   /* return success. */
   return 1;
@@ -158,8 +177,45 @@ int fn_args_get_all (const fn_arg *argdef, ...) {
     val = va_arg(vl, void*);
 
     /* get the value from the array and store it in the result pointer. */
-    if (!fn_args_get(argdef, defi, val))
+    if (!fn_args_get(argdef, defi, val, NULL))
       throw("failed to get value of argument '%s'", argdef[defi].name);
+  }
+
+  /* clean up the variable arguments list. */
+  va_end(vl);
+
+  /* return success. */
+  return 1;
+}
+
+/* fn_args_get_sizes(): retrieve the sizes of every argument in an argument
+ * definition array.
+ * @argdef: the argument definition array to pull sizes from.
+ * @...: result pointers to store argument sizes into.
+ */
+int fn_args_get_sizes (const fn_arg *argdef, ...) {
+  /* declare a few required variables:
+   * @vl: variable argument list structure.
+   * @sz: size of the currently indexed argument.
+   * @defi: argument definition array index.
+   */
+  va_list vl;
+  size_t *sz;
+  int defi;
+
+  /* initialize the variable arguments list. */
+  va_start(vl, argdef);
+
+  /* loop over the argument definition array elements. */
+  for (defi = 0; argdef[defi].name; defi++) {
+    /* pull another result pointer from the variable arguments list. */
+    sz = va_arg(vl, size_t*);
+
+    /* if the result pointer is non-null, store the currently indexed
+     * argument's size into it.
+     */
+    if (sz)
+      *sz = argdef[defi].sz;
   }
 
   /* clean up the variable arguments list. */
@@ -186,8 +242,9 @@ int fn_args_parse_int (char **v, int c) {
  * string array.
  * @v: the string array.
  * @c: the string array length.
+ * @sz: the size of the result.
  */
-int *fn_args_parse_intarray (char **v, int c) {
+int *fn_args_parse_intarray (char **v, int c, size_t *sz) {
   /* declare a few required variables:
    */
   unsigned int i, n;
@@ -226,7 +283,7 @@ int *fn_args_parse_intarray (char **v, int c) {
   /* allocate an array of integers having the same number of elements as
    * the string array.
    */
-  intv = (int*) calloc(n + 1, sizeof(int));
+  intv = (int*) calloc(n, sizeof(int));
   if (!intv) {
     /* raise an exception and return nothing. */
     raise("failed to allocate int-array");
@@ -234,13 +291,14 @@ int *fn_args_parse_intarray (char **v, int c) {
   }
 
   /* loop over the strings in the string array. */
-  for (i = 0, intv[0] = n; i < n; i++)
-    intv[i + 1] = atoi(strv[i]);
+  for (i = 0; i < n; i++)
+    intv[i] = atoi(strv[i]);
 
   /* free the string array */
   strvfree(strv, n);
 
   /* return the complete array of integers. */
+  *sz = n;
   return intv;
 }
 
@@ -290,8 +348,9 @@ real fn_args_parse_float (char **v, int c) {
  * a key-value string array.
  * @v: the string array.
  * @c: the string array length.
+ * @sz: the size of the result.
  */
-real *fn_args_parse_floatarray (char **v, int c) {
+real *fn_args_parse_floatarray (char **v, int c, size_t *sz) {
   /* declare a few required variables.
    */
   unsigned int i, n;
@@ -330,7 +389,7 @@ real *fn_args_parse_floatarray (char **v, int c) {
   /* allocate an array of floats having the same number of elements as
    * the string array.
    */
-  fltv = (real*) calloc(n + 1, sizeof(real));
+  fltv = (real*) calloc(n, sizeof(real));
   if (!fltv) {
     /* raise an exception and return nothing. */
     raise("failed to allocate float-array");
@@ -338,13 +397,14 @@ real *fn_args_parse_floatarray (char **v, int c) {
   }
 
   /* loop over the strings in the string array. */
-  for (i = 0, fltv[0] = (real) n; i < n; i++)
-    fltv[i + 1] = atof(strv[i]);
+  for (i = 0; i < n; i++)
+    fltv[i] = atof(strv[i]);
 
   /* free the string array. */
   strvfree(strv, n);
 
   /* return the complete array of floats. */
+  *sz = n;
   return fltv;
 }
 
@@ -353,8 +413,9 @@ real *fn_args_parse_floatarray (char **v, int c) {
  * calling function of fn_scan_args().
  * @v: the string array.
  * @c: the string array length.
+ * @sz: the size of the result.
  */
-char *fn_args_parse_str (char **v, int c) {
+char *fn_args_parse_str (char **v, int c, size_t *sz) {
   /* declare a few required variables. */
   unsigned int n;
   char *str;
@@ -375,6 +436,7 @@ char *fn_args_parse_str (char **v, int c) {
     strcpy(str, v[1]);
 
   /* return the newly allocated, copied string. */
+  *sz = n;
   return str;
 }
 
@@ -400,6 +462,7 @@ int fn_args_from_string (fn_arg *argdef, const char *argstr) {
    */
   unsigned int valc, defi, found;
   char **valv, *noname;
+  size_t valsz;
 
   /* do not attempt to fill a null argdef array. */
   if (!argdef)
@@ -455,6 +518,9 @@ int fn_args_from_string (fn_arg *argdef, const char *argstr) {
 
     /* check if a value was found for the current argument. */
     if (found) {
+      /* initialize the argument value size. */
+      valsz = 0;
+
       /* act based on the expected type of the argument. */
       switch (argdef[defi].type) {
         /* signed int. */
@@ -464,7 +530,7 @@ int fn_args_from_string (fn_arg *argdef, const char *argstr) {
 
         /* int array. */
         case FN_VALTYPE_INTS:
-          argdef[defi].val.iv = fn_args_parse_intarray(valv, valc);
+          argdef[defi].val.iv = fn_args_parse_intarray(valv, valc, &valsz);
           break;
 
         /* boolean. */
@@ -479,12 +545,12 @@ int fn_args_from_string (fn_arg *argdef, const char *argstr) {
 
         /* float array. */
         case FN_VALTYPE_FLOATS:
-          argdef[defi].val.fv = fn_args_parse_floatarray(valv, valc);
+          argdef[defi].val.fv = fn_args_parse_floatarray(valv, valc, &valsz);
           break;
 
         /* string. */
         case FN_VALTYPE_STRING:
-          argdef[defi].val.s = fn_args_parse_str(valv, valc);
+          argdef[defi].val.s = fn_args_parse_str(valv, valc, &valsz);
           break;
 
         /* other... */
@@ -492,8 +558,11 @@ int fn_args_from_string (fn_arg *argdef, const char *argstr) {
           throw("unsupported argument type '%c'", argdef[defi].type);
       }
 
-      /* free the values string array, if required. */
+      /* free the values string array. */
       strvfree(valv, valc);
+
+      /* store the argument value size. */
+      argdef[defi].sz = valsz;
     }
 
     /* free the negated value string, if required. */

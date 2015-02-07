@@ -484,14 +484,14 @@ subtract the means from each other (A minus B):
 hx -i a1.hx                  \\
    -f add:file=a2.hx         \\
    -f add:file=a3.hx         \\
-   -f scale:factor=3,inverse \\
+   -f mul:factor=3,inverse \\
    -o a.hx
 
 # compute second group mean.
 hx -i b1.hx                  \\
    -f add:file=b2.hx         \\
    -f add:file=b3.hx         \\
-   -f scale:factor=3,inverse \\
+   -f mul:factor=3,inverse \\
    -o b.hx
 
 # compute difference.

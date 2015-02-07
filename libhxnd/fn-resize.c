@@ -33,12 +33,15 @@ int fn_resize (datum *D, const int dim, const fn_arg *args) {
    * @sznew: new size array for the core hypercomplex array.
    * @szv: new size values (with array count) for reshapes.
    * @szd: new size value for single-dimension operations.
+   * @nszv: number of array elements in @szv.
    * @i: loop counter.
    */
   int *sznew, *szv, szd, i;
+  size_t nszv;
 
   /* get the argument values from the argdef array. */
-  if (!fn_args_get_all(args, &szd, &szv))
+  if (!fn_args_get_all(args, &szd, &szv) ||
+      !fn_args_get_sizes(args, NULL, &nszv))
     throw("failed to get resize arguments");
 
   /* initialize the size array. */
@@ -51,8 +54,8 @@ int fn_resize (datum *D, const int dim, const fn_arg *args) {
       throw("expected 'shape' argument not found");
 
     /* check that the parsed int-array is of correct length. */
-    if (szv[0] != D->array.k)
-      throw("invalid array length (%d != %d)", szv[0], D->array.k);
+    if (nszv != D->array.k)
+      throw("invalid array length (%d != %d)", nszv, D->array.k);
 
     /* allocate memory for the size array. */
     sznew = hx_array_index_alloc(D->array.k);
@@ -63,7 +66,7 @@ int fn_resize (datum *D, const int dim, const fn_arg *args) {
 
     /* copy the sizes from the parsed int-array. */
     for (i = 0; i < D->array.k; i++)
-      sznew[i] = szv[i + 1];
+      sznew[i] = szv[i];
 
     /* free the parsed int-array. */
     free(szv);

@@ -28,79 +28,79 @@
 #include <hxnd/fn.h>
 
 static fn_arg fn_args_add[] = {
-  { "const",    { .f = 0.0  }, FN_VALTYPE_FLOAT },
-  { "file",     { .s = NULL }, FN_VALTYPE_STRING },
-  { "scale",    { .f = 1.0  }, FN_VALTYPE_FLOAT },
-  { "subtract", { .b = 0    }, FN_VALTYPE_BOOL },
-  { NULL,       {},            FN_VALTYPE_UNKNOWN }
+  { "const",    { .f = 0.0  }, 0, FN_VALTYPE_FLOAT },
+  { "file",     { .s = NULL }, 0, FN_VALTYPE_STRING },
+  { "scale",    { .f = 1.0  }, 0, FN_VALTYPE_FLOAT },
+  { "subtract", { .b = 0    }, 0, FN_VALTYPE_BOOL },
+  { NULL,       {},            0, FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_cut[] = {
-  { "trace", { .iv = NULL }, FN_VALTYPE_INTS },
-  { "plane", { .iv = NULL }, FN_VALTYPE_INTS },
-  { NULL,    {},             FN_VALTYPE_UNKNOWN }
+  { "trace", { .iv = NULL }, 0, FN_VALTYPE_INTS },
+  { "plane", { .iv = NULL }, 0, FN_VALTYPE_INTS },
+  { NULL,    {},             0, FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_fft[] = {
-  { "alternate", { .b = 0 }, FN_VALTYPE_BOOL },
-  { "negate",    { .b = 0 }, FN_VALTYPE_BOOL },
-  { "inverse",   { .b = 0 }, FN_VALTYPE_BOOL },
-  { NULL,        {},         FN_VALTYPE_UNKNOWN }
+  { "alternate", { .b = 0 }, 0, FN_VALTYPE_BOOL },
+  { "negate",    { .b = 0 }, 0, FN_VALTYPE_BOOL },
+  { "inverse",   { .b = 0 }, 0, FN_VALTYPE_BOOL },
+  { NULL,        {},         0, FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_ist[] = {
-  { "thresh", { .f = 0.9 }, FN_VALTYPE_FLOAT },
-  { "iters",  { .i = 200 }, FN_VALTYPE_INT },
-  { NULL,     {},           FN_VALTYPE_UNKNOWN }
+  { "thresh", { .f = 0.9 }, 0, FN_VALTYPE_FLOAT },
+  { "iters",  { .i = 200 }, 0, FN_VALTYPE_INT },
+  { NULL,     {},           0, FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_multiply[] = {
-  { "first",  { .f = 0.0 }, FN_VALTYPE_FLOAT },
-  { "factor", { .f = 1.0 }, FN_VALTYPE_FLOAT },
-  { "invert", { .b = 0   }, FN_VALTYPE_BOOL },
-  { NULL,     {},           FN_VALTYPE_UNKNOWN }
+  { "first",  { .f = 0.0 }, 0, FN_VALTYPE_FLOAT },
+  { "factor", { .f = 1.0 }, 0, FN_VALTYPE_FLOAT },
+  { "invert", { .b = 0   }, 0, FN_VALTYPE_BOOL },
+  { NULL,     {},           0, FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_phase[] = {
-  { "ph0",     { .f = 0.0 }, FN_VALTYPE_FLOAT },
-  { "ph1",     { .f = 0.0 }, FN_VALTYPE_FLOAT },
-  { "pivot",   { .f = 0.5 }, FN_VALTYPE_FLOAT },
-  { "ppm",     { .b = 0   }, FN_VALTYPE_BOOL },
-  { "hz",      { .b = 0   }, FN_VALTYPE_BOOL },
-  { "inverse", { .b = 0   }, FN_VALTYPE_BOOL },
-  { NULL,      {},           FN_VALTYPE_UNKNOWN }
+  { "ph0",     { .f = 0.0 }, 0, FN_VALTYPE_FLOAT },
+  { "ph1",     { .f = 0.0 }, 0, FN_VALTYPE_FLOAT },
+  { "pivot",   { .f = 0.5 }, 0, FN_VALTYPE_FLOAT },
+  { "ppm",     { .b = 0   }, 0, FN_VALTYPE_BOOL },
+  { "hz",      { .b = 0   }, 0, FN_VALTYPE_BOOL },
+  { "inverse", { .b = 0   }, 0, FN_VALTYPE_BOOL },
+  { NULL,      {},           0, FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_resize[] = {
-  { "size",  { .i = 0     }, FN_VALTYPE_INT },
-  { "shape", { .iv = NULL }, FN_VALTYPE_INTS },
-  { NULL,    {},             FN_VALTYPE_UNKNOWN }
+  { "size",  { .i = 0     }, 0, FN_VALTYPE_INT },
+  { "shape", { .iv = NULL }, 0, FN_VALTYPE_INTS },
+  { NULL,    {},             0, FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_shift[] = {
-  { "points", { .b = 0   }, FN_VALTYPE_BOOL },
-  { "sec",    { .b = 0   }, FN_VALTYPE_BOOL },
-  { "ppm",    { .b = 0   }, FN_VALTYPE_BOOL },
-  { "hz",     { .b = 0   }, FN_VALTYPE_BOOL },
-  { "round",  { .b = 0   }, FN_VALTYPE_BOOL },
-  { "amount", { .f = 0.0 }, FN_VALTYPE_FLOAT },
-  { NULL,     {},           FN_VALTYPE_UNKNOWN }
+  { "points", { .b = 0   }, 0, FN_VALTYPE_BOOL },
+  { "sec",    { .b = 0   }, 0, FN_VALTYPE_BOOL },
+  { "ppm",    { .b = 0   }, 0, FN_VALTYPE_BOOL },
+  { "hz",     { .b = 0   }, 0, FN_VALTYPE_BOOL },
+  { "round",  { .b = 0   }, 0, FN_VALTYPE_BOOL },
+  { "amount", { .f = 0.0 }, 0, FN_VALTYPE_FLOAT },
+  { NULL,     {},           0, FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_window[] = {
-  { "type",   { .s = NULL }, FN_VALTYPE_STRING },
-  { "start",  { .f = 0.0  }, FN_VALTYPE_FLOAT },
-  { "end",    { .f = 1.0  }, FN_VALTYPE_FLOAT },
-  { "order",  { .f = 1.0  }, FN_VALTYPE_FLOAT },
-  { "lb",     { .f = 0.0  }, FN_VALTYPE_FLOAT },
-  { "invlb",  { .f = 0.0  }, FN_VALTYPE_FLOAT },
-  { "center", { .f = 0.0  }, FN_VALTYPE_FLOAT },
-  { NULL,     {},            FN_VALTYPE_UNKNOWN }
+  { "type",   { .s = NULL }, 0, FN_VALTYPE_STRING },
+  { "start",  { .f = 0.0  }, 0, FN_VALTYPE_FLOAT },
+  { "end",    { .f = 1.0  }, 0, FN_VALTYPE_FLOAT },
+  { "order",  { .f = 1.0  }, 0, FN_VALTYPE_FLOAT },
+  { "lb",     { .f = 0.0  }, 0, FN_VALTYPE_FLOAT },
+  { "invlb",  { .f = 0.0  }, 0, FN_VALTYPE_FLOAT },
+  { "center", { .f = 0.0  }, 0, FN_VALTYPE_FLOAT },
+  { NULL,     {},            0, FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_zerofill[] = {
-  { "times", { .i = 0 }, FN_VALTYPE_INT },
-  { NULL,    {},         FN_VALTYPE_UNKNOWN }
+  { "times", { .i = 0 }, 0, FN_VALTYPE_INT },
+  { NULL,    {},         0, FN_VALTYPE_UNKNOWN }
 };
 
 #endif /* __HXND_FN_ARGS_H__ */

@@ -32,8 +32,10 @@ int fn_cut (datum *D, const int dim, const fn_arg *args) {
   /* declare variables to hold argument values.
    * @ivtr: int-array for extracting traces.
    * @ivpl: int-array for extracting planes.
+   * @ntr, @npl: number of int-array elements.
    */
   int *ivtr, *ivpl;
+  size_t ntr, npl;
 
   /* declare a few required variables:
    * @iv: int-array that points to either @ivtr or @ivpl.
@@ -41,15 +43,18 @@ int fn_cut (datum *D, const int dim, const fn_arg *args) {
    * @upper: upper bound index array for slicing.
    * @i: general-purpose loop counter.
    * @nz: number of zeros in @ivtr or @ivpl.
+   * @niv: number of final int-array elements.
    */
   int *iv, *lower, *upper, i, nz;
+  size_t niv;
 
   /* check that no dimension was specified. */
   if (dim >= 0)
     throw("dimension index specification not supported");
 
   /* get the argument values from the argdef array. */
-  if (!fn_args_get_all(args, &ivtr, &ivpl))
+  if (!fn_args_get_all(args, &ivtr, &ivpl) ||
+      !fn_args_get_sizes(args, &ntr, &npl))
     throw("failed to get cut arguments");
 
   /* ensure that both modes were not specified. */
@@ -70,6 +75,7 @@ int fn_cut (datum *D, const int dim, const fn_arg *args) {
    * code duplication below.
    */
   iv = (ivtr ? ivtr : ivpl);
+  niv = (ivtr ? ntr : npl);
 
   /* allocate the lower and upper bound index arrays. */
   lower = hx_array_index_alloc(D->array.k);
@@ -80,19 +86,19 @@ int fn_cut (datum *D, const int dim, const fn_arg *args) {
     throw("failed to allocate index arrays");
 
   /* check that the int-array is of correct length. */
-  if (iv[0] != D->array.k)
-    throw("invalid array length (%d != %d)", iv[0], D->array.k);
+  if (niv != D->array.k)
+    throw("invalid array length (%d != %d)", niv, D->array.k);
 
   /* build the lower and upper bound arrays. */
   for (i = 0, nz = 0; i < D->array.k; i++) {
     /* store the lower bound. */
-    lower[i] = (iv[i + 1] > 0 ? iv[i + 1] - 1 : 0);
+    lower[i] = (iv[i] > 0 ? iv[i] - 1 : 0);
 
     /* store the upper bound. */
-    upper[i] = (iv[i + 1] > 0 ? iv[i + 1] - 1 : D->array.sz[i] - 1);
+    upper[i] = (iv[i] > 0 ? iv[i] - 1 : D->array.sz[i] - 1);
 
     /* count the number of zero-valued indices. */
-    if (iv[i + 1] < 1)
+    if (iv[i] < 1)
       nz++;
   }
 
