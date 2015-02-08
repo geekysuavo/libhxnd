@@ -151,9 +151,7 @@ int mx_stats_min (hx_array *x, int k, hx_array *m) {
 
 /* mx_stats_max(): compute the maximum values along a given dimension of
  * a real multidimensional array.
- * @x: the input array to compute statistics from.
- * @k: the dimension along which to compute the statistic.
- * @m: pointer to the output array.
+ * see mx_stats_min() for more details.
  */
 int mx_stats_max (hx_array *x, int k, hx_array *m) {
   /* execute the maximum projector function. */
@@ -163,9 +161,7 @@ int mx_stats_max (hx_array *x, int k, hx_array *m) {
 
 /* mx_stats_range(): compute the ranges along a given dimension of
  * a real multidimensional array.
- * @x: the input array to compute statistics from.
- * @k: the dimension along which to compute the statistic.
- * @m: pointer to the output array.
+ * see mx_stats_min() for more details.
  */
 int mx_stats_range (hx_array *x, int k, hx_array *m) {
   /* execute the maximum projector function. */
@@ -175,9 +171,7 @@ int mx_stats_range (hx_array *x, int k, hx_array *m) {
 
 /* mx_stats_mean(): compute the mean values along a given dimension of
  * a real multidimensional array.
- * @x: the input array to compute statistics from.
- * @k: the dimension along which to compute the statistic.
- * @m: pointer to the output array.
+ * see mx_stats_min() for more details.
  */
 int mx_stats_mean (hx_array *x, int k, hx_array *m) {
   /* execute the mean projector function. */
@@ -187,9 +181,7 @@ int mx_stats_mean (hx_array *x, int k, hx_array *m) {
 
 /* mx_stats_var(): compute the sample variances along a given dimension of
  * a real multidimensional array.
- * @x: the input array to compute statistics from.
- * @k: the dimension along which to compute the statistic.
- * @m: pointer to the output array.
+ * see mx_stats_min() for more details.
  */
 int mx_stats_var (hx_array *x, int k, hx_array *m) {
   /* execute the mean projector function. */
@@ -199,9 +191,7 @@ int mx_stats_var (hx_array *x, int k, hx_array *m) {
 
 /* mx_stats_stdev(): compute the sample standard deviations along a
  * given dimension of a real multidimensional array.
- * @x: the input array to compute statistics from.
- * @k: the dimension along which to compute the statistic.
- * @m: pointer to the output array.
+ * see mx_stats_min() for more details.
  */
 int mx_stats_stdev (hx_array *x, int k, hx_array *m) {
   /* execute the mean projector function. */
