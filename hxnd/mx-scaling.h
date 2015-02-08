@@ -52,9 +52,9 @@ enum mx_scaling_type {
 
 enum mx_scaling_type mx_scaling_lookup_type (const char *name);
 
-int mx_scale (hx_array *X, enum mx_scaling_type type);
+int mx_scale (dataset *Dset, enum mx_scaling_type type);
 
-int mx_scale_by_name (hx_array *X, const char *name);
+int mx_scale_by_name (dataset *Dset, const char *name);
 
 #endif /* __HXND_MX_SCALING_H__ */
 

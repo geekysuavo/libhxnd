@@ -25,17 +25,17 @@
 
 /* function declarations for all scaling methods:
  */
-int mx_scale_none (hx_array *X);
-int mx_scale_uv (hx_array *X);
-int mx_scale_pareto (hx_array *X);
-int mx_scale_range (hx_array *X);
-int mx_scale_level (hx_array *X);
-int mx_scale_vast (hx_array *X);
+int mx_scale_none (dataset *Dset);
+int mx_scale_uv (dataset *Dset);
+int mx_scale_pareto (dataset *Dset);
+int mx_scale_range (dataset *Dset);
+int mx_scale_level (dataset *Dset);
+int mx_scale_vast (dataset *Dset);
 
 /* mx_scaling_func: function prototype for all scaling methods.
- * @X: pointer to the data matrix to scale.
+ * @Dset: pointer to the dataset to modify.
  */
-typedef int (*mx_scaling_func) (hx_array *X);
+typedef int (*mx_scaling_func) (dataset *Dset);
 
 /* method_def: structure definition for looking up scaling method types by
  * string name.
@@ -102,10 +102,10 @@ enum mx_scaling_type mx_scaling_lookup_type (const char *name) {
 }
 
 /* mx_scale(): apply a specified scaling method to a data matrix.
- * @X: pointer to the data matrix to scale.
+ * @Dset: pointer to the dataset to modify.
  * @type: scaling method type.
  */
-int mx_scale (hx_array *X, enum mx_scaling_type type) {
+int mx_scale (dataset *Dset, enum mx_scaling_type type) {
   /* declare a required variable. */
   unsigned int i;
 
@@ -113,7 +113,7 @@ int mx_scale (hx_array *X, enum mx_scaling_type type) {
   for (i = 0; methods[i].name; i++) {
     /* check if the scaling method name matches. */
     if (methods[i].type == type)
-      return methods[i].func(X);
+      return methods[i].func(Dset);
   }
 
   /* return failure. */
@@ -122,18 +122,18 @@ int mx_scale (hx_array *X, enum mx_scaling_type type) {
 
 /* mx_scale_by_name(): apply a specified (named) scaling method
  * to a data matrix.
- * @X: pointer to the data matrix to scale.
+ * @Dset: pointer to the dataset to modify.
  * @name: scaling method string name.
  */
-int mx_scale_by_name (hx_array *X, const char *name) {
+int mx_scale_by_name (dataset *Dset, const char *name) {
   /* look up the specified scaling method and return its result. */
-  return mx_scale(X, mx_scaling_lookup_type(name));
+  return mx_scale(Dset, mx_scaling_lookup_type(name));
 }
 
 /* mx_scale_none(): mean-center the columns of a data matrix.
- * @X: data matrix to modify.
+ * @Dset: pointer to the dataset to modify.
  */
-int mx_scale_none (hx_array *X) {
+int mx_scale_none (dataset *Dset) {
   /* FIXME: implement mx_scale_none() */
 
   /* return success. */
@@ -142,9 +142,9 @@ int mx_scale_none (hx_array *X) {
 
 /* mx_scale_uv(): mean-center and scale the columns of a data matrix
  * by their standard deviation.
- * @X: data matrix to modify.
+ * @Dset: pointer to the dataset to modify.
  */
-int mx_scale_uv (hx_array *X) {
+int mx_scale_uv (dataset *Dset) {
   /* FIXME: implement mx_scale_uv() */
 
   /* return success. */
@@ -153,9 +153,9 @@ int mx_scale_uv (hx_array *X) {
 
 /* mx_scale_pareto(): mean-center and scale the columns of a data matrix
  * by the square root of their standard deviation.
- * @X: data matrix to modify.
+ * @Dset: pointer to the dataset to modify.
  */
-int mx_scale_pareto (hx_array *X) {
+int mx_scale_pareto (dataset *Dset) {
   /* FIXME: implement mx_scale_pareto() */
 
   /* return success. */
@@ -164,9 +164,9 @@ int mx_scale_pareto (hx_array *X) {
 
 /* mx_scale_range(): mean-center and scale the columns of a data matrix
  * by their range.
- * @X: data matrix to modify.
+ * @Dset: pointer to the dataset to modify.
  */
-int mx_scale_range (hx_array *X) {
+int mx_scale_range (dataset *Dset) {
   /* FIXME: implement mx_scale_range() */
 
   /* return success. */
@@ -175,9 +175,9 @@ int mx_scale_range (hx_array *X) {
 
 /* mx_scale_level(): mean-center and scale the columns of a data matrix
  * by their mean.
- * @X: data matrix to modify.
+ * @Dset: pointer to the dataset to modify.
  */
-int mx_scale_level (hx_array *X) {
+int mx_scale_level (dataset *Dset) {
   /* FIXME: implement mx_scale_level() */
 
   /* return success. */
@@ -186,9 +186,9 @@ int mx_scale_level (hx_array *X) {
 
 /* mx_scale_vast(): mean-center and scale the columns of a data matrix
  * by their relative variance.
- * @X: data matrix to modify.
+ * @Dset: pointer to the dataset to modify.
  */
-int mx_scale_vast (hx_array *X) {
+int mx_scale_vast (dataset *Dset) {
   /* FIXME: implement mx_scale_vast() */
 
   /* return success. */
