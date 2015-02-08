@@ -22,6 +22,7 @@
 
 /* include the processing function header. */
 #include <hxnd/fn.h>
+#include <hxnd/fn-handlers.h>
 
 /* fn_multiply_first(): callback function for first-point scaling operations.
  *

@@ -22,6 +22,7 @@
 
 /* include the processing function header. */
 #include <hxnd/fn.h>
+#include <hxnd/fn-handlers.h>
 
 /* fn_cut(): cut a trace or a plane from the array of a datum structure.
  * @D: pointer to the datum to manipulate (in-place).

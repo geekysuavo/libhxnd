@@ -23,6 +23,9 @@
 /* include the processing function header. */
 #include <hxnd/fn.h>
 
+/* include the string functions header. */
+#include <hxnd/str.h>
+
 /* fn_args_get(): retrieve an argument value from an argument definition
  * array.
  * @argdef: the argument definition array.

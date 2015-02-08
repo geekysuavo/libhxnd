@@ -27,6 +27,9 @@ LIBSRC+= nmr-datum-type nmr-datum-dims
 LIBSRC+= nmr-hxnd nmr-text nmr-bruker nmr-varian nmr-pipe nmr-ucsf nmr-nv
 LIBSRC+= nmr-rnmrtk
 
+# LIBSRC: library source basenames: multivariate math functions.
+LIBSRC+= mx-scaling
+
 # LIBSRC: library source basenames: processing functions.
 LIBSRC+= fn fn-args fn-list fn-abs fn-add fn-complex fn-cut fn-fft fn-ht fn-ist
 LIBSRC+= fn-multiply fn-phase fn-real fn-resize fn-shift fn-window fn-zerofill

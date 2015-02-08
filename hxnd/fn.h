@@ -27,28 +27,6 @@
 /* include the hypercomplex math headers. */
 #include <hxnd/hx.h>
 
-/* define string names for all available processing functions.
- */
-#define FN_NAME_ABS       "abs"
-#define FN_NAME_ADD       "add"
-#define FN_NAME_COMPLEX   "complex"
-#define FN_NAME_CUT       "cut"
-#define FN_NAME_FFT       "fft"
-#define FN_NAME_HT        "ht"
-#define FN_NAME_IST       "ist"
-#define FN_NAME_MULTIPLY  "multiply"
-#define FN_NAME_PHASE     "phase"
-#define FN_NAME_REAL      "real"
-#define FN_NAME_RESIZE    "resize"
-#define FN_NAME_SHIFT     "shift"
-#define FN_NAME_WINDOW    "window"
-#define FN_NAME_ZEROFILL  "zerofill"
-
-/* define string names for all available multivariate functions.
- */
-#define FN_NAME_NORM   "norm"
-#define FN_NAME_SCALE  "scale"
-
 /* fn_valtype: enumerated type for all accepted function argument value types.
  */
 enum fn_valtype {
@@ -124,12 +102,6 @@ typedef struct {
 }
 fn_list;
 
-/* include the nmr datum header. */
-#include <hxnd/nmr-datum.h>
-
-/* include the nmr dataset header. */
-#include <hxnd/mx-dataset.h>
-
 /* function declarations (fn.c): */
 
 int fn_execute (void *fndata, const int dim, fn *func, fn_arg *args);
@@ -157,42 +129,6 @@ fn_arg *fn_args_copy (const fn_arg *argsrc);
 void fn_list_init (fn_list *fl);
 
 void fn_list_free (fn_list *fl);
-
-/* function declarations, datum handlers: */
-
-int fn_abs (datum *D, const int dim, const fn_arg *args);
-
-int fn_add (datum *D, const int dim, const fn_arg *args);
-
-int fn_complex (datum *D, const int dim, const fn_arg *args);
-
-int fn_cut (datum *D, const int dim, const fn_arg *args);
-
-int fn_fft (datum *D, const int dim, const fn_arg *args);
-
-int fn_ht (datum *D, const int dim, const fn_arg *args);
-
-int fn_ist (datum *D, const int dim, const fn_arg *args);
-
-int fn_multiply (datum *D, const int dim, const fn_arg *args);
-
-int fn_phase (datum *D, const int dim, const fn_arg *args);
-
-int fn_real (datum *D, const int dim, const fn_arg *args);
-
-int fn_resize (datum *D, const int dim, const fn_arg *args);
-
-int fn_shift (datum *D, const int dim, const fn_arg *args);
-
-int fn_window (datum *D, const int dim, const fn_arg *args);
-
-int fn_zerofill (datum *D, const int dim, const fn_arg *args);
-
-/* function declarations, dataset handlers: */
-
-int fn_norm (dataset *Dset, const int dim, const fn_arg *args);
-
-int fn_scale (dataset *Dset, const int dim, const fn_arg *args);
 
 #endif /* __HXND_FN_H__ */
 

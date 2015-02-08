@@ -22,6 +22,7 @@
 
 /* include the processing function header. */
 #include <hxnd/fn.h>
+#include <hxnd/fn-handlers.h>
 
 /* fn_fft(): applies a complex radix-2 fast Fourier transform.
  * @D: pointer to the datum to manipulate (in-place).

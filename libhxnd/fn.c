@@ -26,6 +26,9 @@
 /* include the function argument definitions header. */
 #include <hxnd/fn-args.h>
 
+/* include the function pointer declarations header. */
+#include <hxnd/fn-handlers.h>
+
 /* functions: local table of all available function names, pointers
  * and argument definitions.
  */

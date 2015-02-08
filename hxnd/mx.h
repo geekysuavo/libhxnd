@@ -26,6 +26,7 @@
 
 /* include all multivariate math headers. */
 #include <hxnd/mx-dataset.h>
+#include <hxnd/mx-scaling.h>
 
 #endif /* __HXND_MX_H__ */
 

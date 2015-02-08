@@ -22,6 +22,7 @@
 
 /* include the processing function header. */
 #include <hxnd/fn.h>
+#include <hxnd/fn-handlers.h>
 
 /* fn_phase(): applies a single-dimension phase correction operation.
  * @D: pointer to the datum to manipulate (in-place).

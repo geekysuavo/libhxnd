@@ -22,6 +22,7 @@
 
 /* include the processing function header. */
 #include <hxnd/fn.h>
+#include <hxnd/fn-handlers.h>
 
 /* fn_ist(): reconstructs a nonuniformly sampled dimension using
  * iterative soft thresholding.

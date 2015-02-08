@@ -22,6 +22,7 @@
 
 /* include the processing function header. */
 #include <hxnd/fn.h>
+#include <hxnd/fn-handlers.h>
 
 /* fn_ht(): applies a Hilbert transform to reconstruct imaginaries.
  * @D: pointer to the datum to manipulate (in-place).

@@ -24,8 +24,9 @@
 #ifndef __HXND_MX_DATASET_H__
 #define __HXND_MX_DATASET_H__
 
-/* include the nmr datum header. */
+/* include the nmr datum and function headers. */
 #include <hxnd/nmr-datum.h>
+#include <hxnd/fn.h>
 
 /* dataset: data type for multiple data..
  *
