@@ -36,6 +36,8 @@ int *hx_array_index_build (int k, ...);
 
 int hx_array_index_init (int *arr, int k);
 
+int *hx_array_index_copy (int k, int *sz);
+
 void hx_array_index_pack (int k, int *sz, int *arr, int *pidx);
 
 void hx_array_index_unpack (int k, int *sz, int *arr, int idx);

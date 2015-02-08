@@ -71,6 +71,26 @@ int hx_array_index_init (int *arr, int k) {
   return 1;
 }
 
+/* hx_array_index_copy(): duplicate an array of multidimensional indices.
+ * @k: the array size.
+ * @sz: the input array.
+ */
+int *hx_array_index_copy (int k, int *sz) {
+  /* declare a few required variables. */
+  int *sznew;
+
+  /* allocate a new array. */
+  sznew = hx_array_index_alloc(k);
+  if (!sznew)
+    return NULL;
+
+  /* copy the elements from the source array. */
+  memcpy(sznew, sz, k * sizeof(int));
+
+  /* return the allocated, duplicated array. */
+  return sznew;
+}
+
 /* hx_array_index_pack(): packs an array of multidimensional indices into a
  * linear index.
  * @k: the size of the array.

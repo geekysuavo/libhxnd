@@ -21,13 +21,25 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_MX_H__
-#define __HXND_MX_H__
+#ifndef __HXND_MX_STATS_H__
+#define __HXND_MX_STATS_H__
 
-/* include all multivariate math headers. */
-#include <hxnd/mx-stats.h>
-#include <hxnd/mx-dataset.h>
-#include <hxnd/mx-scaling.h>
+/* include the n-dimensional math header. */
+#include <hxnd/hx.h>
 
-#endif /* __HXND_MX_H__ */
+/* function declarations: */
+
+int mx_stats_min (hx_array *x, int k, hx_array *m);
+
+int mx_stats_max (hx_array *x, int k, hx_array *m);
+
+int mx_stats_range (hx_array *x, int k, hx_array *r);
+
+int mx_stats_mean (hx_array *x, int k, hx_array *m);
+
+int mx_stats_var (hx_array *x, int k, hx_array *s);
+
+int mx_stats_stdev (hx_array *x, int k, hx_array *s);
+
+#endif /* __HXND_MX_STATS_H__ */
 

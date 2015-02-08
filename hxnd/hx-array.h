@@ -91,6 +91,13 @@ typedef int (*hx_array_vector_cb) (hx_array *x, hx_array *y,
                                    int *arr, int idx,
                                    va_list *vl);
 
+/* hx_array_projector_cb: callback function prototype for array 'projection'
+ * operations that act on hypercomplex arrays.
+ * @y: the current slice from the host array.
+ * @val: the result of the 'projection'.
+ */
+typedef int (*hx_array_projector_cb) (hx_array *y, real *val);
+
 /* function declarations (hx-array.c): */
 
 int hx_array_set_coeff (hx_array *x, int di, real value, ...);
@@ -104,6 +111,9 @@ int hx_array_reshape (hx_array *x, int k, int *sz);
 int hx_array_repack (hx_array *x, int ndiv);
 
 int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...);
+
+int hx_array_projector (hx_array *x, int k, hx_array_projector_cb fn,
+                        hx_array *xp);
 
 int hx_array_shift (hx_array *x, int k, int amount);
 
