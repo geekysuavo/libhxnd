@@ -162,6 +162,10 @@ int hx_array_index_cmp (int k, int *sza, int *szb) {
   /* declare a required variable. */
   int i;
 
+  /* return if either of the index arrays is unallocated. */
+  if (!sza || !szb)
+    return HXCMP_SIZE;
+
   /* loop over the indices. */
   for (i = 0; i < k; i++) {
     /* check if the current dimension is a mismatch. */

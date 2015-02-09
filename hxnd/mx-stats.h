@@ -35,6 +35,8 @@ int mx_stats_max (hx_array *x, int k, hx_array *m);
 
 int mx_stats_range (hx_array *x, int k, hx_array *r);
 
+int mx_stats_med (hx_array *x, int k, hx_array *m);
+
 int mx_stats_mean (hx_array *x, int k, hx_array *m);
 
 int mx_stats_var (hx_array *x, int k, hx_array *s);

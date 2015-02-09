@@ -514,7 +514,7 @@ int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
   return 1;
 }
 
-/* hx_array_projector(): compute a real scalar value for each vector
+/* hx_array_projector(): compute a hypercomplex scalar value for each vector
  * of a hypercomplex multidimensional array @x and return the values
  * in a new array @xp.
  */
@@ -527,11 +527,9 @@ int hx_array_projector (hx_array *x, int k, hx_array_projector_cb fn,
    * @sznew: topological size of the 'projected' output array.
    * @slice: linear slice index used for counting progress.
    * @y: hypercomplex array holding the currently sliced vector values.
-   * @val: the value of the projector callback along each position.
    */
   int *arr, idx, szk, *sznew, slice;
   hx_array y;
-  real val;
 
   /* check that the dimension index is in bounds. */
   if (k < 0 || k >= x->k)
@@ -555,9 +553,13 @@ int hx_array_projector (hx_array *x, int k, hx_array_projector_cb fn,
   if (!hx_array_alloc(&y, x->d, 1, &szk))
     throw("failed to allocate slice (%d, 1)-array", x->d);
 
-  /* allocate the output array. */
-  if (!hx_array_alloc(xp, 0, x->k - 1, sznew))
-    throw("failed to allocate projection array");
+  /* check if the output array requires allocation. */
+  if (xp->d != x->d || xp->k != x->k ||
+      hx_array_index_cmp(xp->k, xp->sz, sznew)) {
+    /* yes. allocate the output array. */
+    if (!hx_array_alloc(xp, x->d, x->k, sznew))
+      throw("failed to allocate projection array");
+  }
 
   /* initialize the linear indices. */
   idx = slice = 0;
@@ -572,11 +574,8 @@ int hx_array_projector (hx_array *x, int k, hx_array_projector_cb fn,
       throw("failed to slice vector %d", slice);
 
     /* execute the callback function. */
-    if (!fn(&y, &val))
+    if (!fn(&y, xp->x + idx * xp->n))
       throw("failed to execute callback %d", slice);
-
-    /* store the computed result. */
-    xp->x[idx] = val;
 
     /* increment the slice index. */
     slice++;
