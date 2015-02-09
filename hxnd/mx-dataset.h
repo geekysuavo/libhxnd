@@ -52,29 +52,46 @@ typedef struct {
    */
   fn_list funcs;
 
+  /* @centers: values used during variable mean-centering.
+   * @scales: values used during variable scaling.
+   * @norms: values used during normalization.
+   */
+  hx_array centers, scales, norms;
+
   /* @X: final real data matrix.
    * @X_ok: whether the data matrix is fresh.
+   * @X_damage: function list index where the data matrix is not fresh.
    * @N: final data matrix observation (row) count.
    * @K: final data matrix variable (column) count.
    */
-  int N, K, X_ok;
+  int N, K, X_ok, X_damage;
   hx_array X;
 }
 dataset;
 
 /* function declarations (mx-dataset.c): */
 
-void dataset_init (dataset *Dset);
-
-void dataset_free (dataset *Dset);
-
 int dataset_append_datum (dataset *Dset, datum *D);
 
 int dataset_remove_datum (dataset *Dset, int idx);
 
-void dataset_mask_datum (dataset *Dset, int idx);
+int dataset_mask_datum (dataset *Dset, int idx);
 
-void dataset_unmask_datum (dataset *Dset, int idx);
+int dataset_unmask_datum (dataset *Dset, int idx);
+
+/* function declarations (mx-dataset-mem.c): */
+
+void dataset_init (dataset *Dset);
+
+void dataset_free (dataset *Dset);
+
+/* function declarations (mx-dataset-matrix.c): */
+
+int dataset_matrix_damage (dataset *Dset, int idmg);
+
+int dataset_matrix_build (dataset *Dset);
+
+int dataset_matrix_free (dataset *Dset);
 
 #endif /* __HXND_MX_DATASET_H__ */
 

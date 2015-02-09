@@ -155,24 +155,15 @@ void hx_array_free (hx_array *x) {
   if (x == NULL)
     return;
 
-  /* check if the coefficient array is allocated. */
-  if (x->x != NULL) {
-    /* yes. free its associated memory. */
+  /* free the coefficient array. */
+  if (x->x)
     free(x->x);
-    x->x = NULL;
-  }
 
-  /* de-initialize the dimensionalities and coefficient count. */
-  x->d = 0;
-  x->n = 0;
-  x->k = 0;
-  x->len = 0;
-
-  /* check if the size array is allocated. */
-  if (x->sz != NULL) {
-    /* yes. free its associated memory. */
+  /* free the size array. */
+  if (x->sz)
     free(x->sz);
-    x->sz = NULL;
-  }
+
+  /* re-initialize the array structure contents. */
+  hx_array_init(x);
 }
 
