@@ -47,8 +47,28 @@ int dataset_matrix_damage (dataset *Dset, int idmg) {
  * @Dset: pointer to the dataset to update.
  */
 int dataset_matrix_build (dataset *Dset) {
-  /* FIXME: implement dataset_matrix_build() */
-  throw("UNIMPLEMENTED");
+  /* declare a few required variables:
+   * @ifn: function list index.
+   */
+  int ifn;
+
+  /* return if the matrix is undamaged. */
+  if (Dset->X_ok)
+    return 1;
+
+  /* loop from the point of damage to the function list end. */
+  for (ifn = Dset->X_damage; ifn < Dset->funcs.n; ifn++) {
+    /* execute the currently indexed dataset function. */
+    if (!fn_execute(Dset, 0, &Dset->funcs.v[ifn], Dset->funcs.v[ifn].args))
+      throw("failed to apply function '%s'", Dset->funcs.v[ifn].name);
+  }
+
+  /* flag the matrix as undamaged. */
+  Dset->X_damage = Dset->funcs.n;
+  Dset->X_ok = 1;
+
+  /* return success. */
+  return 1;
 }
 
 /* dataset_matrix_free(): completely free the allocated data matrix of
