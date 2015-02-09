@@ -171,6 +171,23 @@ int hx_data_zero (real *x, int n) {
   return 1;
 }
 
+/* hx_data_fill(): sets the raw coefficients of a hypercomplex value.
+ * @x: the raw array data of the input operand.
+ * @n: the number of array elements of the operand.
+ * @val: the value to fill the array elements with.
+ */
+int hx_data_fill (real *x, int n, real val) {
+  /* declare a required variable. */
+  int i;
+
+  /* loop over the array elements. */
+  for (i = 0; i < n; i++)
+    x[i] = val;
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_data_norm(): compute the norm of the raw array elements of
  * a hypercomplex value.
  * @x: the raw array data of the input operand.
@@ -397,6 +414,15 @@ int hx_scalar_zero (hx_scalar *a) {
 
   /* return success. */
   return 1;
+}
+
+/* hx_scalar_fill(): set all the coefficients of a hypercomplex scalar.
+ * @a: the structure pointer of the input operand.
+ * @val: the value to fill the operand with.
+ */
+int hx_scalar_fill (hx_scalar *a, real val) {
+  /* perform the raw data operation. */
+  return hx_data_fill(a->x, a->n, val);
 }
 
 /* hx_scalar_norm(): compute the norm of a hypercomplex scalar.
@@ -729,6 +755,15 @@ int hx_array_zero (hx_array *a) {
 
   /* return success. */
   return 1;
+}
+
+/* hx_array_fill(): set all the coefficients of a hypercomplex array.
+ * @a: the structure pointer of the input operand.
+ * @val: the value to fill the operand with.
+ */
+int hx_array_fill (hx_array *a, real val) {
+  /* perform the raw data operation. */
+  return hx_data_fill(a->x, a->len, val);
 }
 
 /* hx_array_norm(): compute the norm every scalar in a hypercomplex array.

@@ -106,18 +106,50 @@ enum mx_scaling_type mx_scaling_lookup_type (const char *name) {
  * @type: scaling method type.
  */
 int mx_scale (dataset *Dset, enum mx_scaling_type type) {
-  /* declare a required variable. */
+  /* declare a few required variables. */
   unsigned int i;
+  int idx, nk[2];
+
+  /* ensure the data matrix is allocated. */
+  if (Dset->X.k != 2 ||
+      Dset->X.sz[0] != Dset->N ||
+      Dset->X.sz[1] != Dset->K)
+    throw("data matrix is unallocated");
+
+  /* ensure the centering and scaling vectors are allocated. */
+  hx_array_free(&Dset->centers);
+  hx_array_free(&Dset->scales);
 
   /* loop over all supported scaling methods. */
   for (i = 0; methods[i].name; i++) {
     /* check if the scaling method name matches. */
     if (methods[i].type == type)
-      return methods[i].func(Dset);
+      break;
   }
 
-  /* return failure. */
-  throw("unsupported scaling method");
+  /* check that a scaling method was identified. */
+  if (!methods[i].name)
+    throw("unsupported scaling method");
+
+  /* compute the centering and scaling vectors. */
+  if (!methods[i].func(Dset))
+    throw("failed to execute scaling method");
+
+  /* loop over the data matrix rows. */
+  for (nk[0] = 0; nk[0] < Dset->N; nk[0]++) {
+    /* loop over the data matrix columns. */
+    for (nk[1] = 0; nk[1] < Dset->K; nk[1]++) {
+      /* pack the array of indices into a linear index. */
+      hx_array_index_pack(Dset->X.k, Dset->X.sz, nk, &idx);
+
+      /* subtract the centering value and divide by the scaling value. */
+      Dset->X.x[idx] -= Dset->centers.x[nk[1]];
+      Dset->X.x[idx] /= Dset->scales.x[nk[1]];
+    }
+  }
+
+  /* return success. */
+  return 1;
 }
 
 /* mx_scale_by_name(): apply a specified (named) scaling method
@@ -134,7 +166,14 @@ int mx_scale_by_name (dataset *Dset, const char *name) {
  * @Dset: pointer to the dataset to modify.
  */
 int mx_scale_none (dataset *Dset) {
-  /* FIXME: implement mx_scale_none() */
+  /* compute the centering vector. */
+  if (!mx_stats_mean(&Dset->X, 0, &Dset->centers))
+    throw("failed to compute centering vector");
+
+  /* allocate the scaling vector. */
+  if (!hx_array_alloc(&Dset->scales, 0, 1, &Dset->K) ||
+      !hx_array_fill(&Dset->scales, 1.0))
+    throw("failed to compute scaling vector");
 
   /* return success. */
   return 1;
@@ -145,7 +184,13 @@ int mx_scale_none (dataset *Dset) {
  * @Dset: pointer to the dataset to modify.
  */
 int mx_scale_uv (dataset *Dset) {
-  /* FIXME: implement mx_scale_uv() */
+  /* compute the centering vector. */
+  if (!mx_stats_mean(&Dset->X, 0, &Dset->centers))
+    throw("failed to compute centering vector");
+
+  /* compute the scaling vector. */
+  if (!mx_stats_stdev(&Dset->X, 0, &Dset->scales))
+    throw("failed to compute scaling vector");
 
   /* return success. */
   return 1;
@@ -156,7 +201,20 @@ int mx_scale_uv (dataset *Dset) {
  * @Dset: pointer to the dataset to modify.
  */
 int mx_scale_pareto (dataset *Dset) {
-  /* FIXME: implement mx_scale_pareto() */
+  /* declare a required variable. */
+  int i;
+
+  /* compute the centering vector. */
+  if (!mx_stats_mean(&Dset->X, 0, &Dset->centers))
+    throw("failed to compute centering vector");
+
+  /* compute the scaling vector. */
+  if (!mx_stats_stdev(&Dset->X, 0, &Dset->scales))
+    throw("failed to compute scaling vector");
+
+  /* finalize the scaling vector computation. */
+  for (i = 0; i < Dset->K; i++)
+    Dset->scales.x[i] = sqrt(Dset->scales.x[i]);
 
   /* return success. */
   return 1;
@@ -167,7 +225,13 @@ int mx_scale_pareto (dataset *Dset) {
  * @Dset: pointer to the dataset to modify.
  */
 int mx_scale_range (dataset *Dset) {
-  /* FIXME: implement mx_scale_range() */
+  /* compute the centering vector. */
+  if (!mx_stats_mean(&Dset->X, 0, &Dset->centers))
+    throw("failed to compute centering vector");
+
+  /* compute the scaling vector. */
+  if (!mx_stats_range(&Dset->X, 0, &Dset->scales))
+    throw("failed to compute scaling vector");
 
   /* return success. */
   return 1;
@@ -178,7 +242,13 @@ int mx_scale_range (dataset *Dset) {
  * @Dset: pointer to the dataset to modify.
  */
 int mx_scale_level (dataset *Dset) {
-  /* FIXME: implement mx_scale_level() */
+  /* compute the centering vector. */
+  if (!mx_stats_mean(&Dset->X, 0, &Dset->centers))
+    throw("failed to compute centering vector");
+
+  /* compute the scaling vector. */
+  if (!hx_array_copy(&Dset->scales, &Dset->centers))
+    throw("failed to compute scaling vector");
 
   /* return success. */
   return 1;
@@ -189,7 +259,20 @@ int mx_scale_level (dataset *Dset) {
  * @Dset: pointer to the dataset to modify.
  */
 int mx_scale_vast (dataset *Dset) {
-  /* FIXME: implement mx_scale_vast() */
+  /* declare a required variable. */
+  int i;
+
+  /* compute the centering vector. */
+  if (!mx_stats_mean(&Dset->X, 0, &Dset->centers))
+    throw("failed to compute centering vector");
+
+  /* compute the scaling vector. */
+  if (!mx_stats_var(&Dset->X, 0, &Dset->scales))
+    throw("failed to compute scaling vector");
+
+  /* finalize the scaling vector computation. */
+  for (i = 0; i < Dset->K; i++)
+    Dset->scales.x[i] /= sqrt(Dset->centers.x[i]);
 
   /* return success. */
   return 1;

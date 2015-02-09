@@ -36,6 +36,8 @@ int hx_data_shuf (real *xa, real *xb, real *xc, real *xd,
 
 int hx_data_zero (real *x, int n);
 
+int hx_data_fill (real *x, int n, real val);
+
 int hx_data_norm (real *x, int d, int n);
 
 real hx_data_real_norm (real *x, int d, int n);
@@ -53,6 +55,8 @@ int hx_scalar_mul (hx_scalar *a, hx_scalar *b, hx_scalar *c);
 int hx_scalar_scale (hx_scalar *a, real s, hx_scalar *b);
 
 int hx_scalar_zero (hx_scalar *a);
+
+int hx_scalar_fill (hx_scalar *a, real val);
 
 int hx_scalar_norm (hx_scalar *a);
 
@@ -75,6 +79,8 @@ int hx_array_mul_vector (hx_array *a, hx_array *b, int kmul, hx_array *c);
 int hx_array_scale (hx_array *a, real s, hx_array *b);
 
 int hx_array_zero (hx_array *a);
+
+int hx_array_fill (hx_array *a, real val);
 
 int hx_array_norm (hx_array *a);
 
