@@ -30,6 +30,10 @@ int hx_array_nnzdims (hx_array *x) {
   /* declare a few required variables. */
   int i, nnz;
 
+  /* return zero if a null pointer was passed. */
+  if (!x)
+    return 0;
+
   /* loop over the array dimensions, counting the number of dimensions
    * that have a 'size' larger than a single element. (in other words,
    * a 1x1x5x1 array has only one nonzero-size dimension)

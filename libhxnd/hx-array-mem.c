@@ -129,7 +129,7 @@ int hx_array_copy_real (hx_array *dst, hx_array *src) {
   int i, n;
 
   /* check if the source array is real. */
-  if (src->d == 0)
+  if (hx_array_is_real(src))
     return hx_array_copy(dst, src);
 
   /* allocate the destination array. */

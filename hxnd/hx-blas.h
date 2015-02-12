@@ -24,9 +24,9 @@
 #ifndef __HXND_HX_BLAS_H__
 #define __HXND_HX_BLAS_H__
 
-/* function declarations, blas level 1: */
+/* function declarations (hx-blas-l1.c): */
 
-real hx_blas_dot (hx_array *x, hx_array *y);
+int hx_blas_dot (hx_array *x, hx_array *y, hx_scalar *delta);
 
 real hx_blas_nrm2 (hx_array *x);
 
@@ -34,25 +34,25 @@ real hx_blas_asum (hx_array *x);
 
 int hx_blas_iamax (hx_array *x);
 
-void hx_blas_swap (hx_array *x, hx_array *y);
+int hx_blas_swap (hx_array *x, hx_array *y);
 
-void hx_blas_copy (hx_array *x, hx_array *y);
+int hx_blas_copy (hx_array *x, hx_array *y);
 
-void hx_blas_scal (real alpha, hx_array *x);
+int hx_blas_scal (real alpha, hx_array *x);
 
-void hx_blas_axpy (real alpha, hx_array *x, hx_array *y);
+int hx_blas_axpy (real alpha, hx_array *x, hx_array *y);
 
-/* function declarations, blas level 2: */
+/* function declarations (hx-blas-l2.c): */
 
-void hx_blas_gemv (int tA, real alpha, hx_array *A, hx_array *x,
+int hx_blas_gemv (int tA, real alpha, hx_array *A, hx_array *x,
                    real beta, hx_array *y);
 
-void hx_blas_ger (real alpha, hx_array *x, hx_array *y, hx_array *A);
+int hx_blas_ger (real alpha, hx_array *x, hx_array *y, hx_array *A);
 
-/* function declarations, blas level 3: */
+/* function declarations (hx-blas-l3.c): */
 
-void hx_blas_gemm (int tA, int tB, real alpha, hx_array *A, hx_array *B,
-                   real beta, hx_array *C);
+int hx_blas_gemm (int tA, int tB, real alpha, hx_array *A, hx_array *B,
+                  real beta, hx_array *C);
 
 #endif /* __HXND_HX_BLAS_H__ */
 

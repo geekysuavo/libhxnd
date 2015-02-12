@@ -164,9 +164,28 @@ int hx_array_is_matrix (hx_array *x);
 
 int hx_array_is_cube (hx_array *x);
 
+#define hx_array_assert_vector(x) \
+  if (!hx_array_is_vector(x)) \
+    throw("expected vector configuration for array %s", #x);
+
+#define hx_array_assert_matrix(x) \
+  if (!hx_array_is_matrix(x)) \
+    throw("expected matrix configuration for array %s", #x);
+
+#define hx_vector_len(x) \
+  (hx_array_is_vector(x) ? x->sz[0] : 0)
+
+#define hx_matrix_rows(x) \
+  (hx_array_is_matrix(x) ? x->sz[0] : 0)
+
+#define hx_matrix_cols(x) \
+  (hx_array_is_matrix(x) ? x->sz[1] : 0)
+
 int hx_array_compact (hx_array *x);
 
 /* function declarations (hx-array-resize.c): */
+
+int hx_array_is_real (hx_array *x);
 
 int hx_array_resize (hx_array *x, int d, int k, int *sz);
 

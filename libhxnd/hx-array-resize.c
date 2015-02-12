@@ -23,6 +23,15 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
+/* hx_array_is_real(): return whether a specified hypercomplex array contains
+ * only real data.
+ * @x: a pointer to the array to query.
+ */
+int hx_array_is_real (hx_array *x) {
+  /* return whether the array is real or not. */
+  return (x && x->d == 0);
+}
+
 /* hx_array_resize_d(): change the algebraic dimensionality of a
  * hypercomplex array. this function performs the resize operation
  * in-place.

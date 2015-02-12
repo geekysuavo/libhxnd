@@ -37,10 +37,6 @@
 /* include the openmp library header. */
 #include <omp.h>
 
-/* include the blas and lapack library headers. */
-#include <cblas.h>
-#include <lapacke.h>
-
 /* define 'pi' if needed. */
 #ifndef M_PI
 #define M_PI 3.1415926539
