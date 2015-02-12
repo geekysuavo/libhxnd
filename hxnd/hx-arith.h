@@ -34,6 +34,10 @@ int hx_data_shuf (real *xa, real *xb, real *xc, real *xd,
                   real *xph, real *xtmp, int d, int n,
                   hx_algebra tbl);
 
+int hx_data_copy (real *x, real *xcpy, int n);
+
+int hx_data_conj (real *x, real *xh, int n);
+
 int hx_data_zero (real *x, int n);
 
 int hx_data_fill (real *x, int n, real val);

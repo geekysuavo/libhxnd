@@ -159,6 +159,38 @@ int hx_data_shuf (real *xa, real *xb, real *xc, real *xd,
   return 1;
 }
 
+/* hx_data_copy(): copy the coefficients between the raw arrays
+ * of two hypercomplex values.
+ * @x: the raw array data of the input operand.
+ * @xcpy: the raw array data of the output operand.
+ * @n: the number of array elements of the operands.
+ */
+int hx_data_copy (real *x, real *xcpy, int n) {
+  /* copy the values. */
+  memcpy(xcpy, x, n * sizeof(real));
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_data_conj(): conjugate the imaginary coefficients in the raw array
+ * of a hypercomplex value.
+ * @x: the raw array data of the input operand.
+ * @xh: the raw array data of the output operand.
+ * @n: the number of array elements of the operands.
+ */
+int hx_data_conj (real *x, real *xh, int n) {
+  /* declare a required variable. */
+  int i;
+
+  /* loop over the imaginary elements. */
+  for (i = 1; i < n; i++)
+    xh[i] = -1.0 * x[i];
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_data_zero(): sets the raw coefficients of a hypercomplex value to zero.
  * @x: the raw array data of the input operand.
  * @n: the number of array elements of the operand.

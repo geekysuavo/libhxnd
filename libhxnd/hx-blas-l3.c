@@ -24,15 +24,16 @@
 #include <hxnd/hx.h>
 
 /* hx_blas_gemm(): compute the matrix-matrix product of two arrays.
- * @tA: whether to transpose the matrix @A.
- * @tB: whether to transpose the matrix @B.
+ * @tA: transposition mode of the matrix @A.
+ * @tB: transposition mode of the matrix @B.
  * @alpha: scale factor for the product.
  * @A: first matrix-shaped argument.
  * @B: second matrix-shaped argument.
  * @beta: second term scale factor.
  * @C: matrix shaped output array argument.
  */
-int hx_blas_gemm (int tA, int tB, real alpha, hx_array *A, hx_array *B,
+int hx_blas_gemm (hx_blas_trans tA, hx_blas_trans tB, real alpha,
+                  hx_array *A, hx_array *B,
                   real beta, hx_array *C) {
   /* declare a few required variables:
    * @i, @j, @k: loop counters.
@@ -41,9 +42,8 @@ int hx_blas_gemm (int tA, int tB, real alpha, hx_array *A, hx_array *B,
    * @K: inner size (row/column) of the AB product.
    * @sum: temporary hypercomplex sum.
    */
-  int i, j, k, n, M, N, K;
-  int idxa, idxb, idxc;
-  hx_scalar sum;
+  int i, j, k, n, M, N, K, idx;
+  hx_scalar a, b, sum;
 
   /* ensure the arrays are all of correct shape. */
   hx_array_assert_matrix(A);
@@ -72,37 +72,7 @@ int hx_blas_gemm (int tA, int tB, real alpha, hx_array *A, hx_array *B,
   n = A->n;
 
   /* check the transpose mode. */
-  if (tA && tB) {
-    /* get the inner loop index. */
-    K = hx_matrix_cols(A);
-
-    /* ensure the sizes match. */
-    if (hx_matrix_rows(C) != hx_matrix_cols(A) ||
-        hx_matrix_cols(C) != hx_matrix_rows(B) ||
-        hx_matrix_rows(A) != hx_matrix_cols(B))
-      throw("one or more operand size mismatches");
-  }
-  else if (tA) {
-    /* get the inner loop index. */
-    K = hx_matrix_rows(A);
-
-    /* ensure the sizes match. */
-    if (hx_matrix_rows(C) != hx_matrix_cols(A) ||
-        hx_matrix_cols(C) != hx_matrix_cols(B) ||
-        hx_matrix_rows(A) != hx_matrix_rows(B))
-      throw("one or more operand size mismatches");
-  }
-  else if (tB) {
-    /* get the inner loop index. */
-    K = hx_matrix_cols(A);
-
-    /* ensure the sizes match. */
-    if (hx_matrix_rows(C) != hx_matrix_rows(A) ||
-        hx_matrix_cols(C) != hx_matrix_rows(B) ||
-        hx_matrix_cols(A) != hx_matrix_cols(B))
-      throw("one or more operand size mismatches");
-  }
-  else {
+  if (tA == &hx_no_trans && tB == &hx_no_trans) {
     /* get the inner loop index. */
     K = hx_matrix_cols(A);
 
@@ -112,46 +82,69 @@ int hx_blas_gemm (int tA, int tB, real alpha, hx_array *A, hx_array *B,
         hx_matrix_cols(A) != hx_matrix_rows(B))
       throw("one or more operand size mismatches");
   }
+  else if (tA == &hx_no_trans) {
+    /* get the inner loop index. */
+    K = hx_matrix_cols(A);
+
+    /* ensure the sizes match. */
+    if (hx_matrix_rows(C) != hx_matrix_rows(A) ||
+        hx_matrix_cols(C) != hx_matrix_rows(B) ||
+        hx_matrix_cols(A) != hx_matrix_cols(B))
+      throw("one or more operand size mismatches");
+  }
+  else if (tB == &hx_no_trans) {
+    /* get the inner loop index. */
+    K = hx_matrix_rows(A);
+
+    /* ensure the sizes match. */
+    if (hx_matrix_rows(C) != hx_matrix_cols(A) ||
+        hx_matrix_cols(C) != hx_matrix_cols(B) ||
+        hx_matrix_rows(A) != hx_matrix_rows(B))
+      throw("one or more operand size mismatches");
+  }
+  else {
+    /* get the inner loop index. */
+    K = hx_matrix_cols(A);
+
+    /* ensure the sizes match. */
+    if (hx_matrix_rows(C) != hx_matrix_cols(A) ||
+        hx_matrix_cols(C) != hx_matrix_rows(B) ||
+        hx_matrix_rows(A) != hx_matrix_cols(B))
+      throw("one or more operand size mismatches");
+  }
 
   /* allocate a scalar to hold intermediate sums. */
-  if (!hx_scalar_alloc(&sum, A->d))
+  if (!hx_scalar_alloc(&sum, A->d) ||
+      !hx_scalar_alloc(&a, A->d) ||
+      !hx_scalar_alloc(&b, A->d))
     throw("failed to allocate temporary %d-scalar", A->d);
 
-  /* loop over the rows of the output matrix. */
-  for (i = 0; i < M * n; i += n) {
-    /* loop over the columns of the output matrix. */
-    for (j = 0; j < N * n; j += n) {
-      /* compute the output array linear index. */
-      idxc = i + M * j;
-
+  /* loop over the columns of the output matrix. */
+  for (j = 0, idx = 0; j < N * n; j += n) {
+    /* loop over the rows of the output matrix. */
+    for (i = 0; i < M * n; i += n, idx += n) {
       /* loop over the elements of the matrix product. */
       hx_scalar_zero(&sum);
       for (k = 0; k < K * n; k += n) {
-        /* compute the first matrix linear index. */
-        if (tA)
-          idxa = i + A->sz[0] * k;
-        else
-          idxa = k + A->sz[0] * i;
-
-        /* compute the second matrix linear index. */
-        if (tB)
-          idxb = k + B->sz[0] * j;
-        else
-          idxb = j + B->sz[0] * k;
+        /* extract the input matrix elements. */
+        tA(A, &a, i, k);
+        tB(B, &b, k, j);
 
         /* sum += A(i,k) * B(k,j) */
-        hx_data_mul(A->x + idxa, B->x + idxb, sum.x, A->d, n, A->tbl);
+        hx_data_mul(a.x, b.x, sum.x, A->d, n, A->tbl);
       }
 
       /* scale the computed value and sum it into @C:
        *  C(i,j) += alpha * sum
        */
-      hx_data_add(C->x + idxc, sum.x, C->x + idxc, alpha, C->d, C->n);
+      hx_data_add(C->x + idx, sum.x, C->x + idx, alpha, C->d, C->n);
     }
   }
 
-  /* free the temporary scalar. */
+  /* free the temporary scalars. */
   hx_scalar_free(&sum);
+  hx_scalar_free(&a);
+  hx_scalar_free(&b);
 
   /* return success. */
   return 1;

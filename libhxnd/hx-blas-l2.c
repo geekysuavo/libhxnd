@@ -24,21 +24,22 @@
 #include <hxnd/hx.h>
 
 /* hx_blas_gemv(): compute the matrix-vector product of two arrays.
- * @tA: whether to transpose the matrix @A.
+ * @tA: transposition mode of the matrix @A.
  * @A: matrix-shaped array operand.
  * @x: vector-shaped array operand.
  * @beta: second term scale factor.
  * @y: vector-shaped output array operand.
  */
-int hx_blas_gemv (int tA, real alpha, hx_array *A, hx_array *x,
+int hx_blas_gemv (hx_blas_trans tA, real alpha,
+                  hx_array *A, hx_array *x,
                   real beta, hx_array *y) {
   /* declare a few required variables:
-   * @i, @j: loop counters.
-   * @idx: matrix linear index.
+   * @Ah: hypercomplex matrix element from @A.
    * @sum: hypercomplex sum.
+   * @i, @j: loop counters.
    */
-  int i, j, idx;
-  hx_scalar sum;
+  hx_scalar Ah, sum;
+  int i, j;
 
   /* ensure the arrays are all of correct shape. */
   hx_array_assert_matrix(A);
@@ -60,21 +61,22 @@ int hx_blas_gemv (int tA, real alpha, hx_array *A, hx_array *x,
     return 1;
 
   /* check the tranpose mode. */
-  if (tA) {
-    /* ensure the sizes match. */
-    if (hx_vector_len(y) != hx_matrix_cols(A) ||
-        hx_vector_len(x) != hx_matrix_rows(A))
-      throw("one or more operand size mismatches");
-  }
-  else {
+  if (tA == &hx_no_trans) {
     /* ensure the sizes match. */
     if (hx_vector_len(y) != hx_matrix_rows(A) ||
         hx_vector_len(x) != hx_matrix_cols(A))
       throw("one or more operand size mismatches");
   }
+  else {
+    /* ensure the sizes match. */
+    if (hx_vector_len(y) != hx_matrix_cols(A) ||
+        hx_vector_len(x) != hx_matrix_rows(A))
+      throw("one or more operand size mismatches");
+  }
 
   /* allocate a scalar to hold intermediate sums. */
-  if (!hx_scalar_alloc(&sum, A->d))
+  if (!hx_scalar_alloc(&sum, A->d) ||
+      !hx_scalar_alloc(&Ah, A->d))
     throw("failed to allocate temporary %d-scalar", A->d);
 
   /* loop over the elements of @y. */
@@ -84,14 +86,11 @@ int hx_blas_gemv (int tA, real alpha, hx_array *A, hx_array *x,
 
     /* loop over the elements of @x. */
     for (j = 0; j < x->len; j += x->n) {
-      /* compute the matrix linear index. */
-      if (tA)
-        idx = j + A->sz[0] * i;
-      else
-        idx = i + A->sz[0] * j;
+      /* retrieve the currently indexed matrix element. */
+      tA(A, &Ah, i, j);
 
       /* sum += A(i,j) * x(i) */
-      hx_data_mul(A->x + idx, x->x + j, sum.x, A->d, A->n, A->tbl);        
+      hx_data_mul(Ah.x, x->x + j, sum.x, A->d, A->n, A->tbl);        
     }
 
     /* scale the computed value and sum it into @y:
@@ -100,20 +99,59 @@ int hx_blas_gemv (int tA, real alpha, hx_array *A, hx_array *x,
     hx_data_add(y->x + i, sum.x, y->x + i, alpha, A->d, A->n);
   }
 
-  /* free the temporary scalar. */
+  /* free the temporary scalars. */
   hx_scalar_free(&sum);
+  hx_scalar_free(&Ah);
 
   /* return success. */
   return 1;
 }
 
-/* hx_blas_ger(): compute the rank-1 update of an array by two arrays.
+/* hx_blas_rger(): compute the rank-1 update of a real array by two
+ * real arrays. if the arrays are not real, then only their real
+ * elements are used in the computation.
  * @alpha: scale factor for the update.
  * @x: first vector-shaped array operand.
  * @y: second vector-shaped array operand.
  * @A: matrix-shaped array operand.
  */
-int hx_blas_ger (real alpha, hx_array *x, hx_array *y, hx_array *A) {
+int hx_blas_rger (real alpha, hx_array *x, hx_array *y, hx_array *A) {
+  /* declare a few required variables:
+   * @i, @j: loop counters.
+   * @idx: matrix linear index.
+   */
+  int i, j, idx;
+
+  /* ensure the arrays are all of correct shape. */
+  hx_array_assert_vector(x);
+  hx_array_assert_vector(y);
+  hx_array_assert_matrix(A);
+
+  /* ensure the arrays are all of correct dimensionality. */
+  if (hx_array_dims_cmp(x, A) || hx_array_dims_cmp(y, A))
+    throw("algebraic dimensionality mismatch");
+
+  /* ensure the array sizes match. */
+  if (hx_vector_len(x) != hx_matrix_rows(A) ||
+      hx_vector_len(y) != hx_matrix_cols(A))
+    throw("one or more operand size mismatches");
+
+  /* update the elements of the real matrix. */
+  for (j = idx = 0; j < y->len; j += y->n)
+    for (i = 0; i < x->len; i += x->n, idx += A->n)
+      A->x[idx] += alpha * x->x[i] * y->x[j];
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_blas_cgeru(): compute the rank-1 update of an array by two arrays.
+ * @alpha: scale factor for the update.
+ * @x: first vector-shaped array operand.
+ * @y: second vector-shaped array operand.
+ * @A: matrix-shaped array operand.
+ */
+int hx_blas_cgeru (real alpha, hx_array *x, hx_array *y, hx_array *A) {
   /* declare a few required variables:
    * @i, @j: loop counters.
    * @idx: matrix linear index.
@@ -136,33 +174,81 @@ int hx_blas_ger (real alpha, hx_array *x, hx_array *y, hx_array *A) {
       hx_vector_len(y) != hx_matrix_cols(A))
     throw("one or more operand size mismatches");
 
-  /* use a faster real-only matrix update whenever possible. */
-  if (hx_array_is_real(A)) {
-    /* update the elements of the real matrix. */
-    for (j = idx = 0; j < y->len; j++)
-      for (i = 0; i < x->len; i++, idx++)
-        A->x[idx] += alpha * x->x[i] * y->x[j];
-  }
-  else {
-    /* allocate a temporary hypercomplex scalar. */
-    if (!hx_scalar_alloc(&hprod, A->d))
-      throw("failed to allocate temporary %d-scalar", A->d);
+  /* allocate a temporary hypercomplex scalar. */
+  if (!hx_scalar_alloc(&hprod, A->d))
+    throw("failed to allocate temporary %d-scalar", A->d);
 
-    /* update the elements of the hypercomplex matrix. */
-    for (j = idx = 0; j < y->len; j += y->n) {
-      for (i = 0; i < x->len; i += x->n, idx += A->n) {
-        /* compute the scaled product of the two vector entries,
-         * then sum it with the appropriate matrix element.
-         */
-        hx_scalar_zero(&hprod);
-        hx_data_mul(x->x + i, y->x + j, hprod.x, x->d, x->n, x->tbl);
-        hx_data_add(A->x + idx, hprod.x, A->x + idx, alpha, A->d, A->n);
-      }
+  /* update the elements of the hypercomplex matrix. */
+  for (j = idx = 0; j < y->len; j += y->n) {
+    for (i = 0; i < x->len; i += x->n, idx += A->n) {
+      /* compute the scaled product of the two vector entries,
+       * then sum it with the appropriate matrix element.
+       */
+      hx_scalar_zero(&hprod);
+      hx_data_mul(x->x + i, y->x + j, hprod.x, x->d, x->n, x->tbl);
+      hx_data_add(A->x + idx, hprod.x, A->x + idx, alpha, A->d, A->n);
     }
-
-    /* free the temporary scalar. */
-    hx_scalar_free(&hprod);
   }
+
+  /* free the temporary scalar. */
+  hx_scalar_free(&hprod);
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_blas_cgerc(): compute the rank-1 update of an array by two arrays,
+ * where the second vector has been conjugated prior to multiplication..
+ * @alpha: scale factor for the update.
+ * @x: first vector-shaped array operand.
+ * @y: second vector-shaped array operand.
+ * @A: matrix-shaped array operand.
+ */
+int hx_blas_cgerc (real alpha, hx_array *x, hx_array *y, hx_array *A) {
+  /* declare a few required variables:
+   * @i, @j: loop counters.
+   * @idx: matrix linear index.
+   * @hprod: hypercomplex temporary, unscaled product.
+   * @yh: hypercomplex array element of the second vector.
+   */
+  hx_scalar hprod, yh;
+  int i, j, idx;
+
+  /* ensure the arrays are all of correct shape. */
+  hx_array_assert_vector(x);
+  hx_array_assert_vector(y);
+  hx_array_assert_matrix(A);
+
+  /* ensure the arrays are all of correct dimensionality. */
+  if (hx_array_dims_cmp(x, A) || hx_array_dims_cmp(y, A))
+    throw("algebraic dimensionality mismatch");
+
+  /* ensure the array sizes match. */
+  if (hx_vector_len(x) != hx_matrix_rows(A) ||
+      hx_vector_len(y) != hx_matrix_cols(A))
+    throw("one or more operand size mismatches");
+
+  /* allocate a temporary hypercomplex scalar. */
+  if (!hx_scalar_alloc(&hprod, A->d) ||
+      !hx_scalar_alloc(&yh, A->d))
+    throw("failed to allocate temporary %d-scalar", A->d);
+
+  /* update the elements of the hypercomplex matrix. */
+  for (j = idx = 0; j < y->len; j += y->n) {
+    for (i = 0; i < x->len; i += x->n, idx += A->n) {
+      /* compute the scaled product of the two vector entries,
+       * then sum it with the appropriate matrix element.
+       */
+      hx_scalar_zero(&hprod);
+      hx_data_conj(y->x + j, yh.x, y->n);
+      hx_data_mul(x->x + i, yh.x, hprod.x, x->d, x->n, x->tbl);
+      hx_data_add(A->x + idx, hprod.x, A->x + idx, alpha, A->d, A->n);
+    }
+  }
+
+  /* free the temporary scalars. */
+  hx_scalar_free(&hprod);
+  hx_scalar_free(&yh);
 
   /* return success. */
   return 1;

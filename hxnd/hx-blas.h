@@ -24,9 +24,29 @@
 #ifndef __HXND_HX_BLAS_H__
 #define __HXND_HX_BLAS_H__
 
+/* hx_blas_trans(): function prototype for matrix transposition operations.
+ * @A: pointer to the array for the input matrix.
+ * @aij: pointer to the array for the output scalar.
+ * @i: the row index of the final (transposed or not) matrix.
+ * @j: the column index of the final (transposed or not) matrix.
+ */
+typedef void (*hx_blas_trans) (hx_array *A, hx_scalar *aij, int i, int j);
+
+/* function declarations (hx-blas.c): */
+
+void hx_no_trans (hx_array *A, hx_scalar *aij, int i, int j);
+
+void hx_trans (hx_array *A, hx_scalar *aij, int i, int j);
+
+void hx_conj_trans (hx_array *A, hx_scalar *aij, int i, int j);
+
 /* function declarations (hx-blas-l1.c): */
 
-int hx_blas_dot (hx_array *x, hx_array *y, hx_scalar *delta);
+int hx_blas_rdot (hx_array *x, hx_array *y, real *delta);
+
+int hx_blas_cdotu (hx_array *x, hx_array *y, hx_scalar *delta);
+
+int hx_blas_cdotc (hx_array *x, hx_array *y, hx_scalar *delta);
 
 real hx_blas_nrm2 (hx_array *x);
 
@@ -44,14 +64,20 @@ int hx_blas_axpy (real alpha, hx_array *x, hx_array *y);
 
 /* function declarations (hx-blas-l2.c): */
 
-int hx_blas_gemv (int tA, real alpha, hx_array *A, hx_array *x,
-                   real beta, hx_array *y);
+int hx_blas_gemv (hx_blas_trans tA, real alpha,
+                  hx_array *A, hx_array *x,
+                  real beta, hx_array *y);
 
-int hx_blas_ger (real alpha, hx_array *x, hx_array *y, hx_array *A);
+int hx_blas_rger (real alpha, hx_array *x, hx_array *y, hx_array *A);
+
+int hx_blas_cgeru (real alpha, hx_array *x, hx_array *y, hx_array *A);
+
+int hx_blas_cgerc (real alpha, hx_array *x, hx_array *y, hx_array *A);
 
 /* function declarations (hx-blas-l3.c): */
 
-int hx_blas_gemm (int tA, int tB, real alpha, hx_array *A, hx_array *B,
+int hx_blas_gemm (hx_blas_trans tA, hx_blas_trans tB, real alpha,
+                  hx_array *A, hx_array *B,
                   real beta, hx_array *C);
 
 #endif /* __HXND_HX_BLAS_H__ */

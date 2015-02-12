@@ -23,15 +23,15 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
-/* hx_blas_dot(): compute the inner product of two arrays.
+/* hx_blas_rdot(): compute the inner product of two real arrays. if the
+ * arrays are not real, then compute the inner product of their real
+ * elements only.
  * @x: first array operand.
  * @y: second array operand.
- * @delta: output dot product scalar.
+ * @delta: output dot product value.
  */
-int hx_blas_dot (hx_array *x, hx_array *y, hx_scalar *delta) {
-  /* declare a required variable:
-   * @i: array traversal loop index.
-   */
+int hx_blas_rdot (hx_array *x, hx_array *y, real *delta) {
+  /* declare a required variable. */
   int i;
 
   /* ensure the arrays are of equal length. */
@@ -39,22 +39,74 @@ int hx_blas_dot (hx_array *x, hx_array *y, hx_scalar *delta) {
     throw("array length mismatch (%d != %d)", x->len, y->len);
 
   /* ensure the arrays are of equal dimensionality. */
-  if (x->d != y->d || x->d != delta->d)
-    throw("array dimensionality mismatch (%d != %d, %d)",
-          x->d, y->d, delta->d);
+  if (x->d != y->d)
+    throw("array dimensionality mismatch (%d != %d)", x->d, y->d);
 
-  /* use a faster real-only function whenever possible. */
-  if (hx_array_is_real(x)) {
-    /* compute the real dot product. */
-    for (i = 0, delta->x[0] = 0.0; i < x->len; i++)
-      delta->x[0] += x->x[i] * y->x[i];
+  /* compute the real dot product. */
+  for (i = 0, *delta = 0.0; i < x->len; i += x->n)
+    *delta += x->x[i] * y->x[i];
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_blas_cdotu(): compute the hypercomplex inner product of two arrays.
+ * see hx_blas_rdot() for more details.
+ */
+int hx_blas_cdotu (hx_array *x, hx_array *y, hx_scalar *delta) {
+  /* declare a required variable. */
+  int i;
+
+  /* ensure the arrays are of equal length. */
+  if (x->len != y->len)
+    throw("array length mismatch (%d != %d)", x->len, y->len);
+
+  /* ensure the arrays are of equal dimensionality. */
+  if (x->d != y->d)
+    throw("array dimensionality mismatch (%d != %d)", x->d, y->d);
+
+  /* compute the hypercomplex dot product. */
+  hx_scalar_zero(delta);
+  for (i = 0; i < x->len; i += x->n)
+    hx_data_mul(x->x + i, y->x + i, delta->x, x->d, x->n, x->tbl);
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_blas_cdotc(): compute the hypercomplex inner product of two arrays,
+ * where the first array has been conjugated prior to multiplication.
+ * see hx_blas_rdot() for more details.
+ */
+int hx_blas_cdotc (hx_array *x, hx_array *y, hx_scalar *delta) {
+  /* declare a few required variables. */
+  hx_scalar xh;
+  int i;
+
+  /* ensure the arrays are of equal length. */
+  if (x->len != y->len)
+    throw("array length mismatch (%d != %d)", x->len, y->len);
+
+  /* ensure the arrays are of equal dimensionality. */
+  if (x->d != y->d)
+    throw("array dimensionality mismatch (%d != %d)", x->d, y->d);
+
+  /* allocate a temporary scalar. */
+  if (!hx_scalar_alloc(&xh, x->d))
+    throw("failed to allocate temporary %d-scalar", x->d);
+
+  /* compute the hypercomplex dot product. */
+  hx_scalar_zero(delta);
+  for (i = 0; i < x->len; i += x->n) {
+    /* conjugate the element of @x out of place. */
+    hx_data_conj(x->x + i, xh.x, x->n);
+
+    /* multiply the conjugated element of @x with that of @y. */
+    hx_data_mul(xh.x, y->x + i, delta->x, x->d, x->n, x->tbl);
   }
-  else {
-    /* compute the hypercomplex dot product. */
-    hx_scalar_zero(delta);
-    for (i = 0; i < x->len; i += x->n)
-      hx_data_mul(x->x + i, y->x + i, delta->x, x->d, x->n, x->tbl);
-  }
+
+  /* free the temporary scalar. */
+  hx_scalar_free(&xh);
 
   /* return success. */
   return 1;
