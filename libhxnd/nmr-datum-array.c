@@ -352,16 +352,16 @@ int datum_array_resize (datum *D, int *sz) {
 int datum_array_slice (datum *D, int *lower, int *upper) {
   /* declare a few required variables:
    * @arrnew: destination slice array.
-   * @nd: previous dimension count.
-   * @ndnew: new number of dimensions.
+   * @k: previous topological dimension count.
+   * @knew: new number of topological dimensions.
+   * @dnew: new number of algebraic dimensions.
    * @ord: dimension reordering array.
    */
-  int nd, ndnew, d, dadj, *ord;
+  int i, k, dnew, knew, *ord;
   hx_array arrnew;
 
   /* initialize the local array values, just to be safe. */
-  arrnew.d = arrnew.k = 0;
-  arrnew.sz = NULL;
+  hx_array_init(&arrnew);
 
   /* slice the datum array into a local array. */
   if (!hx_array_slice(&D->array, &arrnew, lower, upper))
@@ -375,31 +375,35 @@ int datum_array_slice (datum *D, int *lower, int *upper) {
   /* allocate an array to specify how to reorder the datum dimensions,
    * if the need arises.
    */
-  nd = D->nd;
-  ord = hx_array_index_alloc(nd);
+  k = D->array.k;
+  ord = hx_array_index_alloc(k);
 
   /* check that allocation succeeded. */
   if (!ord)
-    throw("failed to allocate %u indices", nd);
+    throw("failed to allocate %u indices", k);
 
-  /* store the new array sizes in the datum dimensions. */
-  for (d = 0, dadj = 0, ndnew = 0; d < nd; d++) {
+  /* compute the new topological dimension count. */
+  for (i = dnew = knew = 0; i < D->nd; i++) {
     /* check if the current dimension has nonzero size. */
-    if (D->array.sz[d] > 1) {
+    if (D->array.sz[D->dims[i].k] > 1) {
       /* store a sortable value in the ordering array. */
-      ord[d] = dadj;
-      dadj++;
+      ord[i] = knew;
 
-      /* increment the number of nonzero-size dimensions. */
-      ndnew++;
+      /* increment the algebraic dimension count, but only if the
+       * current algebraic dimension is valid.
+       */
+      dnew += (D->dims[i].d != DATUM_DIM_INVALID ? 1 : 0);
+
+      /* increment the topological dimension count. */
+      knew++;
     }
     else {
       /* store an unsortable value in the ordering array. */
-      ord[d] = (int) nd;
+      ord[i] = k;
     }
 
     /* store the new array dimension size. */
-    D->dims[d].sz = D->array.sz[d];
+    D->dims[i].sz = D->array.sz[D->dims[i].k];
   }
 
   /* compact zero-size array dimensions out of the array. */
@@ -407,24 +411,24 @@ int datum_array_slice (datum *D, int *lower, int *upper) {
     throw("failed to compact core array");
 
   /* check if the dimension count changed. */
-  if (ndnew != nd) {
+  if (knew != k) {
     /* reorder the datum dimensions. */
     if (!datum_dims_reorder(D, ord))
       throw("failed to reorder datum dimensions");
 
     /* reallocate the dimension array. */
-    if (!datum_dims_realloc(D, ndnew))
+    if (!datum_dims_realloc(D, knew))
       throw("failed to reallocate dimension array");
 
     /* sort the ordering array into a valid index list. */
-    hx_array_index_sort(nd, ord);
+    hx_array_index_sort(k, ord);
 
     /* reorder the core array basis elements. */
     if (!hx_array_reorder_bases(&D->array, ord))
       throw("failed to reorder core array basis elements");
 
     /* reduce the dimensionality of the core array. */
-    if (!hx_array_resize(&D->array, ndnew, D->array.k, D->array.sz))
+    if (!hx_array_resize(&D->array, dnew, D->array.k, D->array.sz))
       throw("failed to resize core array");
   }
 
