@@ -39,6 +39,7 @@
 #define FN_NAME_IST       "ist"
 #define FN_NAME_MULTIPLY  "multiply"
 #define FN_NAME_PHASE     "phase"
+#define FN_NAME_PROJECT   "project"
 #define FN_NAME_REAL      "real"
 #define FN_NAME_RESIZE    "resize"
 #define FN_NAME_SHIFT     "shift"
@@ -69,6 +70,8 @@ int fn_ist (datum *D, const int dim, const fn_arg *args);
 int fn_multiply (datum *D, const int dim, const fn_arg *args);
 
 int fn_phase (datum *D, const int dim, const fn_arg *args);
+
+int fn_project (datum *D, const int dim, const fn_arg *args);
 
 int fn_real (datum *D, const int dim, const fn_arg *args);
 

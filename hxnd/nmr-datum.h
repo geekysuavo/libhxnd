@@ -183,6 +183,8 @@ int datum_array_resize (datum *D, int *sz);
 
 int datum_array_slice (datum *D, int *lower, int *upper);
 
+int datum_array_project (datum *D, int dim, hx_array_projector_cb projector);
+
 /* function declarations (nmr-datum-type.c): */
 
 const char *datum_type_name (enum datum_type typ);

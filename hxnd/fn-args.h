@@ -71,6 +71,11 @@ static fn_arg fn_args_phase[] = {
   { NULL,      {},           0, FN_VALTYPE_UNKNOWN }
 };
 
+static fn_arg fn_args_project[] = {
+  { "type", { .s = NULL }, 0, FN_VALTYPE_STRING },
+  { NULL,   {},            0, FN_VALTYPE_UNKNOWN }
+};
+
 static fn_arg fn_args_resize[] = {
   { "size",  { .i = 0     }, 0, FN_VALTYPE_INT },
   { "shape", { .iv = NULL }, 0, FN_VALTYPE_INTS },

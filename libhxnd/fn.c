@@ -42,6 +42,7 @@ static fn functions[] = {
   { FN_NAME_IST,      (fn_pointer) &fn_ist,      fn_args_ist },
   { FN_NAME_MULTIPLY, (fn_pointer) &fn_multiply, fn_args_multiply },
   { FN_NAME_PHASE,    (fn_pointer) &fn_phase,    fn_args_phase },
+  { FN_NAME_PROJECT,  (fn_pointer) &fn_project,  fn_args_project },
   { FN_NAME_REAL,     (fn_pointer) &fn_real,     NULL },
   { FN_NAME_RESIZE,   (fn_pointer) &fn_resize,   fn_args_resize },
   { FN_NAME_SHIFT,    (fn_pointer) &fn_shift,    fn_args_shift },

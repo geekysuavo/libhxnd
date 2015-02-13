@@ -473,3 +473,91 @@ int datum_array_slice (datum *D, int *lower, int *upper) {
   return 1;
 }
 
+/* datum_array_project(): project a dimension out of an array in a datum.
+ * @D: pointer to the datum to manipulate.
+ * @dim: datum dimension index for projection.
+ * @projector: array projection callback to use.
+ */
+int datum_array_project (datum *D, int dim, hx_array_projector_cb projector) {
+  /* declare a few required variables:
+   * @arrnew: destination projection array.
+   * @d: algebraic dimension being projected.
+   * @k: topological dimension being projected.
+   * @ord: datum dimension reordering array.
+   */
+  int i, d, k, *ord;
+  hx_array arrnew;
+
+  /* get references to the projected array dimension indices. */
+  d = D->dims[dim].d;
+  k = D->dims[dim].k;
+
+  /* allocate an index array for reordering datum and array dimensions. */
+  ord = hx_array_index_alloc(D->nd);
+
+  /* ensure that allocation succeeded. */
+  if (!ord)
+    throw("failed to allocate %u indices", D->nd);
+
+  /* apply the projector to the datum array. */
+  hx_array_init(&arrnew);
+  if (!hx_array_projector(&D->array, k, projector, &arrnew))
+    throw("failed to apply projection operation");
+
+  /* replace the datum array with its projection. */
+  hx_array_free(&D->array);
+  hx_array_copy(&D->array, &arrnew);
+  hx_array_free(&arrnew);
+
+  /* compact zero-size array dimensions out of the array. */
+  if (!hx_array_compact(&D->array))
+    throw("failed to compact core array");
+
+  /* correct the topological array indices. */
+  for (i = 0; i < D->nd; i++)
+    D->dims[i].k -= (D->dims[i].k > k ? 1 : 0);
+
+  /* only correct the indices if we're losing a dimension. */
+  if (d != DATUM_DIM_INVALID) {
+    /* correct the algebraic array indices. */
+    for (i = 0; i < D->nd; i++)
+      D->dims[i].d -= (D->dims[i].d > d ? 1 : 0);
+  }
+
+  /* build the datum dimension reordering array. */
+  for (i = 0; i < D->nd; i++)
+    ord[i] = (i == dim ? D->nd : i);
+
+  /* reorder the datum dimensions. */
+  if (!datum_dims_reorder(D, ord))
+    throw("failed to reorder datum dimensions");
+
+  /* reallocate the dimension array. */
+  if (!datum_dims_realloc(D, D->nd - 1))
+    throw("failed to reallocate dimension array");
+
+  /* only reorder the complex bases if we're losing a dimension. */
+  if (d != DATUM_DIM_INVALID) {
+    /* build the basis reordering array. */
+    for (i = 0; i < D->array.d; i++)
+      ord[i] = (i == d ? D->array.d : i);
+
+    /* sort the ordering array. */
+    hx_array_index_sort(D->array.d, ord);
+
+    /* reorder the core array basis elements. */
+    if (!hx_array_reorder_bases(&D->array, ord))
+      throw("failed to reorder core array basis elements");
+
+    /* reduce the dimensionality of the core array. */
+    if (!hx_array_resize(&D->array, D->array.d - 1, D->array.k, D->array.sz))
+      throw("failed to resize core array");
+  }
+
+  /* free the allocated index array. */
+  free(ord);
+
+  /* return success. */
+  return 1;
+}
+

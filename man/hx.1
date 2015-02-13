@@ -299,6 +299,15 @@ interprets the pivot location as a value in Hertz when set.
 \fBinverse\fR (boolean) [false]
 negates the specified phase correction values when set.
 
+.SS project
+The \fBproject\fR command projects down a given dimension \fID\fR in the
+current datum by applying the specified vector-to-scalar projection
+operation (\fBtype\fR) to each vector along that dimension.
+.TP
+\fBtype\fR (string) ['sum']
+type of vector-to-scalar projection operation to apply. must be one of
+\fIsum\fR, \fImin\fR or \fImax\fR.
+
 .SS real
 The \fBreal\fR command compresses one or all dimensions of the current datum
 by dropping imaginary algebraic components.
