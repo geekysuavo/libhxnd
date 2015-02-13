@@ -351,13 +351,18 @@ int datum_array_resize (datum *D, int *sz) {
  */
 int datum_array_slice (datum *D, int *lower, int *upper) {
   /* declare a few required variables:
-   * @arrnew: destination slice array.
+   * @dim: datum dimension index.
    * @k: previous topological dimension count.
-   * @knew: new number of topological dimensions.
    * @dnew: new number of algebraic dimensions.
-   * @ord: dimension reordering array.
+   * @knew: new number of topological dimensions.
+   * @drm: number of removed algebraic dimensions.
+   * @krm: number of removed topological dimensions.
+   * @ordd: algebraic dimension reordering array.
+   * @ordk: topological dimension reordering array.
+   * @arrnew: destination slice array.
    */
-  int i, k, dnew, knew, *ord;
+  int dim, d, k, dnew, knew, drm, krm, dadj, kadj;
+  int *ordd, *ordk;
   hx_array arrnew;
 
   /* initialize the local array values, just to be safe. */
@@ -372,38 +377,66 @@ int datum_array_slice (datum *D, int *lower, int *upper) {
   hx_array_copy(&D->array, &arrnew);
   hx_array_free(&arrnew);
 
-  /* allocate an array to specify how to reorder the datum dimensions,
+  /* get the current dimensionalities of the datum array. */
+  d = D->array.d;
+  k = D->array.k;
+
+  /* allocate arrays to specify how to reorder the datum dimensions,
    * if the need arises.
    */
-  k = D->array.k;
-  ord = hx_array_index_alloc(k);
+  ordd = hx_array_index_alloc(d ? d : 1);
+  ordk = hx_array_index_alloc(k);
 
   /* check that allocation succeeded. */
-  if (!ord)
-    throw("failed to allocate %u indices", k);
+  if (!ordd || !ordk)
+    throw("failed to allocate %d+%d indices", d, k);
 
-  /* compute the new topological dimension count. */
-  for (i = dnew = knew = 0; i < D->nd; i++) {
-    /* check if the current dimension has nonzero size. */
-    if (D->array.sz[D->dims[i].k] > 1) {
-      /* store a sortable value in the ordering array. */
-      ord[i] = knew;
+  /* initialize the new dimension counts and ordering indices. */
+  dnew = dadj = drm = 0;
+  knew = kadj = krm = 0;
 
-      /* increment the algebraic dimension count, but only if the
-       * current algebraic dimension is valid.
-       */
-      dnew += (D->dims[i].d != DATUM_DIM_INVALID ? 1 : 0);
-
-      /* increment the topological dimension count. */
+  /* compute the new topological and algebraic dimension counts. */
+  for (dim = 0; dim < D->nd; dim++) {
+    /* check if the current topological dimension is disappearing. */
+    if (D->array.sz[D->dims[dim].k] > 1) {
+      /* increment the dimension counts. */
+      dnew += (D->dims[dim].d != DATUM_DIM_INVALID ? 1 : 0);
       knew++;
+
+      /* store a sortable index in the topological ordering. */
+      ordk[kadj++] = D->dims[dim].k;
+
+      /* store an index in the algebraic ordering. */
+      if (D->dims[dim].d != DATUM_DIM_INVALID)
+        ordd[dadj++] = D->dims[dim].d;
+
+      /* store the new array dimension size. */
+      D->dims[dim].sz = D->array.sz[D->dims[dim].k];
+
+      /* adjust the topological dimension index. */
+      D->dims[dim].k -= krm;
+
+      /* adjust the algebraic dimension index. */
+      if (D->dims[dim].d != DATUM_DIM_INVALID)
+        D->dims[dim].d -= drm;
     }
     else {
-      /* store an unsortable value in the ordering array. */
-      ord[i] = k;
-    }
+      /* store an unsortable index in the topological ordering. */
+      ordk[kadj++] = k;
+      krm++;
 
-    /* store the new array dimension size. */
-    D->dims[i].sz = D->array.sz[D->dims[i].k];
+      /* store an index in the algebraic ordering. */
+      if (D->dims[dim].d != DATUM_DIM_INVALID) {
+        /* store an unsortable index and increment the removed count. */
+        ordd[dadj++] = d;
+        drm++;
+      }
+
+      /* invalidate the current topological dimension. */
+      D->dims[dim].d = DATUM_DIM_INVALID;
+      D->dims[dim].k = DATUM_DIM_INVALID;
+      D->dims[dim].sz = 0;
+    }
   }
 
   /* compact zero-size array dimensions out of the array. */
@@ -413,7 +446,7 @@ int datum_array_slice (datum *D, int *lower, int *upper) {
   /* check if the dimension count changed. */
   if (knew != k) {
     /* reorder the datum dimensions. */
-    if (!datum_dims_reorder(D, ord))
+    if (!datum_dims_reorder(D, ordk))
       throw("failed to reorder datum dimensions");
 
     /* reallocate the dimension array. */
@@ -421,10 +454,10 @@ int datum_array_slice (datum *D, int *lower, int *upper) {
       throw("failed to reallocate dimension array");
 
     /* sort the ordering array into a valid index list. */
-    hx_array_index_sort(k, ord);
+    hx_array_index_sort(d, ordd);
 
     /* reorder the core array basis elements. */
-    if (!hx_array_reorder_bases(&D->array, ord))
+    if (!hx_array_reorder_bases(&D->array, ordd))
       throw("failed to reorder core array basis elements");
 
     /* reduce the dimensionality of the core array. */
@@ -432,8 +465,9 @@ int datum_array_slice (datum *D, int *lower, int *upper) {
       throw("failed to resize core array");
   }
 
-  /* free the allocated index array. */
-  free(ord);
+  /* free the allocated index arrays. */
+  free(ordd);
+  free(ordk);
 
   /* return success. */
   return 1;
