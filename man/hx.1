@@ -260,6 +260,13 @@ iteration.
 \fBiters\fR (integer) [200]
 number of iterations to perform.
 
+.SS mirror
+The \fBmirror\fR command symmetrizes a given dimension \fID\fR of the current
+datum by replacing each pair of points off the center-frequency line with
+the point having lowest absolute value. If the dimension is complex, then
+replacement is performed to respect phase-sensitivity by retaining the sign
+of each point.
+
 .SS multiply
 The \fBmultiply\fR command multiplies the current datum by a scalar constant.
 .TP

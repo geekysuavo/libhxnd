@@ -37,6 +37,7 @@
 #define FN_NAME_FFT       "fft"
 #define FN_NAME_HT        "ht"
 #define FN_NAME_IST       "ist"
+#define FN_NAME_MIRROR    "mirror"
 #define FN_NAME_MULTIPLY  "multiply"
 #define FN_NAME_PHASE     "phase"
 #define FN_NAME_PROJECT   "project"
@@ -66,6 +67,8 @@ int fn_fft (datum *D, const int dim, const fn_arg *args);
 int fn_ht (datum *D, const int dim, const fn_arg *args);
 
 int fn_ist (datum *D, const int dim, const fn_arg *args);
+
+int fn_mirror (datum *D, const int dim, const fn_arg *args);
 
 int fn_multiply (datum *D, const int dim, const fn_arg *args);
 
