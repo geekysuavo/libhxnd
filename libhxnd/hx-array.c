@@ -442,160 +442,10 @@ int hx_array_repack (hx_array *x, int ndiv) {
   return 1;
 }
 
-/* hx_array_vector_op(): perform an operation on each vector of a hypercomplex
- * array @x using a standardized callback-based scheme.
- */
-int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...) {
-  /* declare a few required variables:
-   * @arr: the index array for the current position in @x.
-   * @idx: the linear index for the current position in @x.
-   * @y: hypercomplex array holding the currently sliced vector values.
-   * @vl: the variable argument list passed to each callback invocation.
-   */
-  int *arr, idx, szk, slice;
-  hx_array y;
-  va_list vl;
-
-  /* check that the dimension index is in bounds. */
-  if (k < 0 || k >= x->k)
-    throw("dimension index %d is out of bounds [0,%d)", k, x->k);
-
-  /* retrieve the size of the dimension under operation. */
-  szk = x->sz[k];
-
-  /* allocate an index array. */
-  arr = hx_array_index_alloc(x->k);
-
-  /* check that allocation was successful. */
-  if (!arr)
-    throw("failed to allocate %d indices", x->k);
-
-  /* allocate a temporary array to store each sliced vector. */
-  if (!hx_array_alloc(&y, x->d, 1, &szk))
-    throw("failed to allocate slice (%d, 1)-array", x->d);
-
-  /* initialize the linear indices. */
-  idx = slice = 0;
-
-  /* iterate over the elements of the array. */
-  do {
-    /* pack the index array into a linear index. */
-    hx_array_index_pack(x->k, x->sz, arr, &idx);
-
-    /* slice the currently indexed vector from the array. */
-    if (!hx_array_slice_vector(x, &y, k, idx))
-      throw("failed to slice vector %d", slice);
-
-    /* initialize the variable arguments list. */
-    va_start(vl, fn);
-
-    /* execute the callback function. */
-    if (!fn(x, &y, arr, idx, &vl))
-      throw("failed to execute callback %d", slice);
-
-    /* free the variable arguments list. */
-    va_end(vl);
-
-    /* store the modified sliced vector back into the array. */
-    if (!hx_array_store_vector(x, &y, k, idx))
-      throw("failed to store vector %d", slice);
-
-    /* increment the slice index. */
-    slice++;
-  } while (hx_array_index_skip(x->k, x->sz, arr, k));
-
-  /* free the temporary array. */
-  hx_array_free(&y);
-
-  /* free the index array. */
-  free(arr);
-
-  /* return success. */
-  return 1;
-}
-
-/* hx_array_projector(): compute a hypercomplex scalar value for each vector
- * of a hypercomplex multidimensional array @x and return the values
- * in a new array @xp.
- */
-int hx_array_projector (hx_array *x, int k, hx_array_projector_cb fn,
-                        hx_array *xp) {
-  /* declare a few required variables:
-   * @arr: the index array for the current position in @x.
-   * @idx: the linear index for the current position in @y.
-   * @szk: the topological size along the slice dimension.
-   * @sznew: topological size of the 'projected' output array.
-   * @slice: linear slice index used for counting progress.
-   * @y: hypercomplex array holding the currently sliced vector values.
-   */
-  int *arr, idx, szk, *sznew, slice;
-  hx_array y;
-
-  /* check that the dimension index is in bounds. */
-  if (k < 0 || k >= x->k)
-    throw("dimension index %d is out of bounds [0,%d)", k, x->k);
-
-  /* duplicate the source size array, allocate an index array. */
-  sznew = hx_array_index_copy(x->k, x->sz);
-  arr = hx_array_index_alloc(x->k);
-
-  /* check that allocation was successful. */
-  if (!sznew || !arr)
-    throw("failed to allocate pair of %d indices", x->k);
-
-  /* retrieve the size of the dimension under operation and
-   * adjust the output size array.
-   */
-  szk = sznew[k];
-  sznew[k] = 1;
-
-  /* allocate a temporary array to store each sliced vector. */
-  if (!hx_array_alloc(&y, x->d, 1, &szk))
-    throw("failed to allocate slice (%d, 1)-array", x->d);
-
-  /* check if the output array requires allocation. */
-  if (xp->d != x->d || xp->k != x->k ||
-      hx_array_index_cmp(xp->k, xp->sz, sznew)) {
-    /* yes. allocate the output array. */
-    if (!hx_array_alloc(xp, x->d, x->k, sznew))
-      throw("failed to allocate projection array");
-  }
-
-  /* initialize the linear indices. */
-  idx = slice = 0;
-
-  /* iterate over the elements of the array. */
-  do {
-    /* pack the index array into an output linear index. */
-    hx_array_index_pack(x->k, sznew, arr, &idx);
-
-    /* slice the currently indexed vector from the array. */
-    if (!hx_array_slice_vector(x, &y, k, idx))
-      throw("failed to slice vector %d", slice);
-
-    /* execute the callback function. */
-    if (!fn(&y, xp->x + idx * xp->n))
-      throw("failed to execute callback %d", slice);
-
-    /* increment the slice index. */
-    slice++;
-  } while (hx_array_index_skip(x->k, x->sz, arr, k));
-
-  /* free the temporary array. */
-  hx_array_free(&y);
-
-  /* free the duplicated index arrays. */
-  free(sznew);
-  free(arr);
-
-  /* return success. */
-  return 1;
-}
-
 /* hx_array_shift_cb(): callback function for hx_array_shift().
  *
  * args:
- *  see hx_array_vector_cb().
+ *  see hx_array_foreach_cb().
  *
  * varargs:
  *  @delta: shift amount, in number of coefficients.
@@ -673,7 +523,7 @@ int hx_array_shift (hx_array *x, int k, int amount) {
     throw("failed to allocate temporary shift array");
 
   /* perform the per-vector shift operation. */
-  if (!hx_array_vector_op(x, k, &hx_array_shift_cb, delta, &swp))
+  if (!hx_array_foreach_vector(x, k, &hx_array_shift_cb, delta, &swp))
     throw("failed to perform shift by %d", delta);
 
   /* free the temporary array. */

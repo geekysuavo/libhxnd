@@ -44,6 +44,7 @@
 #define FN_NAME_REAL      "real"
 #define FN_NAME_RESIZE    "resize"
 #define FN_NAME_SHIFT     "shift"
+#define FN_NAME_SYMM      "symmetrize"
 #define FN_NAME_WINDOW    "window"
 #define FN_NAME_ZEROFILL  "zerofill"
 
@@ -81,6 +82,8 @@ int fn_real (datum *D, const int dim, const fn_arg *args);
 int fn_resize (datum *D, const int dim, const fn_arg *args);
 
 int fn_shift (datum *D, const int dim, const fn_arg *args);
+
+int fn_symm (datum *D, const int dim, const fn_arg *args);
 
 int fn_window (datum *D, const int dim, const fn_arg *args);
 

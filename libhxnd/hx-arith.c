@@ -657,7 +657,7 @@ int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c) {
 /* hx_array_mul_vector_cb(): callback function for hx_array_mul_vector().
  *
  * args:
- *  see hx_array_vector_cb().
+ *  see hx_array_foreach_cb().
  *
  * varargs:
  *  @b: vector multiplier.
@@ -736,7 +736,7 @@ int hx_array_mul_vector (hx_array *a, hx_array *b, int kmul, hx_array *c) {
     memcpy(c->x, a->x, a->len * sizeof(real));
 
   /* run the callback function over every vector along @kmul. */
-  if (!hx_array_vector_op(c, kmul, &hx_array_mul_vector_cb, b, &ytmp))
+  if (!hx_array_foreach_vector(c, kmul, &hx_array_mul_vector_cb, b, &ytmp))
     return 0;
 
   /* free the temporary array. */
@@ -826,7 +826,7 @@ int hx_array_norm (hx_array *a) {
  * hx_array_alternate_sign().
  *
  * args:
- *  see hx_array_vector_cb().
+ *  see hx_array_foreach_cb().
  *
  * varargs:
  *  none.
@@ -859,7 +859,7 @@ int hx_array_alternate_sign (hx_array *x, int k) {
     throw("alternation dimension %d out of bounds [0,%d)", k, x->k);
 
   /* perform the per-vector sign alternation operation. */
-  if (!hx_array_vector_op(x, k, &hx_array_alternate_sign_cb))
+  if (!hx_array_foreach_vector(x, k, &hx_array_alternate_sign_cb))
     throw("failed to perform alternation");
 
   /* return success. */

@@ -41,7 +41,7 @@ int fn_mirror_cb (hx_array *x, hx_array *y, int *arr, int idx, va_list *vl) {
   real inorm, jnorm, f;
 
   /* compute the number of scalar elements in the array. */
-  n = y->len / y->n;
+  n = y->sz[0];
 
   /* initialize the starting indices. */
   if (n % 2) {
@@ -113,7 +113,7 @@ int fn_mirror (datum *D, const int dim, const fn_arg *args) {
     throw("dimension index %d out of bounds [0,%u)", dim, D->nd);
 
   /* execute the mirroring vector operation. */
-  if (!hx_array_vector_op(&D->array, D->dims[dim].k, &fn_mirror_cb))
+  if (!hx_array_foreach_vector(&D->array, D->dims[dim].k, &fn_mirror_cb))
     throw("failed to perform mirroring operation");
 
   /* return success. */

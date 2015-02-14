@@ -27,7 +27,7 @@
 /* fn_multiply_first(): callback function for first-point scaling operations.
  *
  * args:
- *  see hx_array_vector_cb().
+ *  see hx_array_foreach_cb().
  *
  * varargs:
  *  @hxscale: first-point scaling factor.
@@ -96,7 +96,7 @@ int fn_multiply (datum *D, const int dim, const fn_arg *args) {
     hxscale.x[0] = f0;
 
     /* perform the first-point scaling. */
-    if (!hx_array_vector_op(&D->array, D->dims[d].k,
+    if (!hx_array_foreach_vector(&D->array, D->dims[d].k,
                             &fn_multiply_first, &hxscale))
       throw("failed to execute first-point scaling");
 

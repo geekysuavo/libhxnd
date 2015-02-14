@@ -79,17 +79,17 @@ typedef struct {
 }
 hx_array;
 
-/* hx_array_vector_cb: callback function prototype for per-vector operations
- * that act on hypercomplex arrays.
+/* hx_array_foreach_cb: callback function prototype for per-vector and
+ * per-matrix operations that act on hypercomplex arrays.
  * @x: the host array pointer.
  * @y: the current slice from the host array.
  * @arr: the set of array indices for the first vector point.
  * @idx: the linear array index for the first vector point.
  * @vl: custom arguments, stored in a variable arguments list.
  */
-typedef int (*hx_array_vector_cb) (hx_array *x, hx_array *y,
-                                   int *arr, int idx,
-                                   va_list *vl);
+typedef int (*hx_array_foreach_cb) (hx_array *x, hx_array *y,
+                                    int *arr, int idx,
+                                    va_list *vl);
 
 /* hx_array_projector_cb: callback function prototype for array 'projection'
  * operations that act on hypercomplex arrays.
@@ -109,11 +109,6 @@ int hx_array_real (hx_array *x, int d);
 int hx_array_reshape (hx_array *x, int k, int *sz);
 
 int hx_array_repack (hx_array *x, int ndiv);
-
-int hx_array_vector_op (hx_array *x, int k, hx_array_vector_cb fn, ...);
-
-int hx_array_projector (hx_array *x, int k, hx_array_projector_cb fn,
-                        hx_array *xp);
 
 int hx_array_shift (hx_array *x, int k, int amount);
 
@@ -201,9 +196,24 @@ int hx_array_slicer (hx_array *x, hx_array *y,
 #define hx_array_store(x, y, l, u) \
   hx_array_slicer(x, y, l, u, HX_ARRAY_SLICER_STORE)
 
-int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int loc);
+int hx_array_vector_slicer (hx_array *x, hx_array *y,
+                            int k, int loc, int dir);
 
-int hx_array_store_vector (hx_array *x, hx_array *y, int k, int loc);
+#define hx_array_slice_vector(x, y, k, loc) \
+  hx_array_vector_slicer(x, y, k, loc, HX_ARRAY_SLICER_SLICE)
+
+#define hx_array_store_vector(x, y, k, loc) \
+  hx_array_vector_slicer(x, y, k, loc, HX_ARRAY_SLICER_STORE)
+
+int hx_array_matrix_slicer (hx_array *x, hx_array *y,
+                            int k1, int k2, int loc,
+                            int dir);
+
+#define hx_array_slice_matrix(x, y, k1, k2, loc) \
+  hx_array_matrix_slicer(x, y, k1, k2, loc, HX_ARRAY_SLICER_SLICE)
+
+#define hx_array_store_matrix(x, y, k1, k2, loc) \
+  hx_array_matrix_slicer(x, y, k1, k2, loc, HX_ARRAY_SLICER_STORE)
 
 /* function declarations (hx-array-tile.c): */
 
@@ -221,6 +231,17 @@ int hx_array_tiler (hx_array *x, int k, int *nt, int *szt,
     HX_ARRAY_INCR_FORWARD)
 
 int hx_array_tiling (hx_array *x, unsigned int nwords, int *nt, int *szt);
+
+/* function declarations (hx-array-foreach.c): */
+
+int hx_array_foreach_vector (hx_array *x, int k,
+                             hx_array_foreach_cb fn, ...);
+
+int hx_array_foreach_matrix (hx_array *x, int k1, int k2,
+                             hx_array_foreach_cb fn, ...);
+
+int hx_array_projector (hx_array *x, int k, hx_array_projector_cb fn,
+                        hx_array *xp);
 
 #endif /* __HXND_HX_ARRAY_H__ */
 

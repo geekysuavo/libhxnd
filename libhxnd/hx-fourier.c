@@ -259,7 +259,7 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
 /* hx_array_ht_cb(): callback function for hx_array_ht().
  *
  * args:
- *  see hx_array_vector_cb().
+ *  see hx_array_foreach_cb().
  *
  * varargs:
  *  @xtmp: temporary swap vector.
@@ -334,7 +334,7 @@ int hx_array_ht (hx_array *x, int d, int k) {
     throw("failed to apply forward fft");
 
   /* perform the data shuffling. */
-  if (!hx_array_vector_op(x, k, &hx_array_ht_cb, &xtmp))
+  if (!hx_array_foreach_vector(x, k, &hx_array_ht_cb, &xtmp))
     throw("failed to apply shuffling operation");
 
   /* inverse Fourier-transform the vectors. */

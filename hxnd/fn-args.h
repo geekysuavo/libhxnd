@@ -92,6 +92,11 @@ static fn_arg fn_args_shift[] = {
   { NULL,     {},           0, FN_VALTYPE_UNKNOWN }
 };
 
+static fn_arg fn_args_symm[] = {
+  { "dims", { .iv = NULL }, 0, FN_VALTYPE_INTS },
+  { NULL,   {},             0, FN_VALTYPE_UNKNOWN }
+};
+
 static fn_arg fn_args_window[] = {
   { "type",   { .s = NULL }, 0, FN_VALTYPE_STRING },
   { "start",  { .f = 0.0  }, 0, FN_VALTYPE_FLOAT },

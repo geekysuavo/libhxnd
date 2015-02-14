@@ -133,15 +133,17 @@ int hx_array_slicer (hx_array *x, hx_array *y,
   return 1;
 }
 
-/* hx_array_slice_vector(): slice a linear section from an array, starting
- * and ending at the extents of a given dimension @k. this is *much* faster
- * for slicing vectors out of nD arrays than hx_array_slice().
+/* hx_array_vector_slicer(): slice or store a linear section from an array,
+ * starting and ending at the extents of a given dimension. this is *much*
+ * faster for slicing vectors out of nD arrays than hx_array_slice().
  * @x: pointer to the input array.
  * @y: pointer to the output array.
  * @k: array dimension to slice along.
  * @loc: off-dimension slice origin.
+ * @dir: either HX_ARRAY_SLICER_SLICE or HX_ARRAY_SLICER_STORE.
  */
-int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int loc) {
+int hx_array_vector_slicer (hx_array *x, hx_array *y,
+                            int k, int loc, int dir) {
   /* declare a few required variables:
    * @i: a loop counter used during slicing and index setup.
    * @n: size of the sliced dimension, length of the output array.
@@ -173,41 +175,112 @@ int hx_array_slice_vector (hx_array *x, hx_array *y, int k, int loc) {
     throw("failed to allocate slice destination array");
 
   /* copy the scalar values into the (vector) output array. */
-  for (i = 0, idx = loc; i < n; i++, idx += stride)
-    memcpy(y->x + y->n * i, x->x + x->n * idx, ncpy);
+  for (i = 0, idx = loc; i < n; i++, idx += stride) {
+    /* copy the coefficient memory. */
+    switch (dir) {
+      /* slice: x ==> y */
+      case HX_ARRAY_SLICER_SLICE:
+        memcpy(y->x + y->n * i, x->x + x->n * idx, ncpy);
+        break;
+
+      /* store: x <== y */
+      case HX_ARRAY_SLICER_STORE:
+        memcpy(x->x + x->n * idx, y->x + y->n * i, ncpy);
+        break;
+
+      /* other: no-op. */
+      default:
+        break;
+    }
+  }
 
   /* return success. */
   return 1;
 }
 
-/* hx_array_store_vector(): store a linear section from an array, essentially
- * the reverse operation of hx_array_slice_vector().
+/* hx_array_matrix_slicer(): slice or store a planar section from an array,
+ * similar to hx_array_vector_slicer().
+ * @x: pointer to the input array.
+ * @y: pointer to the output array.
+ * @k1: first slice array dimension.
+ * @k2: second slice array dimension.
+ * @loc: off-dimension slice origin.
+ * @dir: either HX_ARRAY_SLICER_SLICE or HX_ARRAY_SLICER_STORE.
  */
-int hx_array_store_vector (hx_array *x, hx_array *y, int k, int loc) {
-  /* declare a few required variables. */
-  int i, n, ncpy, idx, stride;
+int hx_array_matrix_slicer (hx_array *x, hx_array *y,
+                            int k1, int k2, int loc,
+                            int dir) {
+  /* declare a few required variables:
+   * @i, @j: loop counters to use during slicing and index setup.
+   * @n: sizes of the sliced dimensions, output array.
+   * @ncpy: number of bytes per hypercomplex scalar value.
+   * @idx: linear index of the input array.
+   * @idxy: linear index of the output array.
+   * @stride: strides for each slice dimension.
+   */
+  int i, j, n[2], ncpy, idx, idxy, stride[2];
 
-  /* check that the slice dimension in within bounds. */
-  if (k < 0 || k >= x->k)
-    throw("slice dimension %d out of bounds [0,%d)", k, x->k);
+  /* check that the slice dimensions are in order. */
+  if (k1 >= k2)
+    throw("slice dimensions (%d,%d) out of order", k1, k2);
+
+  /* check that the slice dimensions are in bounds. */
+  if (k1 < 0 || k2 < 0 || k1 >= x->k || k2 >= x->k)
+    throw("slice dimensions (%d,%d) out of bounds [0,%d)U[0,%d)",
+          k1, k2, x->k, x->k);
 
   /* compute the number of bytes per scalar
-   * and the size of the output array.
+   * and the sizes of the output array.
    */
   ncpy = x->n * sizeof(real);
-  n = x->sz[k];
+  n[0] = x->sz[k1];
+  n[1] = x->sz[k2];
 
-  /* compute the stride for passing along the slice dimension. */
-  for (i = 0, stride = 1; i < k; i++)
-    stride *= x->sz[i];
+  /* compute the stride along the first slice dimension. */
+  for (i = 0, stride[0] = 1; i < k1; i++)
+    stride[0] *= x->sz[i];
 
-  /* check that the array configurations are correct. */
-  if (y->d != x->d || y->k != 1 || y->sz[0] != n)
-    throw("source-destination array configuration mismatch");
+  /* compute the stride along the second slice dimension. */
+  for (j = 0, stride[1] = 1; j < k2; j++)
+    stride[1] *= x->sz[j];
 
-  /* copy the scalar values into the (vector) output array. */
-  for (i = 0, idx = loc; i < n; i++, idx += stride)
-    memcpy(x->x + x->n * idx, y->x + y->n * i, ncpy);
+  /* adjust the second stride to account for incrementation in the
+   * first slice dimension.
+   */
+  stride[1] -= stride[0] * (n[0] - 1);
+
+  /* allocate the output array, if its configuration does not match
+   * the required configuration.
+   */
+  if ((y->d != x->d || y->k != 2 || y->sz[0] != n[0] || y->sz[1] != n[1]) &&
+      !hx_array_alloc(y, x->d, 2, n))
+    throw("failed to allocate slice destination array");
+
+  /* arrays are column-major, so vary the larger index slower. */
+  for (j = 0, idx = loc; j < n[1]; j++, idx += stride[1]) {
+    /* then vary the smaller index faster inside the slow loop. */
+    for (i = 0; i < n[0]; i++, idx += (i < n[0] ? stride[0] : 0)) {
+      /* compute the matrix coefficient index. */
+      idxy = i + j * n[0];
+
+      /* copy the coefficient memory. */
+      switch (dir) {
+        /* slice: x ==> y */
+        case HX_ARRAY_SLICER_SLICE:
+          memcpy(y->x + y->n * idxy, x->x + x->n * idx, ncpy);
+          break;
+
+        /* store: x <== y */
+        case HX_ARRAY_SLICER_STORE:
+          memcpy(x->x + x->n * idx, y->x + y->n * idxy, ncpy);
+          break;
+
+        /* other: no-op. */
+        default:
+          break;
+      }
+    }
+  }
 
   /* return success. */
   return 1;

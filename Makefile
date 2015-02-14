@@ -13,8 +13,9 @@ GLIBS=$(shell pkg-config --libs gtk+-3.0)
 # LIBSRC: library source basenames: hypercomplex data structures.
 LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-array-mem hx-array-io
 LIBSRC+= hx-array-rawio hx-array-topo hx-array-resize hx-array-slice
-LIBSRC+= hx-array-tile hx-cmp hx-arith hx-blas hx-blas-l1 hx-blas-l2
-LIBSRC+= hx-blas-l3 hx-phasor hx-fourier hx-window hx-ist
+LIBSRC+= hx-array-tile hx-array-foreach hx-cmp hx-arith hx-blas
+LIBSRC+= hx-blas-l1 hx-blas-l2 hx-blas-l3 hx-phasor hx-fourier hx-window
+LIBSRC+= hx-ist
 
 # LIBSRC: library source basenames: auxiliary library routines.
 LIBSRC+= trace opts str bytes
@@ -33,7 +34,7 @@ LIBSRC+= mx-stats mx-scaling mx-dataset mx-dataset-mem mx-dataset-matrix
 # LIBSRC: library source basenames: processing functions.
 LIBSRC+= fn fn-args fn-list fn-abs fn-add fn-complex fn-cut fn-fft fn-ht fn-ist
 LIBSRC+= fn-mirror fn-multiply fn-phase fn-project fn-real fn-resize fn-shift
-LIBSRC+= fn-window fn-zerofill
+LIBSRC+= fn-symm fn-window fn-zerofill
 
 # GUISRC: graphical interface source basenames.
 GUISRC=ghx-proc-main

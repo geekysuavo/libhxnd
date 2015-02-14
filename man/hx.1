@@ -353,6 +353,17 @@ interprets the shift amount as a frequency in Hertz when set.
 when set, forces the rounding of the shift amount, allowing the shifting of
 non power-of-two dimensions.
 
+.SS symmetrize
+The \fBsymmetrize\fR command symmetrizes a given pair of dimensions of the
+current datum by replacing each pair of points off their diagonal with
+the point having lowest absolute value. If the dimension is complex, then
+replacement is performed to respect phase-sensitivity by retaining the sign
+of each point.
+.TP
+\fBdims\fR (int-array) [(1; 2)]
+dimension indices of the plane or planes to symmetrize with respect to the
+diagonal line.
+
 .SS window
 The \fBwindow\fR command multiplies the current datum by a window function
 along dimension \fID\fR. When no dimension is specified, \fBwindow\fR defaults
