@@ -48,6 +48,7 @@ static fn functions[] = {
   { FN_NAME_RESIZE,   (fn_pointer) &fn_resize,   fn_args_resize },
   { FN_NAME_SHIFT,    (fn_pointer) &fn_shift,    fn_args_shift },
   { FN_NAME_SYMM,     (fn_pointer) &fn_symm,     fn_args_symm },
+  { FN_NAME_TILT,     (fn_pointer) &fn_tilt,     fn_args_tilt },
   { FN_NAME_WINDOW,   (fn_pointer) &fn_window,   fn_args_window },
   { FN_NAME_ZEROFILL, (fn_pointer) &fn_zerofill, fn_args_zerofill },
   { NULL,             NULL,         NULL }

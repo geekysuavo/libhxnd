@@ -30,7 +30,7 @@
 .ie \\n(.$=0:((0\\$1)*2u>(\\n(.1u-\\n(.iu)) .TP
 .el .TP "\\$1"
 ..
-.TH HX 1 "05 Nov 2014" "libhxnd version 20141105"
+.TH HX 1 "15 Feb 2015" "libhxnd version 20150215"
 
 .SH NAME
 hx \- command-line multi-tool for handling NMR data
@@ -363,6 +363,20 @@ of each point.
 \fBdims\fR (int-array) [(1; 2)]
 dimension indices of the plane or planes to symmetrize with respect to the
 diagonal line.
+
+.SS tilt
+The \fBtilt\fR command applies a variable fractional shift to two dimension
+of the current datum, effectively achieving a tilting of the points along
+one dimension with respect to the other. If a tilt angle is unspecified,
+it will be automatically determined based on the spectral widths and point
+counts along the dimensions in the \fBdims\fR argument.
+.TP
+\fBangle\fR (float) [0.0]
+tilt angle to apply to the shifted dimension.
+.TP
+\fBdims\fR (int-array) [(1; 2)]
+datum dimension indices to use when automatically computing the tilt angle.
+the second dimension index in the array will be shifted.
 
 .SS window
 The \fBwindow\fR command multiplies the current datum by a window function

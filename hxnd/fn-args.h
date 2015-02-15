@@ -97,6 +97,12 @@ static fn_arg fn_args_symm[] = {
   { NULL,   {},             0, FN_VALTYPE_UNKNOWN }
 };
 
+static fn_arg fn_args_tilt[] = {
+  { "angle", { .f = 0.0   }, 0, FN_VALTYPE_FLOAT },
+  { "dims",  { .iv = NULL }, 0, FN_VALTYPE_INTS },
+  { NULL,    {},             0, FN_VALTYPE_UNKNOWN }
+};
+
 static fn_arg fn_args_window[] = {
   { "type",   { .s = NULL }, 0, FN_VALTYPE_STRING },
   { "start",  { .f = 0.0  }, 0, FN_VALTYPE_FLOAT },
