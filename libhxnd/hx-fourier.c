@@ -351,10 +351,11 @@ int hx_array_ht (hx_array *x, int d, int k) {
 /* hx_array_fshift(): circularly shifts each vector along a given array
  * topological dimension, but by a fractional amount of points.
  * @x: pointer to the array to manipulate.
+ * @d: shift algebraic dimension.
  * @k: shift topological dimension.
  * @amount: fractional shift amount.
  */
-int hx_array_fshift (hx_array *x, int k, real amount) {
+int hx_array_fshift (hx_array *x, int d, int k, real amount) {
   /* declare a few required variables:
    * @phi: scalar phasor entries in @ph.
    * @ph: linear phase adjustment array.
@@ -366,6 +367,10 @@ int hx_array_fshift (hx_array *x, int k, real amount) {
   hx_array ph;
   int i, j, n;
   real fi;
+
+  /* check that the algebraic dimension index is in bounds. */
+  if (d < 0 || d >= x->d)
+    throw("algebraic index %d out of bounds [0,%d)", d, x->d);
 
   /* check that the shift dimension index is in bounds. */
   if (k < 0 || k >= x->k)
@@ -395,14 +400,14 @@ int hx_array_fshift (hx_array *x, int k, real amount) {
     fi = 2.0 * ((real) i) / ((real) (n - 1)) - 1.0;
 
     /* compute the scalar phasing element. */
-    hx_scalar_phasor(&phi, k, -M_PI * amount * fi);
+    hx_scalar_phasor(&phi, d, -M_PI * amount * fi);
 
     /* copy the phasor scalar element into the array. */
     memcpy(ph.x + ph.n * j, phi.x, ph.n * sizeof(real));
   }
 
   /* forward Fourier-transform the vectors. */
-  if (!hx_array_fft(x, k, k))
+  if (!hx_array_fft(x, d, k))
     throw("failed to apply forward fft");
 
   /* perform the scaling. */
@@ -410,7 +415,7 @@ int hx_array_fshift (hx_array *x, int k, real amount) {
     throw("failed to apply linear phase");
 
   /* inverse Fourier-transform the vectors. */
-  if (!hx_array_ifft(x, k, k))
+  if (!hx_array_ifft(x, d, k))
     throw("failed to apply inverse fft");
 
   /* free the linear phase array. */

@@ -95,8 +95,12 @@ int fn_shift (datum *D, const int dim, const fn_arg *args) {
       throw("failed to perform integer shift");
   }
   else {
+    /* check that the shift dimension is complex. */
+    if (D->dims[dim].d == DATUM_DIM_INVALID)
+      throw("fractional shift dimension must be complex");
+
     /* perform the fractional shift. */
-    if (!hx_array_fshift(&D->array, D->dims[dim].k, famt))
+    if (!hx_array_fshift(&D->array, D->dims[dim].d, D->dims[dim].k, famt))
       throw("failed to perform fractional shift");
   }
 

@@ -50,7 +50,7 @@ int hx_array_fftfn (hx_array *x, int d, int k, float dir);
 
 int hx_array_ht (hx_array *x, int d, int k);
 
-int hx_array_fshift (hx_array *x, int k, real amount);
+int hx_array_fshift (hx_array *x, int d, int k, real amount);
 
 #endif /* __HXND_HX_FOURIER_H__ */
 

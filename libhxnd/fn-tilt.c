@@ -32,19 +32,21 @@ int fn_tilt_cb (hx_array *x, hx_array *y, int *arr, int idx, va_list *vl) {
    * @f: tilt factor to apply.
    * @n: number of points to shift.
    * @k: dimension to use as a reference.
+   * @d: algebraic basis index for shifting.
    */
   real f, n;
-  int k;
+  int d, k;
 
   /* extract the varargs. */
   f = (real) va_arg(*vl, double);
+  d = va_arg(*vl, int);
   k = va_arg(*vl, int);
 
   /* compute the shift amount. */
   n = f * ((real) x->sz[k] / 2.0 - (real) arr[k]);
 
   /* shift the sliced vector. */
-  if (!hx_array_fshift(y, 0, n))
+  if (!hx_array_fshift(y, d, 0, n))
     throw("failed to execute fractional shift");
 
   /* return success. */
@@ -67,10 +69,11 @@ int fn_tilt (datum *D, const int dim, const fn_arg *args) {
   real angle;
 
   /* declare a few required variables:
-   * @k1: array topological index to shift.
-   * @k2: array topological index for computing shift amount.
+   * @d1: array algebraic dimension index to shift.
+   * @k1: array topological dimension index to shift.
+   * @k2: array topological dimension index for computing shift amount.
    */
-  int k1, k2;
+  int d1, k1, k2;
 
   /* check that no dimension was specified. */
   if (dim >= 0)
@@ -106,11 +109,16 @@ int fn_tilt (datum *D, const int dim, const fn_arg *args) {
   if (dims[1] < 0 || dims[1] >= D->nd)
     throw("second dimension index %d out of bounds [0,%u)", dims[1], D->nd);
 
+  /* check that the shift dimension is complex. */
+  if (D->dims[dims[0]].d == DATUM_DIM_INVALID)
+    throw("shift dimension must be complex for tilt");
+
   /* if unspecified, automatically compute the tilt angle. */
   if (angle == 0.0)
     angle = D->dims[dims[1]].width / D->dims[dims[0]].width;
 
   /* set the shift and count dimension index. */
+  d1 = D->dims[dims[0]].d;
   k1 = D->dims[dims[0]].k;
   k2 = D->dims[dims[1]].k;
 
@@ -122,7 +130,7 @@ int fn_tilt (datum *D, const int dim, const fn_arg *args) {
   angle *= (real) D->dims[dims[0]].sz / (real) D->dims[dims[1]].sz;
 
   /* apply the required shift operations. */
-  if (!hx_array_foreach_vector(&D->array, k1, &fn_tilt_cb, angle, k2))
+  if (!hx_array_foreach_vector(&D->array, k1, &fn_tilt_cb, angle, d1, k2))
     throw("failed to apply tilt operation");
 
   /* free the index array. */
