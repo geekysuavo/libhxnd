@@ -53,6 +53,8 @@ int hx_array_index_incr_rev (int k, int *sz, int *arr);
 
 int hx_array_index_decr_rev (int k, int *sz, int *arr);
 
+int hx_array_index_incr_mask (int k, int *sz, int *arr, int *mask);
+
 int hx_array_index_skip (int k, int *sz, int *arr, int kskip);
 
 int hx_array_index_jump_init (int k, int *sz, int kskip,

@@ -114,11 +114,12 @@ int hx_array_foreach_matrix (hx_array *x, int k1, int k2,
    * @arr: the index array for the current position in @x.
    * @idx: the linear index for the current position in @x.
    * @sz: the sizes of each sliced submatrix.
+   * @mask: array of masked dimensions to skip during incrementation.
    * @slice: index for counting each sliced matrix.
    * @y: hypercomplex array holding the currently sliced matrix values.
    * @vl: the variable argument list passed to each callback invocation.
    */
-  int kl, ku, *arr, idx, *sz, slice;
+  int kl, ku, *arr, idx, *sz, *mask, slice;
   hx_array y;
   va_list vl;
 
@@ -131,12 +132,13 @@ int hx_array_foreach_matrix (hx_array *x, int k1, int k2,
     throw("second dimension index %d out of bounds [0,%d)", k2, x->k);
 
   /* allocate temporary index and size arrays. */
+  mask = hx_array_index_alloc(x->k);
   arr = hx_array_index_alloc(x->k);
   sz = hx_array_index_alloc(2);
 
   /* check that allocation was successful. */
-  if (!arr || !sz)
-    throw("failed to allocate %d indices", x->k + 2);
+  if (!arr || !mask || !sz)
+    throw("failed to allocate %d indices", 2 * x->k + 2);
 
   /* sort the dimension indices. */
   kl = (k1 < k2 ? k1 : k2);
@@ -153,12 +155,11 @@ int hx_array_foreach_matrix (hx_array *x, int k1, int k2,
   /* initialize the linear indices. */
   idx = slice = 0;
 
+  /* initialize the mask array. */
+  mask[kl] = mask[ku] = 1;
+
   /* iterate over the elements of the array. */
   do {
-    /* skip nonzero positions of the slice indices. */
-    if (arr[kl] || arr[ku])
-      continue;
-
     /* pack the index array into a linear index. */
     hx_array_index_pack(x->k, x->sz, arr, &idx);
 
@@ -182,12 +183,13 @@ int hx_array_foreach_matrix (hx_array *x, int k1, int k2,
 
     /* increment the slice index. */
     slice++;
-  } while (hx_array_index_incr(x->k, x->sz, arr));
+  } while (hx_array_index_incr_mask(x->k, x->sz, arr, mask));
 
   /* free the temporary array. */
   hx_array_free(&y);
 
   /* free the temporary index arrays. */
+  free(mask);
   free(arr);
   free(sz);
 

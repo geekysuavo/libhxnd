@@ -346,6 +346,49 @@ int hx_array_index_decr_rev (int k, int *sz, int *arr) {
   return 1;
 }
 
+/* hx_array_index_incr_mask(): increments a multidimensional index in a
+ * similar fashin to hx_array_index_incr(), but skips incrementation over
+ * all masked indices (mask[k] == 1).
+ * @k: the size of the array.
+ * @sz: the sizes of each array dimension.
+ * @arr: the array of unpacked indices to increment.
+ * @mask: the array of index masks to avoid incrementing.
+ */
+int hx_array_index_incr_mask (int k, int *sz, int *arr, int *mask) {
+  /* declare a few required variables. */
+  int ki, roundtrip;
+
+  /* initialize the round trip indicator. */
+  roundtrip = 0;
+
+  /* loop over the dimensions of the array. */
+  for (ki = 0; ki < k; ki++) {
+    /* skip any masked array indices. */
+    if (mask[ki])
+      continue;
+
+    /* increment the current index. */
+    arr[ki]++;
+
+    /* check if the current index has overflowed. */
+    if (arr[ki] >= sz[ki]) {
+      /* reset the index. */
+      arr[ki] = 0;
+    }
+    else {
+      /* break the loop. */
+      break;
+    }
+  }
+
+  /* check if a round trip was made. */
+  if (ki == k)
+    roundtrip = 1;
+
+  /* return success. */
+  return !roundtrip;
+}
+
 /* hx_array_index_skip(): increments a multidimensional index in a similar
  * fashion to hx_array_index_incr(), but skips the incrementation over a
  * specified index.
