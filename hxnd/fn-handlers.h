@@ -35,6 +35,7 @@
 #define FN_NAME_COMPLEX   "complex"
 #define FN_NAME_CUT       "cut"
 #define FN_NAME_FFT       "fft"
+#define FN_NAME_FILTER    "filter"
 #define FN_NAME_HT        "ht"
 #define FN_NAME_IST       "ist"
 #define FN_NAME_MIRROR    "mirror"
@@ -65,6 +66,8 @@ int fn_complex (datum *D, const int dim, const fn_arg *args);
 int fn_cut (datum *D, const int dim, const fn_arg *args);
 
 int fn_fft (datum *D, const int dim, const fn_arg *args);
+
+int fn_filter (datum *D, const int dim, const fn_arg *args);
 
 int fn_ht (datum *D, const int dim, const fn_arg *args);
 

@@ -244,6 +244,29 @@ transformation, when set.
 \fBinverse\fR (boolean) [false]
 applies an inverse Fourier transform when set.
 
+.SS filter
+The \fBfilter\fR command filters a given dimension \fID\fR using a finite
+impulse response (FIR) filter. The FIR filter coefficients are derived from
+a Blackman-windowed sin(x)/x impulse response.
+.TP
+\fBorder\fR (integer) [32]
+the filter order, or one less than the number of filter coefficients.
+.TP
+\fBlo\fR (float) [1.0]
+the filter low-pass transition frequency. the valid range of \fBlo\fR depends
+on whether \fBppm\fR or \fBhz\fR is set. by default, \fBlo\fR is unitless and
+ranges from zero to one over the spectral width.
+.TP
+\fBhi\fR (float) [0.0]
+the filter high-pass transition frequency. the valid range of \fBhi\fR also
+depends on whether \fBppm\fR or \fBhz\fR is set, like \fBlo\fR.
+.TP
+\fBppm\fR (boolean) [false]
+interprets the transition frequencies as values in parts per million when set.
+.TP
+\fBhz\fR (boolean) [false]
+interprets the transition frequencies as values in Hertz when set.
+
 .SS ht
 The \fBht\fR command applies a discrete Hilbert transform to the current
 datum in order to reconstruct the imaginary component along a given dimension
@@ -385,7 +408,7 @@ to the first dimension.
 .TP
 \fBtype\fR (string) ['sine']
 window type string. must be one of \fIsine\fR, \fIexp\fR, \fIgauss\fR,
-\fItrap\fR or \fItri\fR.
+\fItrap\fR, \fItri\fR or \fIblack\fR.
 .TP
 \fBstart\fR (float) [0.0]
 starting point for \fIsine\fR windows. rising edge endpoint for \fItrap\fR

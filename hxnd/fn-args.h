@@ -48,6 +48,15 @@ static fn_arg fn_args_fft[] = {
   { NULL,        {},         0, FN_VALTYPE_UNKNOWN }
 };
 
+static fn_arg fn_args_filter[] = {
+  { "order", { .i = 32       }, 0, FN_VALTYPE_INT },
+  { "lo",    { .f = INFINITY }, 0, FN_VALTYPE_FLOAT },
+  { "hi",    { .f = INFINITY }, 0, FN_VALTYPE_FLOAT },
+  { "ppm",   { .b = 0        }, 0, FN_VALTYPE_BOOL },
+  { "hz",    { .b = 0        }, 0, FN_VALTYPE_BOOL },
+  { NULL,    {},                0, FN_VALTYPE_UNKNOWN }
+};
+
 static fn_arg fn_args_ist[] = {
   { "thresh", { .f = 0.9 }, 0, FN_VALTYPE_FLOAT },
   { "iters",  { .i = 200 }, 0, FN_VALTYPE_INT },

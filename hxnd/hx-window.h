@@ -34,6 +34,7 @@
 #define HX_WINDOW_NAME_GAUSS  "gauss"
 #define HX_WINDOW_NAME_TRAP   "trap"
 #define HX_WINDOW_NAME_TRI    "tri"
+#define HX_WINDOW_NAME_BLACK  "black"
 
 /* hx_window_type: enumerated type for apodization window types.
  */
@@ -43,14 +44,15 @@ enum hx_window_type {
   HX_WINDOW_TYPE_EXP,
   HX_WINDOW_TYPE_GAUSS,
   HX_WINDOW_TYPE_TRAP,
-  HX_WINDOW_TYPE_TRI
+  HX_WINDOW_TYPE_TRI,
+  HX_WINDOW_TYPE_BLACK
 };
 
 /* function declarations: */
 
 enum hx_window_type hx_window_lookup_type (const char *name);
 
-int hx_window_alloc (hx_array *wnd, int d, int len, real width);
+int hx_window_alloc (hx_array *wnd, int d, int len);
 
 int hx_window_sine (hx_array *wnd, int d, int len, real width,
                     real start, real end, real order);
@@ -66,6 +68,8 @@ int hx_window_trap (hx_array *wnd, int d, int len, real width,
 
 int hx_window_tri (hx_array *wnd, int d, int len, real width,
                    real center, real start, real end);
+
+int hx_window_black (hx_array *wnd, int d, int len);
 
 #endif /* __HXND_HX_WINDOW_H__ */
 

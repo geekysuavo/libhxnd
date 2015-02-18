@@ -40,7 +40,7 @@ int hx_scalar_phasor (hx_scalar *x, int d, real phi) {
   n = 1 << d;
 
   /* zero the values of the coefficient array. */
-  memset(x->x, 0, x->n * sizeof(real));
+  hx_scalar_zero(x);
 
   /* store the real and imaginary phase factors. */
   x->x[0] = cos(phi);
@@ -71,7 +71,7 @@ int hx_array_phasor (hx_array *x, int d, real phi0, real phi1, real pivot) {
   n = 1 << d;
 
   /* zero the values of the coefficient array. */
-  memset(x->x, 0, x->len * sizeof(real));
+  hx_array_zero(x);
 
   /* loop over the array coefficients. */
   for (idx = 0; idx < x->len; idx += x->n) {

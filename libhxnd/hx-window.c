@@ -37,12 +37,13 @@ struct wnd_def {
 /* windows: structure array of all supported window functions.
  */
 const struct wnd_def windows[] = {
-  { HX_WINDOW_NAME_SINE,  HX_WINDOW_TYPE_SINE },
-  { HX_WINDOW_NAME_EXP,   HX_WINDOW_TYPE_EXP },
-  { HX_WINDOW_NAME_GAUSS, HX_WINDOW_TYPE_GAUSS },
-  { HX_WINDOW_NAME_TRAP,  HX_WINDOW_TYPE_TRAP },
-  { HX_WINDOW_NAME_TRI,   HX_WINDOW_TYPE_TRI },
-  { NULL,                 HX_WINDOW_TYPE_UNDEFINED }
+  { HX_WINDOW_NAME_SINE,   HX_WINDOW_TYPE_SINE },
+  { HX_WINDOW_NAME_EXP,    HX_WINDOW_TYPE_EXP },
+  { HX_WINDOW_NAME_GAUSS,  HX_WINDOW_TYPE_GAUSS },
+  { HX_WINDOW_NAME_TRAP,   HX_WINDOW_TYPE_TRAP },
+  { HX_WINDOW_NAME_TRI,    HX_WINDOW_TYPE_TRI },
+  { HX_WINDOW_NAME_BLACK,  HX_WINDOW_TYPE_BLACK },
+  { NULL,                  HX_WINDOW_TYPE_UNDEFINED }
 };
 
 /* hx_window_lookup_type(): returns the enumerated type based on its string
@@ -69,9 +70,8 @@ enum hx_window_type hx_window_lookup_type (const char *name) {
  * @wnd: hypercomplex array pointer for the result.
  * @d: dimensionality for the array.
  * @len: length of the window vector.
- * @width: spectral width parameter.
  */
-int hx_window_alloc (hx_array *wnd, int d, int len, real width) {
+int hx_window_alloc (hx_array *wnd, int d, int len) {
   /* store a local copy of the length argument. */
   int sz = len;
 
@@ -113,7 +113,7 @@ int hx_window_sine (hx_array *wnd, int d, int len, real width,
     throw("order argument %.3f out of bounds [1,inf)", order);
 
   /* ensure that the destination array is allocated. */
-  if (!hx_window_alloc(wnd, d, len, width))
+  if (!hx_window_alloc(wnd, d, len))
     throw("failed to allocate sinusoidal array");
 
   /* compute the values of the window. */
@@ -146,7 +146,7 @@ int hx_window_exp (hx_array *wnd, int d, int len, real width,
   int i;
 
   /* ensure that the destination array is allocated. */
-  if (!hx_window_alloc(wnd, d, len, width))
+  if (!hx_window_alloc(wnd, d, len))
     throw("failed to allocate exponential array");
 
   /* compute the values of the window. */
@@ -186,7 +186,7 @@ int hx_window_gauss (hx_array *wnd, int d, int len, real width,
     throw("center argument %.3f out of bounds [0,1]", center);
 
   /* ensure that the destination array is allocated. */
-  if (!hx_window_alloc(wnd, d, len, width))
+  if (!hx_window_alloc(wnd, d, len))
     throw("failed to allocate gaussian array");
 
   /* compute the scaled center value. */
@@ -235,7 +235,7 @@ int hx_window_trap (hx_array *wnd, int d, int len, real width,
     throw("start argument may not exceed end argument");
 
   /* ensure that the destination array is allocated. */
-  if (!hx_window_alloc(wnd, d, len, width))
+  if (!hx_window_alloc(wnd, d, len))
     throw("failed to allocate trapezoidal array");
 
   /* compute the values of the window. */
@@ -292,7 +292,7 @@ int hx_window_tri (hx_array *wnd, int d, int len, real width,
     throw("end argument %.3f out of bounds [0,1]", end);
 
   /* ensure that the destination array is allocated. */
-  if (!hx_window_alloc(wnd, d, len, width))
+  if (!hx_window_alloc(wnd, d, len))
     throw("failed to allocate triangular array");
 
   /* compute the values of the window. */
@@ -309,6 +309,36 @@ int hx_window_tri (hx_array *wnd, int d, int len, real width,
       /* initial: upward slope. */
       xi = fi * (1.0 - start) / center;
     }
+
+    /* store the computed window value. */
+    wnd->x[i * wnd->n] = xi;
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_window_black(): allocate and construct a blackman window function.
+ */
+int hx_window_black (hx_array *wnd, int d, int len) {
+  /* declare required variables:
+   * @i: integer point index.
+   * @fi: fractional point index.
+   */
+  real fi, xi;
+  int i;
+
+  /* ensure that the destination array is allocated. */
+  if (!hx_window_alloc(wnd, d, len))
+    throw("failed to allocate blackman array");
+
+  /* compute the values of the window. */
+  for (i = 0; i < len; i++) {
+    /* compute the fractional index. */
+    fi = ((real) i) / ((real) (len - 1));
+
+    /* compute the current window value. */
+    xi = 0.42 - 0.5 * cos(2.0 * M_PI * fi) + 0.08 * cos(4.0 * M_PI * fi);
 
     /* store the computed window value. */
     wnd->x[i * wnd->n] = xi;

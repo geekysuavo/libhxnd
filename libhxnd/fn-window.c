@@ -88,8 +88,8 @@ int fn_window (datum *D, const int dim, const fn_arg *args) {
   len = D->array.sz[ldim];
   d = D->array.d;
 
-  /* be extremely safe. */
-  wnd.d = wnd.k = -1;
+  /* initialize the window array contents. */
+  hx_array_init(&wnd);
 
   /* determine which window function to construct. */
   ret = 0;
@@ -122,6 +122,11 @@ int fn_window (datum *D, const int dim, const fn_arg *args) {
     case HX_WINDOW_TYPE_TRI:
       /* construct a triangular window. */
       ret = hx_window_tri(&wnd, d, len, width, center, start, end);
+      break;
+
+    /* blackman. */
+    case HX_WINDOW_TYPE_BLACK:
+      ret = hx_window_black(&wnd, d, len);
       break;
 
     /* undefined. */
