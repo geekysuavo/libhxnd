@@ -613,21 +613,21 @@ int rnmrtk_decode (datum *D, const char *fname) {
  * @D: pointer to the source datum structure.
  * @dim: current datum dimension in the recursion.
  * @n0: current coefficient offset in the resursion.
- * @arr: index array for looping though the datum core array.
+ * @idx: index array for looping though the datum core array.
  * @fh: the output file handle.
  */
 int rnmrtk_fwrite_dim (datum *D, unsigned int dim,
-                       int n0, int *arr,
+                       int n0, hx_index idx,
                        FILE *fh) {
   /* declare a few required variables:
    * @d: current array algebraic dimension index.
    * @k: current array topological dimension index.
    * @n: current array coefficient imaginary offset.
    * @num: size along current array dimension.
-   * @idx: array linear scalar index.
+   * @pidx: packed linear scalar index.
    * @f: float output value.
    */
-  int d, k, n, num, idx;
+  int d, k, n, num, pidx;
   float f;
 
   /* determine the array dimension indices. */
@@ -643,19 +643,19 @@ int rnmrtk_fwrite_dim (datum *D, unsigned int dim,
   /* check if we've reached the lowest dimension. */
   if (k == 0) {
     /* store the points of the current trace. */
-    for (arr[k] = 0; arr[k] < num; arr[k]++) {
+    for (idx[k] = 0; idx[k] < num; idx[k]++) {
       /* pack the linear index. */
-      hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
+      hx_index_pack(D->array.k, D->array.sz, idx, &pidx);
 
       /* get the real coefficient and write it out. */
-      f = (float) D->array.x[D->array.n * idx + n0];
+      f = (float) D->array.x[D->array.n * pidx + n0];
       if (fwrite(&f, sizeof(float), 1, fh) != 1)
         return 0;
 
       /* check if the trace is complex. */
       if (D->dims[dim].cx) {
         /* get the imaginary coefficient and write it out. */
-        f = (float) D->array.x[D->array.n * idx + n0 + n];
+        f = (float) D->array.x[D->array.n * pidx + n0 + n];
         if (fwrite(&f, sizeof(float), 1, fh) != 1)
           return 0;
       }
@@ -663,13 +663,13 @@ int rnmrtk_fwrite_dim (datum *D, unsigned int dim,
   }
   else {
     /* recurse into the lower dimensions. */
-    for (arr[k] = 0; arr[k] < num; arr[k]++) {
+    for (idx[k] = 0; idx[k] < num; idx[k]++) {
       /* recurse the real component. */
-      if (!rnmrtk_fwrite_dim(D, dim - 1, n0, arr, fh))
+      if (!rnmrtk_fwrite_dim(D, dim - 1, n0, idx, fh))
         return 0;
 
       /* recurse the imaginary component. */
-      if (D->dims[dim].cx && !rnmrtk_fwrite_dim(D, dim - 1, n0 + n, arr, fh))
+      if (D->dims[dim].cx && !rnmrtk_fwrite_dim(D, dim - 1, n0 + n, idx, fh))
         return 0;
     }
   }

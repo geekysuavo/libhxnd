@@ -37,15 +37,16 @@ int fn_zerofill (datum *D, const int dim, const fn_arg *args) {
    * @i: loop counter.
    * @k: topological dimension index.
    */
-  int *sznew, nzf, i, k;
   unsigned int n, nx;
+  hx_index sznew;
+  int nzf, i, k;
 
   /* get the argument values from the argdef array. */
   if (!fn_args_get_all(args, &nzf))
     throw("failed to get zerofill arguments");
 
   /* allocate the size array. */
-  sznew = hx_array_index_alloc(D->array.k);;
+  sznew = hx_index_alloc(D->array.k);;
 
   /* check that allocation succeeded. */
   if (!sznew)
@@ -94,7 +95,7 @@ int fn_zerofill (datum *D, const int dim, const fn_arg *args) {
     throw("failed to resize datum");
 
   /* free the size array. */
-  free(sznew);
+  hx_index_free(sznew);
 
   /* return success. */
   return 1;

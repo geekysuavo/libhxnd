@@ -201,18 +201,18 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
     throw("dimension %d is not a power of two size (%d)", k, x->sz[k]);
 
   /* initialize the skipped iteration control variables. */
-  hx_array_index_jump_init(x->k, x->sz, k, &ja, &jb, &jmax);
+  hx_index_jump_init(x->k, x->sz, k, &ja, &jb, &jmax);
 
   /* create a team of threads to execute multiple parallel transforms. */
   #pragma omp parallel
   {
     /* declare a few required thread-local variables:
      * @j: array skipped iteration master index.
-     * @idx: packed linear array index.
+     * @pidx: packed linear array index.
      * @w: temporary array of twiddle factors.
      * @swp: temporary array of intermediate results, swapped values.
      */
-    int j, idx;
+    int j, pidx;
     hx_array xv;
     hx_scalar w, swp;
 
@@ -229,10 +229,10 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
     #pragma omp for
     for (j = 0; j < jmax; j++) {
       /* compute the linear array index of the current vector. */
-      idx = hx_array_index_jump(j, ja, jb);
+      pidx = hx_index_jump(j, ja, jb);
 
       /* slice the currently indexed vector from the array. */
-      if (!hx_array_slice_vector(x, &xv, k, idx))
+      if (!hx_array_slice_vector(x, &xv, k, pidx))
         raise("failed to slice vector %d", j);
 
       /* fourier transform the sliced vector array. */
@@ -240,7 +240,7 @@ int hx_array_fftfn (hx_array *x, int d, int k, real dir) {
         raise("failed to execute vector fft %d", j);
 
       /* store the modified sliced vector back into the array. */
-      if (!hx_array_store_vector(x, &xv, k, idx))
+      if (!hx_array_store_vector(x, &xv, k, pidx))
         raise("failed to store vector %d", j);
     }
 

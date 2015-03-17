@@ -274,7 +274,7 @@ int bruker_decode (datum *D, const char *dname) {
    */
   int acqus_parmode = -1;
   unsigned int d, nd;
-  int *ord;
+  hx_index ord;
 
   /* declare variables for parsing data byte ordering:
    * @endianness: the determined data byte ordering.
@@ -424,7 +424,7 @@ int bruker_decode (datum *D, const char *dname) {
   /* check if the indirect dimensions were acquired in reverse order. */
   if (D->nd >= 3 && acqus_aqseq != BRUKER_AQSEQ_321) {
     /* allocate an array of dimension indices. */
-    ord = (int*) calloc(D->nd, sizeof(int));
+    ord = hx_index_alloc(D->nd);
     if (!ord)
       throw("failed to allocate %u indices", D->nd);
 
@@ -437,7 +437,7 @@ int bruker_decode (datum *D, const char *dname) {
       throw("failed to reorder dimensions");
 
     /* free the dimension index array. */
-    free(ord);
+    hx_index_free(ord);
   }
 
   /* build the schedule filename. */
@@ -519,7 +519,8 @@ int bruker_post (datum *D) {
    * @x: datum array structure pointer.
    */
   real A, Are, Aim, Amax;
-  int i, gd, gdmax, *sznew;
+  int i, gd, gdmax;
+  hx_index sznew;
   hx_array *x;
 
   /* store the group delay value and array pointer locally. */
@@ -550,7 +551,7 @@ int bruker_post (datum *D) {
   }
 
   /* allocate the new size array. */
-  sznew = hx_array_index_alloc(x->k);
+  sznew = hx_index_alloc(x->k);
 
   /* check that the size array was allocated. */
   if (!sznew)
@@ -572,7 +573,7 @@ int bruker_post (datum *D) {
     throw("failed to crop bruker group delay points");
 
   /* free the allocated size array. */
-  free(sznew);
+  hx_index_free(sznew);
 
   /* correct the datum fields. */
   D->dims[0].sz -= gd;

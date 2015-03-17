@@ -288,14 +288,15 @@ int nv_tiler (hx_array *x, struct nv_header *hdr, int dir) {
    * @nt: array of tile counts.
    * @szt: array of tile sizes.
    */
-  int i, k, *nt, *szt;
+  hx_index nt, szt;
+  int i, k;
 
   /* gain a handle on the dimensionality of the array data. */
   k = (int) hdr->ndims;
 
   /* allocate the size index arrays. */
-  nt = hx_array_index_alloc(k);
-  szt = hx_array_index_alloc(k);
+  nt = hx_index_alloc(k);
+  szt = hx_index_alloc(k);
 
   /* check that all index allocations were successful. */
   if (!nt || !szt)
@@ -325,8 +326,8 @@ int nv_tiler (hx_array *x, struct nv_header *hdr, int dir) {
     throw("failed to perform tile mapping");
 
   /* free the allocated index arrays. */
-  free(nt);
-  free(szt);
+  hx_index_free(nt);
+  hx_index_free(szt);
 
   /* return success. */
   return 1;
@@ -501,7 +502,8 @@ int nv_encode (datum *D, const char *fname) {
    * @sz: previous array size.
    * @sznew: adjusted array size.
    */
-  int szadj, *sz, *sznew;
+  hx_index sz, sznew;
+  int szadj;
 
   /* declare a dimension loop counter. */
   unsigned int d;
@@ -510,8 +512,8 @@ int nv_encode (datum *D, const char *fname) {
   hx_array xout;
 
   /* allocate size arrays for possible adjustments. */
-  sz = hx_array_index_alloc(D->array.k);
-  sznew = hx_array_index_alloc(D->array.k);
+  sz = hx_index_alloc(D->array.k);
+  sznew = hx_index_alloc(D->array.k);
 
   /* check that array allocation succeeded. */
   if (!sz || !sznew)
@@ -650,8 +652,8 @@ int nv_encode (datum *D, const char *fname) {
   hx_array_free(&xout);
 
   /* free the allocated size arrays. */
-  free(sz);
-  free(sznew);
+  hx_index_free(sz);
+  hx_index_free(sznew);
 
   /* return success. */
   return 1;
@@ -729,7 +731,7 @@ int nv_post (datum *D) {
    * @sznew: array of new datum array sizes.
    */
   unsigned int d, adjusted;
-  int *sznew;
+  hx_index sznew;
 
   /* determine whether adjustment was performed. */
   for (d = 0, adjusted = 0; d < D->nd; d++) {
@@ -745,7 +747,7 @@ int nv_post (datum *D) {
     return 1;
 
   /* allocate the new size array. */
-  sznew = hx_array_index_alloc(D->array.k);
+  sznew = hx_index_alloc(D->array.k);
 
   /* check that the size array was allocated. */
   if (!sznew)
@@ -763,7 +765,7 @@ int nv_post (datum *D) {
     throw("failed to resize core datum array");
 
   /* free the allocated size array. */
-  free(sznew);
+  hx_index_free(sznew);
 
   /* return success. */
   return 1;

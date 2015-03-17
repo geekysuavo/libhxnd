@@ -152,30 +152,3 @@ int hx_array_conf_cmp (hx_array *a, hx_array *b) {
   return HXCMP_ID;
 }
 
-/* hx_array_index_cmp(): compare the values in two multidimensional indices
- * of the same size @k.
- * @k: the lengths of the two index arrays.
- * @sza: the first index array.
- * @szb: the second index array.
- */
-int hx_array_index_cmp (int k, int *sza, int *szb) {
-  /* declare a required variable. */
-  int i;
-
-  /* return if either of the index arrays is unallocated. */
-  if (!sza || !szb)
-    return HXCMP_SIZE;
-
-  /* loop over the indices. */
-  for (i = 0; i < k; i++) {
-    /* check if the current dimension is a mismatch. */
-    if (sza[i] < szb[i])
-      return -HXCMP_SIZE;
-    else if (sza[i] > szb[i])
-      return HXCMP_SIZE;
-  }
-
-  /* return identity. */
-  return HXCMP_ID;
-}
-

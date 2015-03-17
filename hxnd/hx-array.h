@@ -24,7 +24,8 @@
 #ifndef __HXND_HX_ARRAY_H__
 #define __HXND_HX_ARRAY_H__
 
-/* include the byte-level data header. */
+/* include the indexing and byte-level data headers. */
+#include <hxnd/hx-index.h>
 #include <hxnd/bytes.h>
 
 /* define a magic number to use when determining byte order of binary-format
@@ -69,7 +70,8 @@ typedef struct {
    * len: number of total array coefficients.
    * sz: array sizes along each array dimension.
    */
-  int k, len, *sz;
+  hx_index sz;
+  int k, len;
 
   /* real coefficients. */
   real *x;
@@ -88,7 +90,7 @@ hx_array;
  * @vl: custom arguments, stored in a variable arguments list.
  */
 typedef int (*hx_array_foreach_cb) (hx_array *x, hx_array *y,
-                                    int *arr, int idx,
+                                    hx_index idx, int pidx,
                                     va_list *vl);
 
 /* hx_array_projector_cb: callback function prototype for array 'projection'
@@ -106,7 +108,7 @@ int hx_array_complexify (hx_array *x, int genh);
 
 int hx_array_real (hx_array *x, int d);
 
-int hx_array_reshape (hx_array *x, int k, int *sz);
+int hx_array_reshape (hx_array *x, int k, hx_index sz);
 
 int hx_array_repack (hx_array *x, int ndiv);
 
@@ -116,7 +118,7 @@ int hx_array_shift (hx_array *x, int k, int amount);
 
 void hx_array_init (hx_array *x);
 
-int hx_array_alloc (hx_array *x, int d, int k, int *sz);
+int hx_array_alloc (hx_array *x, int d, int k, hx_index sz);
 
 int hx_array_copy (hx_array *dst, hx_array *src);
 
@@ -182,12 +184,13 @@ int hx_array_compact (hx_array *x);
 
 int hx_array_is_real (hx_array *x);
 
-int hx_array_resize (hx_array *x, int d, int k, int *sz);
+int hx_array_resize (hx_array *x, int d, int k, hx_index sz);
 
 /* function declarations (hx-array-slice.c): */
 
 int hx_array_slicer (hx_array *x, hx_array *y,
-                     int *lower, int *upper,
+                     hx_index lower,
+                     hx_index upper,
                      int dir);
 
 #define hx_array_slice(x, y, l, u) \
@@ -217,7 +220,7 @@ int hx_array_matrix_slicer (hx_array *x, hx_array *y,
 
 /* function declarations (hx-array-tile.c): */
 
-int hx_array_tiler (hx_array *x, int k, int *nt, int *szt,
+int hx_array_tiler (hx_array *x, int k, hx_index nt, hx_index szt,
                     int dir, int incr);
 
 #define hx_array_linearize(x, k, n, s) \
@@ -230,7 +233,8 @@ int hx_array_tiler (hx_array *x, int k, int *nt, int *szt,
     HX_ARRAY_TILER_REVERSE, \
     HX_ARRAY_INCR_FORWARD)
 
-int hx_array_tiling (hx_array *x, unsigned int nwords, int *nt, int *szt);
+int hx_array_tiling (hx_array *x, unsigned int nwords,
+                     hx_index nt, hx_index szt);
 
 /* function declarations (hx-array-foreach.c): */
 

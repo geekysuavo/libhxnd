@@ -33,36 +33,39 @@
  * @dir: either HX_ARRAY_SLICER_SLICE or HX_ARRAY_SLICER_STORE.
  */
 int hx_array_slicer (hx_array *x, hx_array *y,
-                     int *lower, int *upper,
+                     hx_index lower,
+                     hx_index upper,
                      int dir) {
   /* declare a few required variables:
    * @i: general-purpose loop counter.
    * @xycmp: set high if @y needs allocation.
    * @n: number of coefficients per scalar.
    * @ncpy: number of bytes per scalar.
-   * @idxi: input array linear index.
-   * @idxo: output array linear index.
-   * @arri: input array index set.
-   * @arro: output array index set.
+   * @pidxi: input array packed linear index.
+   * @pidxo: output array packed linear index.
+   * @idxi: input array index set.
+   * @idxo: output array index set.
    * @sznew: output array sizes.
    */
-  int i, xycmp, n, ncpy, idxi, idxo, *arri, *arro, *sznew;
+  hx_index idxi, idxo, sznew;
+  int i, xycmp, n, ncpy;
+  int pidxi, pidxo;
 
   /* store the number of coefficients and bytes per hypercomplex scalar. */
   n = x->n;
   ncpy = n * sizeof(real);
 
   /* allocate three index arrays for use during iteration. */
-  arri = hx_array_index_alloc(x->k);
-  arro = hx_array_index_alloc(x->k);
-  sznew = hx_array_index_alloc(x->k);
+  idxi = hx_index_alloc(x->k);
+  idxo = hx_index_alloc(x->k);
+  sznew = hx_index_alloc(x->k);
 
   /* check that the index arrays were allocated successfully. */
-  if (!arri || !arro || !sznew)
+  if (!idxi || !idxo || !sznew)
     throw("failed to allocate %d indices", x->k);
 
   /* subtract the lower bound from the upper bound. */
-  hx_array_index_diff(x->k, upper, lower, sznew);
+  hx_index_diff(x->k, upper, lower, sznew);
 
   /* increment each element of the difference array, resulting in
    * the array of sizes of the sliced portion of the array.
@@ -91,27 +94,27 @@ int hx_array_slicer (hx_array *x, hx_array *y,
     throw("failed to allocate slice destination array");
 
   /* iterate over the larger (input) array. */
-  idxi = 0;
+  pidxi = 0;
   do {
     /* check if the current input array index is in the slice bounds. */
-    if (hx_array_index_bounded(x->k, arri, lower, upper)) {
+    if (hx_index_bounded(x->k, idxi, lower, upper)) {
       /* yes. compute the output array indices. */
       for (i = 0; i < x->k; i++)
-        arro[i] = arri[i] - lower[i];
+        idxo[i] = idxi[i] - lower[i];
 
       /* linearize the output indices. */
-      hx_array_index_pack(x->k, sznew, arro, &idxo);
+      hx_index_pack(x->k, sznew, idxo, &pidxo);
 
       /* copy the coefficient memory. */
       switch (dir) {
         /* slice: x ==> y */
         case HX_ARRAY_SLICER_SLICE:
-          memcpy(y->x + n * idxo, x->x + n * idxi, ncpy);
+          memcpy(y->x + n * pidxo, x->x + n * pidxi, ncpy);
           break;
 
         /* store: x <== y */
         case HX_ARRAY_SLICER_STORE:
-          memcpy(x->x + n * idxi, y->x + n * idxo, ncpy);
+          memcpy(x->x + n * pidxi, y->x + n * pidxo, ncpy);
           break;
 
         /* other: no-op. */
@@ -121,13 +124,13 @@ int hx_array_slicer (hx_array *x, hx_array *y,
     }
 
     /* incremenet the input array linear index. */
-    idxi++;
-  } while (hx_array_index_incr(x->k, x->sz, arri));
+    pidxi++;
+  } while (hx_index_incr(x->k, x->sz, idxi));
 
   /* free the allocated index arrays. */
-  free(sznew);
-  free(arri);
-  free(arro);
+  hx_index_free(sznew);
+  hx_index_free(idxi);
+  hx_index_free(idxo);
 
   /* return success. */
   return 1;

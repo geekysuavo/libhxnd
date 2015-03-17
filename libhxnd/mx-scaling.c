@@ -108,7 +108,7 @@ enum mx_scaling_type mx_scaling_lookup_type (const char *name) {
 int mx_scale (dataset *Dset, enum mx_scaling_type type) {
   /* declare a few required variables. */
   unsigned int i;
-  int idx, nk[2];
+  int pidx, nk[2];
 
   /* ensure the data matrix is allocated. */
   if (Dset->X.k != 2 ||
@@ -140,11 +140,11 @@ int mx_scale (dataset *Dset, enum mx_scaling_type type) {
     /* loop over the data matrix columns. */
     for (nk[1] = 0; nk[1] < Dset->K; nk[1]++) {
       /* pack the array of indices into a linear index. */
-      hx_array_index_pack(Dset->X.k, Dset->X.sz, nk, &idx);
+      hx_index_pack(Dset->X.k, Dset->X.sz, nk, &pidx);
 
       /* subtract the centering value and divide by the scaling value. */
-      Dset->X.x[idx] -= Dset->centers.x[nk[1]];
-      Dset->X.x[idx] /= Dset->scales.x[nk[1]];
+      Dset->X.x[pidx] -= Dset->centers.x[nk[1]];
+      Dset->X.x[pidx] /= Dset->scales.x[nk[1]];
     }
   }
 

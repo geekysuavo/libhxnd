@@ -20,155 +20,164 @@
  *   Boston, MA  02110-1301, USA.
  */
 
-/* include the n-dimensional math header. */
-#include <hxnd/hx.h>
+/* include the n-dimensional indexing header. */
+#include <hxnd/hx-index.h>
 
-/* hx_array_index_alloc(): allocates an array of multidimensional indices.
+/* hx_index_alloc(): allocate an array of multidimensional indices.
+ * @k: the array size.
  */
-int *hx_array_index_alloc (int k) {
+hx_index hx_index_alloc (int k) {
   /* allocate memory for the array, and return it directly. */
-  return (int*) calloc (k, sizeof(int));
+  return (hx_index) calloc (k, sizeof(int));
 }
 
-/* hx_array_index_build(): builds an index array and fills it with values.
+/* hx_index_build(): allocate a new index array and fills it with values.
  * @k: the array size.
  * @...: the array values.
  */
-int *hx_array_index_build (int k, ...) {
+hx_index hx_index_build (int k, ...) {
   /* declare a few required variables. */
-  int i, *arr;
+  hx_index idx;
   va_list vl;
+  int i;
 
   /* allocate an index array. */
-  arr = hx_array_index_alloc(k);
+  idx = hx_index_alloc(k);
 
   /* check that the allocation was successful. */
-  if (!arr) {
-    /* raise an error and return nothing. */
-    raise("failed to allocate %d indices", k);
+  if (!idx)
     return NULL;
-  }
 
   /* initialize the variable arguments list. */
   va_start(vl, k);
 
   /* loop over the array values, pulling from the arguments list. */
   for (i = 0; i < k; i++)
-    arr[i] = va_arg(vl, int);
+    idx[i] = va_arg(vl, int);
 
   /* free the variable arguments list and return the array. */
   va_end(vl);
-  return arr;
+  return idx;
 }
 
-/* hx_array_index_init(): initializes an allocate array of indices.
- * @arr: the array to initialize.
+/* hx_index_free(): free an allocated multidimension index array.
+ * @idx: the index array to free.
+ */
+void hx_index_free (hx_index idx) {
+  /* free the index, if its allocated. */
+  if (idx) {
+    free(idx);
+    idx = NULL;
+  }
+}
+
+/* hx_index_init(): initialize an allocated array of indices.
  * @k: the size of the array.
+ * @idx: the array to initialize.
  */
-int hx_array_index_init (int *arr, int k) {
-  /* zero the array contents and return success. */
-  memset(arr, 0, k * sizeof(int));
-  return 1;
+void hx_index_init (int k, hx_index idx) {
+  /* zero the array contents. */
+  memset(idx, 0, k * sizeof(int));
 }
 
-/* hx_array_index_copy(): duplicate an array of multidimensional indices.
+/* hx_index_copy(): duplicate an array of multidimensional indices.
  * @k: the array size.
- * @sz: the input array.
+ * @idx: the input array.
  */
-int *hx_array_index_copy (int k, int *sz) {
+hx_index hx_index_copy (int k, hx_index idx) {
   /* declare a few required variables. */
-  int *sznew;
+  hx_index idxnew;
 
   /* allocate a new array. */
-  sznew = hx_array_index_alloc(k);
-  if (!sznew)
+  idxnew = hx_index_alloc(k);
+  if (!idxnew)
     return NULL;
 
   /* copy the elements from the source array. */
-  memcpy(sznew, sz, k * sizeof(int));
+  memcpy(idxnew, idx, k * sizeof(int));
 
   /* return the allocated, duplicated array. */
-  return sznew;
+  return idxnew;
 }
 
-/* hx_array_index_pack(): packs an array of multidimensional indices into a
+/* hx_index_pack(): pack an array of multidimensional indices into a
  * linear index.
  * @k: the size of the array.
  * @sz: the sizes of each array dimension.
- * @arr: the input array of unpacked indices.
+ * @idx: the input array of unpacked indices.
  * @pidx: pointer to the output packed linear index.
  */
-void hx_array_index_pack (int k, int *sz, int *arr, int *pidx) {
+void hx_index_pack (int k, hx_index sz, hx_index idx, int *pidx) {
   /* define a few required variables. */
   int ki, stride;
 
   /* loop over the dimensions of the array. */
   for (ki = 0, *pidx = 0, stride = 1; ki < k; ki++) {
     /* add the next index into the linear index. */
-    *pidx += arr[ki] * stride;
+    *pidx += idx[ki] * stride;
     stride *= sz[ki];
   }
 }
 
-/* hx_array_index_unpack(): unpacks a linear index into an array of separate
+/* hx_index_unpack(): unpack a linear index into an array of separate
  * multidimensional indices.
  * @k: the size of the array.
  * @sz: the sizes of each array dimension.
- * @arr: the output array of unpacked indices.
- * @idx: the input packed linear index.
+ * @idx: the output array of unpacked indices.
+ * @pidx: the input packed linear index.
  */
-void hx_array_index_unpack (int k, int *sz, int *arr, int idx) {
+void hx_index_unpack (int k, hx_index sz, hx_index idx, int pidx) {
   /* define a few required variables. */
   int ki, redidx;
 
   /* loop over the dimensions of the array. */
-  for (ki = 0, redidx = idx; ki < k; ki++) {
+  for (ki = 0, redidx = pidx; ki < k; ki++) {
     /* extract the current index. */
-    arr[ki] = redidx % sz[ki];
+    idx[ki] = redidx % sz[ki];
 
     /* reduce the index by the current stride. */
-    redidx = (redidx - arr[ki]) / sz[ki];
+    redidx = (redidx - idx[ki]) / sz[ki];
   }
 }
 
-/* hx_array_index_pack_tiled(): packs a multidimensional tile index and a
- * multidimensional point index into a linear index based on tile size
- * and count.
+/* hx_index_pack_tiled(): pack a multidimensional tile index and a
+ * multidimensional point index into a linear index based on tile
+ * size and count.
  * @k: the size of the arrays.
  * @ntile: array of tile counts along each dimension.
  * @sztile: array of tile sizes along each dimension.
- * @arr: input array of point indices inside the tile.
- * @arrt: input array of tile indices.
+ * @idx: input array of point indices inside the tile.
+ * @idxt: input array of tile indices.
  * @pidx: pointer to the output packed linear index.
  */
-void hx_array_index_pack_tiled (int k, int *ntile, int *sztile,
-                                int *arr, int *arrt, int *pidx) {
+void hx_index_pack_tiled (int k, hx_index ntile, hx_index sztile,
+                          hx_index idx, hx_index idxt, int *pidx) {
   /* define a few required variables. */
-  int ki, arrki, stride;
+  int ki, idxki, stride;
 
   /* loop over the dimensions of the array. */
   for (ki = 0, *pidx = 0, stride = 1; ki < k; ki++) {
     /* add the next index into the linear index. */
-    arrki = arr[ki] + arrt[ki] * sztile[ki];
-    *pidx += arrki * stride;
+    idxki = idx[ki] + idxt[ki] * sztile[ki];
+    *pidx += idxki * stride;
 
     /* scale the stride for the next dimension offset. */
     stride *= ntile[ki] * sztile[ki];
   }
 }
 
-/* hx_array_index_incr(): increments a multidimensional index. the function
- * returns '1' except when the increment operation causes all indices to
- * roll over to zero at once (i.e. at the array end).
+/* hx_index_incr(): increment a multidimensional index. the function returns
+ * '1' except when the increment operation causes all indices to roll over
+ * to zero at once (i.e. at the array end).
  *
  * this function is meant to be used as the condition inside
  * a do{}while() loop.
  *
  * @k: the size of the array.
  * @sz: the sizes of each array dimension.
- * @arr: the array of unpacked indices to increment.
+ * @idx: the array of unpacked indices to increment.
  */
-int hx_array_index_incr (int k, int *sz, int *arr) {
+int hx_index_incr (int k, hx_index sz, hx_index idx) {
   /* declare a few required variables:
    * @ki: the dimension loop counter.
    * @roundtrip: whether we've made it back to (0,0,0,...)
@@ -181,12 +190,12 @@ int hx_array_index_incr (int k, int *sz, int *arr) {
   /* loop over the dimensions of the array. */
   for (ki = 0; ki < k; ki++) {
     /* increment the current index. */
-    arr[ki]++;
+    idx[ki]++;
 
     /* check if the current index has overflowed. */
-    if (arr[ki] >= sz[ki]) {
+    if (idx[ki] >= sz[ki]) {
       /* reset the index. */
-      arr[ki] = 0;
+      idx[ki] = 0;
     }
     else {
       /* break the loop. */
@@ -202,9 +211,9 @@ int hx_array_index_incr (int k, int *sz, int *arr) {
   return !roundtrip;
 }
 
-/* hx_array_index_decr(): decrements a multidimensional index. the function
- * returns '1' except when the decrement operation causes all indices to
- * roll over past zero at once (i.e. at the array start).
+/* hx_index_decr(): decrement a multidimensional index. the function returns
+ * '1' except when the decrement operation causes all indices to roll over
+ * past zero at once (i.e. at the array start).
  *
  * calling this function with an all-zero index will initialize its contents
  * to the array end. this function is meant to be used as the condition inside
@@ -212,9 +221,9 @@ int hx_array_index_incr (int k, int *sz, int *arr) {
  *
  * @k: the size of the array.
  * @sz: the sizes of each array dimension.
- * @arr: the array of unpacked indices to decrement.
+ * @idx: the array of unpacked indices to decrement.
  */
-int hx_array_index_decr (int k, int *sz, int *arr) {
+int hx_index_decr (int k, hx_index sz, hx_index idx) {
   /* declare a few required variables:
    * @ki: the dimension loop counter.
    * @allzero: whether we've made it back to (0,0,0,...)
@@ -224,7 +233,7 @@ int hx_array_index_decr (int k, int *sz, int *arr) {
   /* loop over the dimensions to check if the index is all zeros. */
   for (ki = 0, allzero = 1; ki < k; ki++) {
     /* exit if we encounter a nonzero element. */
-    if (arr[ki]) {
+    if (idx[ki]) {
       allzero = 0;
       break;
     }
@@ -234,7 +243,7 @@ int hx_array_index_decr (int k, int *sz, int *arr) {
   if (allzero) {
     /* initialize the index to the array end. */
     for (ki = 0; ki < k; ki++)
-      arr[ki] = sz[ki] - 1;
+      idx[ki] = sz[ki] - 1;
 
     /* return. */
     return 0;
@@ -243,12 +252,12 @@ int hx_array_index_decr (int k, int *sz, int *arr) {
   /* loop over the dimensions of the array. */
   for (ki = 0; ki < k; ki++) {
     /* decrement the current index. */
-    arr[ki]--;
+    idx[ki]--;
 
     /* check if the current index has underflowed. */
-    if (arr[ki] < 0) {
+    if (idx[ki] < 0) {
       /* reset the index. */
-      arr[ki] = sz[ki] - 1;
+      idx[ki] = sz[ki] - 1;
     }
     else {
       /* break the loop. */
@@ -260,10 +269,10 @@ int hx_array_index_decr (int k, int *sz, int *arr) {
   return 1;
 }
 
-/* hx_array_index_incr_rev(): increments a multidimensional index, in the
- * opposite sense as hx_array_index_incr().
+/* hx_index_incr_rev(): increment a multidimensional index, in the opposite
+ * sense as hx_index_incr().
  */
-int hx_array_index_incr_rev (int k, int *sz, int *arr) {
+int hx_index_incr_rev (int k, hx_index sz, hx_index idx) {
   /* declare a few required variables:
    * @ki: the dimension loop counter.
    * @roundtrip: whether we've made it back to (0,0,0,...)
@@ -276,12 +285,12 @@ int hx_array_index_incr_rev (int k, int *sz, int *arr) {
   /* loop over the dimensions of the array. */
   for (ki = k - 1; ki >= 0; ki--) {
     /* increment the current index. */
-    arr[ki]++;
+    idx[ki]++;
 
     /* check if the current index has overflowed. */
-    if (arr[ki] >= sz[ki]) {
+    if (idx[ki] >= sz[ki]) {
       /* reset the index. */
-      arr[ki] = 0;
+      idx[ki] = 0;
     }
     else {
       /* break the loop. */
@@ -297,10 +306,10 @@ int hx_array_index_incr_rev (int k, int *sz, int *arr) {
   return !roundtrip;
 }
 
-/* hx_array_index_decr_rev(): decrements a multidimensional index, in the
- * opposite sense as hx_array_index_decr().
+/* hx_index_decr_rev(): decrement a multidimensional index, in the opposite
+ * sense as hx_index_decr().
  */
-int hx_array_index_decr_rev (int k, int *sz, int *arr) {
+int hx_index_decr_rev (int k, hx_index sz, hx_index idx) {
   /* declare a few required variables:
    * @ki: the dimension loop counter.
    * @allzero: whether we've made it back to (0,0,0,...)
@@ -310,7 +319,7 @@ int hx_array_index_decr_rev (int k, int *sz, int *arr) {
   /* loop over the dimensions to check if the index is all zeros. */
   for (ki = 0, allzero = 1; ki < k; ki++) {
     /* exit if we encounter a nonzero element. */
-    if (arr[ki]) {
+    if (idx[ki]) {
       allzero = 0;
       break;
     }
@@ -320,7 +329,7 @@ int hx_array_index_decr_rev (int k, int *sz, int *arr) {
   if (allzero) {
     /* initialize the index to the array end. */
     for (ki = 0; ki < k; ki++)
-      arr[ki] = sz[ki] - 1;
+      idx[ki] = sz[ki] - 1;
 
     /* return. */
     return 0;
@@ -329,12 +338,12 @@ int hx_array_index_decr_rev (int k, int *sz, int *arr) {
   /* loop over the dimensions of the array. */
   for (ki = k - 1; ki >= 0; ki--) {
     /* decrement the current index. */
-    arr[ki]--;
+    idx[ki]--;
 
     /* check if the current index has underflowed. */
-    if (arr[ki] < 0) {
+    if (idx[ki] < 0) {
       /* reset the index. */
-      arr[ki] = sz[ki] - 1;
+      idx[ki] = sz[ki] - 1;
     }
     else {
       /* break the loop. */
@@ -346,15 +355,15 @@ int hx_array_index_decr_rev (int k, int *sz, int *arr) {
   return 1;
 }
 
-/* hx_array_index_incr_mask(): increments a multidimensional index in a
- * similar fashin to hx_array_index_incr(), but skips incrementation over
- * all masked indices (mask[k] == 1).
+/* hx_index_incr_mask(): increment a multidimensional index in a similar
+ * fashion to hx_index_incr(), but skip incrementation over all masked
+ * indices (mask[k] == 1).
  * @k: the size of the array.
  * @sz: the sizes of each array dimension.
- * @arr: the array of unpacked indices to increment.
+ * @idx: the array of unpacked indices to increment.
  * @mask: the array of index masks to avoid incrementing.
  */
-int hx_array_index_incr_mask (int k, int *sz, int *arr, int *mask) {
+int hx_index_incr_mask (int k, hx_index sz, hx_index idx, hx_index mask) {
   /* declare a few required variables. */
   int ki, roundtrip;
 
@@ -368,12 +377,12 @@ int hx_array_index_incr_mask (int k, int *sz, int *arr, int *mask) {
       continue;
 
     /* increment the current index. */
-    arr[ki]++;
+    idx[ki]++;
 
     /* check if the current index has overflowed. */
-    if (arr[ki] >= sz[ki]) {
+    if (idx[ki] >= sz[ki]) {
       /* reset the index. */
-      arr[ki] = 0;
+      idx[ki] = 0;
     }
     else {
       /* break the loop. */
@@ -389,15 +398,14 @@ int hx_array_index_incr_mask (int k, int *sz, int *arr, int *mask) {
   return !roundtrip;
 }
 
-/* hx_array_index_skip(): increments a multidimensional index in a similar
- * fashion to hx_array_index_incr(), but skips the incrementation over a
- * specified index.
+/* hx_index_skip(): increment a multidimensional index in a similar fashion
+ * to hx_index_incr(), but skip the incrementation over a specified index.
  * @k: the size of the array.
  * @sz: the sizes of each array dimension.
- * @arr: the array of unpacked indices to increment.
+ * @idx: the array of unpacked indices to increment.
  * @kskip: the array index to avoid incrementing.
  */
-int hx_array_index_skip (int k, int *sz, int *arr, int kskip) {
+int hx_index_skip (int k, hx_index sz, hx_index idx, int kskip) {
   /* declare a few required variables. */
   int ki, roundtrip;
 
@@ -411,12 +419,12 @@ int hx_array_index_skip (int k, int *sz, int *arr, int kskip) {
       continue;
 
     /* increment the current index. */
-    arr[ki]++;
+    idx[ki]++;
 
     /* check if the current index has overflowed. */
-    if (arr[ki] >= sz[ki]) {
+    if (idx[ki] >= sz[ki]) {
       /* reset the index. */
-      arr[ki] = 0;
+      idx[ki] = 0;
     }
     else {
       /* break the loop. */
@@ -432,8 +440,8 @@ int hx_array_index_skip (int k, int *sz, int *arr, int kskip) {
   return !roundtrip;
 }
 
-/* hx_array_index_jump_init(): computes the 'small' and 'large' index strides
- * to use when computing packed linear indices where a single specified
+/* hx_index_jump_init(): compute the 'small' and 'large' index strides to
+ * use when computing packed linear indices where a single specified
  * index is skipped.
  * @k: the size of the array.
  * @sz: the sizes of each array dimension.
@@ -441,8 +449,8 @@ int hx_array_index_skip (int k, int *sz, int *arr, int kskip) {
  * @ja: pointer to the small stride value.
  * @jb: pointer to the large stride value.
  */
-int hx_array_index_jump_init (int k, int *sz, int kskip,
-                              int *ja, int *jb, int *jmax) {
+int hx_index_jump_init (int k, hx_index sz, int kskip,
+                        int *ja, int *jb, int *jmax) {
   /* declare a required variable. */
   int i;
 
@@ -460,57 +468,81 @@ int hx_array_index_jump_init (int k, int *sz, int kskip,
   return 1;
 }
 
-/* hx_array_index_jump(): computes a linear index from small and large index
- * strides computed by hx_array_index_jump_init().
+/* hx_index_jump(): compute a linear index from small and large index
+ * strides computed by hx_index_jump_init().
  * @j: the for loop control variable, ranges from 0 .. jmax-1.
  * @ja: the small stride value.
  * @jb: the large stride value.
  */
-inline int hx_array_index_jump (int j, int ja, int jb) {
+inline int hx_index_jump (int j, int ja, int jb) {
   /* return the computed value. */
   return (jb * (j / ja) + j % ja);
 }
 
-/* hx_array_index_diff(): compute the difference of two indices along
- * each dimension.
+/* hx_index_diff(): compute the difference of two multidimensional indices.
  * @k: the number of index elements.
  * @a: the first operand.
  * @b: the second operand.
- * @c: the output array.
+ * @c: the output index array.
  */
-int hx_array_index_diff (int k, int *a, int *b, int *c) {
+int hx_index_diff (int k, hx_index a, hx_index b, hx_index c) {
   /* declare a required variable. */
-  int i;
+  int ki;
 
   /* compute the element-wise differences. */
-  for (i = 0; i < k; i++)
-    c[i] = a[i] - b[i];
+  for (ki = 0; ki < k; ki++)
+    c[ki] = a[ki] - b[ki];
 
   /* return success. */
   return 1;
 }
 
-/* hx_array_index_bounded(): determine whether an index @arr is bounded
- * between a (optional) @lower bound and an @upper bound.
+/* hx_index_cmp(): compare the values in two multidimensional indices
+ * of the same size.
+ * @k: the lengths of the two index arrays.
+ * @a: the first index array.
+ * @b: the second index array.
+ */
+int hx_index_cmp (int k, hx_index a, hx_index b) {
+  /* declare a required variable. */
+  int ki;
+
+  /* return if either of the index arrays is unallocated. */
+  if (!a || !b)
+    return 1;
+
+  /* loop over the indices. */
+  for (ki = 0; ki < k; ki++) {
+    /* check if the current dimension is a mismatch. */
+    if (a[ki] != b[ki])
+      return 1;
+  }
+
+  /* return identity. */
+  return 0;
+}
+
+/* hx_index_bounded(): determine whether a multidimensional index is bounded
+ * between a (optional) lower index bound and an upper index bound.
  * @k: the index array element count.
- * @arr: the index array in question.
+ * @idx: the index array in question.
  * @lower: the lower bound array, or NULL for all zeros.
  * @upper: the upper bound array.
  */
-int hx_array_index_bounded (int k, int *arr, int *lower, int *upper) {
+int hx_index_bounded (int k, hx_index idx, hx_index lower, hx_index upper) {
   /* declare a few required variables:
-   * @i: a loop counter.
+   * @ki: index loop counter.
    */
-  int i;
+  int ki;
 
   /* loop over the array elements. */
-  for (i = 0; i < k; i++) {
+  for (ki = 0; ki < k; ki++) {
     /* check the lower bound. */
-    if ((lower && arr[i] < lower[i]) || arr[i] < 0)
+    if ((lower && idx[ki] < lower[ki]) || idx[ki] < 0)
       return 0;
 
     /* check the upper bound. */
-    if (arr[i] > upper[i])
+    if (idx[ki] > upper[ki])
       return 0;
   }
 
@@ -518,26 +550,29 @@ int hx_array_index_bounded (int k, int *arr, int *lower, int *upper) {
   return 1;
 }
 
-/* hx_array_index_sort(): sorts the values in @order, returning in @order
- * the resulting zero-based indices in their new swapped positions.
+/* hx_index_sort(): sort the values in an index, returning the resulting
+ * zero-based indices in their new swapped positions.
  */
-int hx_array_index_sort (int k, int *order) {
+int hx_index_sort (int k, hx_index idx) {
   /* declare required variables:
    */
   unsigned int i, j;
-  int *zord, swp;
+  hx_index ord;
+  int swp;
 
   /* allocate a temporary array of indices. */
-  zord = (int*) malloc(k * sizeof(int));
-  if (!zord)
+  ord = hx_index_alloc(k);
+
+  /* ensure the array was allocated. */
+  if (!ord)
     return 0;
 
   /* copy the ordering into the temporary array. */
-  memcpy(zord, order, k * sizeof(int));
+  memcpy(ord, idx, k * sizeof(int));
 
   /* initialize the variables in the output array. */
   for (i = 0; i < k; i++)
-    order[i] = i;
+    idx[i] = i;
 
   /* loop over the array of dimensions. */
   for (i = 1; i < k; i++) {
@@ -545,16 +580,16 @@ int hx_array_index_sort (int k, int *order) {
     j = i;
 
     /* loop over the unsorted dimensions. */
-    while (j > 0 && zord[j - 1] > zord[j]) {
+    while (j > 0 && ord[j - 1] > ord[j]) {
       /* swap the (j-1) and (j) output indices. */
-      swp = order[j];
-      order[j] = order[j - 1];
-      order[j - 1] = swp;
+      swp = idx[j];
+      idx[j] = idx[j - 1];
+      idx[j - 1] = swp;
 
       /* swap the ordering of the temporary indices. */
-      swp = zord[j];
-      zord[j] = zord[j - 1];
-      zord[j - 1] = swp;
+      swp = ord[j];
+      ord[j] = ord[j - 1];
+      ord[j - 1] = swp;
 
       /* decrement the inner loop counter. */
       j--;
@@ -562,33 +597,31 @@ int hx_array_index_sort (int k, int *order) {
   }
 
   /* free the ordering array. */
-  free(zord);
+  free(ord);
 
   /* return success. */
   return 1;
 }
 
-/* hx_array_index_scheduled(): returns a list of packed linear indices
- * locating the sampled elements of an array based on a schedule.
+/* hx_index_scheduled(): return a list of packed linear indices locating the
+ * sampled elements of an array based on a schedule.
  */
-int *hx_array_index_scheduled (int k, int *sz, int dsched, int nsched,
-                               int *sched) {
+hx_index hx_index_scheduled (int k, hx_index sz, int dsched, int nsched,
+                             hx_index sched) {
   /* declare a few required variables. */
-  int i, j, nidx, *idx, *arr;
+  hx_index idx, arr;
+  int i, j, nidx;
 
   /* get the number of scheduled elements. */
   nidx = nsched;
 
   /* allocate the array of indices and a temporary array. */
-  idx = hx_array_index_alloc(nidx);
-  arr = hx_array_index_alloc(k);
+  idx = hx_index_alloc(nidx);
+  arr = hx_index_alloc(k);
 
   /* check that allocation was successful. */
-  if (!idx || !arr) {
-    /* raise an exception. */
-    raise("failed to allocate %d+%d indices", nidx, k);
+  if (!idx || !arr)
     return NULL;
-  }
 
   /* build the array of sampled indices. */
   for (i = 0; i < nidx; i++) {
@@ -597,20 +630,22 @@ int *hx_array_index_scheduled (int k, int *sz, int dsched, int nsched,
       arr[j] = sched[i * dsched + j];
 
     /* pack the index array into a linear index. */
-    hx_array_index_pack(k, sz, arr, idx + i);
+    hx_index_pack(k, sz, arr, idx + i);
   }
 
-  /* return the indices. */
+  /* free the temporary array and return the indices. */
+  hx_index_free(arr);
   return idx;
 }
 
-/* hx_array_index_unscheduled(): returns a list of packed linear indices
- * located the non-sampled elements of an array based on a schedule.
+/* hx_index_unscheduled(): returns a list of packed linear indices locating
+ * the non-sampled elements of an array based on a schedule.
  */
-int *hx_array_index_unscheduled (int k, int *sz, int dsched, int nsched,
-                                 int *sched) {
+hx_index hx_index_unscheduled (int k, hx_index sz, int dsched, int nsched,
+                               hx_index sched) {
   /* declare a few required variables. */
-  int i, iadj, j, ntotal, nidx, *idx, *idxinv;
+  int i, iadj, j, ntotal, nidx;
+  hx_index idx, idxinv;
 
   /* get the number of total elements. */
   for (i = 0, ntotal = 1; i < k; i++)
@@ -620,17 +655,14 @@ int *hx_array_index_unscheduled (int k, int *sz, int dsched, int nsched,
   nidx = ntotal - nsched;
 
   /* allocate the array of indices and a temporary array. */
-  idx = hx_array_index_alloc(nidx);
+  idx = hx_index_alloc(nidx);
 
   /* build the array of scheduled indices. */
-  idxinv = hx_array_index_scheduled(k, sz, dsched, nsched, sched);
+  idxinv = hx_index_scheduled(k, sz, dsched, nsched, sched);
 
   /* check that allocation was successful. */
-  if (!idx || !idxinv) {
-    /* raise an exception. */
-    raise("failed to allocate %d+%d indices", nidx, nsched);
+  if (!idx || !idxinv)
     return NULL;
-  }
 
   /* build the array of unsampled indices. */
   for (i = 0, iadj = 0; i < ntotal; i++) {
@@ -648,20 +680,18 @@ int *hx_array_index_unscheduled (int k, int *sz, int dsched, int nsched,
     }
   }
 
-  /* free the scheduled index array. */
-  free(idxinv);
-
-  /* return the indices. */
+  /* free the scheduled array and return the indices. */
+  hx_index_free(idxinv);
   return idx;
 }
 
-/* hx_array_index_printfn(): core function used by hx_array_print() to write
- * the contents of a multidimensional index to standard error.
+/* hx_index_printfn(): core function used by hx_index_print() to write the
+ * contents of a multidimensional index to standard error.
  * @k: the array size.
- * @arr: the array of indices.
+ * @idx: the array of indices.
  * @s: the array variable name.
  */
-void hx_array_index_printfn (int k, int *arr, const char *s) {
+void hx_index_printfn (int k, hx_index idx, const char *s) {
   /* declare a required variable. */
   int ki;
 
@@ -671,7 +701,7 @@ void hx_array_index_printfn (int k, int *arr, const char *s) {
   /* loop over the array elements. */
   for (ki = 0; ki < k; ki++) {
     /* print the index value. */
-    fprintf(stderr, "%d", arr[ki]);
+    fprintf(stderr, "%d", idx[ki]);
 
     /* print commas to separate values. */
     if (ki < k - 1)

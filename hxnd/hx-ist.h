@@ -26,8 +26,8 @@
 
 /* function declarations: */
 
-int hx_array_ist (hx_array *x, int *dx, int *kx,
-                  int dsched, int nsched, int *sched,
+int hx_array_ist (hx_array *x, hx_index dx, hx_index kx,
+                  int dsched, int nsched, hx_index sched,
                   int niter, real thresh);
 
 #endif /* __HXND_HX_IST_H__ */

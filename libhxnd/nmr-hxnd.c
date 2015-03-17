@@ -153,7 +153,7 @@ int hxnd_decode (datum *D, const char *fname) {
   n_sched = D->n_sched * D->d_sched;
   if (n_sched) {
     /* allocate the schedule array. */
-    D->sched = hx_array_index_alloc(n_sched);
+    D->sched = hx_index_alloc(n_sched);
 
     /* check that allocation succeeded. */
     if (D->sched == NULL)

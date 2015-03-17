@@ -34,9 +34,9 @@ int datum_array_infill (datum *D) {
   /* declare a few required variables:
    * @i: loop counter for sampling schedule rows.
    * @j: loop counter for sampling schedule columns.
-   * @idxi: input array linear index.
-   * @idxo: output array linear index.
-   * @arr: output array unpacked indices.
+   * @pidxi: input array packed linear index.
+   * @pidxo: output array packed linear index.
+   * @idx: output array unpacked indices.
    * @nnus: number of nonuniform dimensions.
    * @ncpy: number of array points per sampled trace.
    * @nbytes: number of bytes per sampled trace.
@@ -45,7 +45,8 @@ int datum_array_infill (datum *D) {
    * @d: datum dimension loop counter.
    * @anew: output array structure.
    */
-  int i, j, idxi, idxo, nnus, ncpy, nbytes, sznew, *tdnew, *arr;
+  int i, j, pidxi, pidxo, nnus, ncpy, nbytes, sznew;
+  hx_index tdnew, idx;
   unsigned int d;
   hx_array anew;
 
@@ -62,7 +63,7 @@ int datum_array_infill (datum *D) {
     throw("datum contains no schedule array");
 
   /* allocate a new size array to build the new array. */
-  tdnew = hx_array_index_alloc(D->nd);
+  tdnew = hx_index_alloc(D->nd);
 
   /* check that the size array was allocated. */
   if (!tdnew)
@@ -92,27 +93,27 @@ int datum_array_infill (datum *D) {
     throw("failed to allocate new (%d, %d)-array", D->array.d, D->array.k);
 
   /* allocate a new index array for traversal. */
-  arr = hx_array_index_alloc(D->nd);
+  idx = hx_index_alloc(D->nd);
 
   /* check that allocation was successful. */
-  if (!arr)
+  if (!idx)
     throw("failed to allocate %u indices", D->nd);
 
   /* loop over the indices in the schedule. */
   for (i = 0; i < D->n_sched; i++) {
     /* build the current unpacked index array. */
-    for (j = 0, arr[0] = 0; j < D->d_sched; j++)
-      arr[j + 1] = D->sched[i * D->d_sched + j];
+    for (j = 0, idx[0] = 0; j < D->d_sched; j++)
+      idx[j + 1] = D->sched[i * D->d_sched + j];
 
     /* compute the input array index. */
-    idxi = i * ncpy * D->array.n;
+    pidxi = i * ncpy * D->array.n;
 
     /* compute the output array index. */
-    hx_array_index_pack(D->nd, tdnew, arr, &idxo);
-    idxo *= anew.n;
+    hx_index_pack(D->nd, tdnew, idx, &pidxo);
+    pidxo *= anew.n;
 
     /* copy the current trace into the new array. */
-    memcpy(anew.x + idxo, D->array.x + idxi, nbytes);
+    memcpy(anew.x + pidxo, D->array.x + pidxi, nbytes);
   }
 
   /* replaced the datum array with the local infilled array. */
@@ -131,8 +132,8 @@ int datum_array_infill (datum *D) {
   }
 
   /* free the allocated index arrays. */
-  free(tdnew);
-  free(arr);
+  hx_index_free(tdnew);
+  hx_index_free(idx);
 
   /* return success. */
   return 1;
@@ -208,8 +209,9 @@ int datum_array_refactor (datum *D) {
  */
 int datum_array_alloc (datum *D) {
   /* declare a few required variables. */
-  int d, k, *sznew;
   unsigned int i;
+  hx_index sznew;
+  int d, k;
 
   /* check if the array has been allocated. */
   if (D->array_alloc)
@@ -219,7 +221,7 @@ int datum_array_alloc (datum *D) {
   k = (int) D->nd;
 
   /* allocate an array for storing array dimension sizes. */
-  sznew = hx_array_index_alloc(k);
+  sznew = hx_index_alloc(k);
 
   /* check that allocation was successful. */
   if (!sznew)
@@ -252,7 +254,7 @@ int datum_array_alloc (datum *D) {
   D->array_alloc = 1;
 
   /* free the size array. */
-  free(sznew);
+  hx_index_free(sznew);
 
   /* return success. */
   return 1;
@@ -315,7 +317,7 @@ int datum_array_free (datum *D) {
  * @D: pointer to the datum to manipulate.
  * @sz: new size array to use for resizing.
  */
-int datum_array_resize (datum *D, int *sz) {
+int datum_array_resize (datum *D, hx_index sz) {
   /* declare a few required variables:
    * @d: dimension loop counter.
    */
@@ -349,7 +351,7 @@ int datum_array_resize (datum *D, int *sz) {
  * @lower: lower bound index array.
  * @upper: upper bound index array.
  */
-int datum_array_slice (datum *D, int *lower, int *upper) {
+int datum_array_slice (datum *D, hx_index lower, hx_index upper) {
   /* declare a few required variables:
    * @dim: datum dimension index.
    * @k: previous topological dimension count.
@@ -362,7 +364,7 @@ int datum_array_slice (datum *D, int *lower, int *upper) {
    * @arrnew: destination slice array.
    */
   int dim, d, k, dnew, knew, drm, krm, dadj, kadj;
-  int *ordd, *ordk;
+  hx_index ordd, ordk;
   hx_array arrnew;
 
   /* initialize the local array values, just to be safe. */
@@ -384,8 +386,8 @@ int datum_array_slice (datum *D, int *lower, int *upper) {
   /* allocate arrays to specify how to reorder the datum dimensions,
    * if the need arises.
    */
-  ordd = hx_array_index_alloc(d ? d : 1);
-  ordk = hx_array_index_alloc(k);
+  ordd = hx_index_alloc(d ? d : 1);
+  ordk = hx_index_alloc(k);
 
   /* check that allocation succeeded. */
   if (!ordd || !ordk)
@@ -454,7 +456,7 @@ int datum_array_slice (datum *D, int *lower, int *upper) {
       throw("failed to reallocate dimension array");
 
     /* sort the ordering array into a valid index list. */
-    hx_array_index_sort(d, ordd);
+    hx_index_sort(d, ordd);
 
     /* reorder the core array basis elements. */
     if (!hx_array_reorder_bases(&D->array, ordd))
@@ -465,9 +467,9 @@ int datum_array_slice (datum *D, int *lower, int *upper) {
       throw("failed to resize core array");
   }
 
-  /* free the allocated index arrays. */
-  free(ordd);
-  free(ordk);
+  /* free the allocated multidimensional indices. */
+  hx_index_free(ordd);
+  hx_index_free(ordk);
 
   /* return success. */
   return 1;
@@ -485,15 +487,16 @@ int datum_array_project (datum *D, int dim, hx_array_projector_cb projector) {
    * @k: topological dimension being projected.
    * @ord: datum dimension reordering array.
    */
-  int i, d, k, *ord;
   hx_array arrnew;
+  hx_index ord;
+  int i, d, k;
 
   /* get references to the projected array dimension indices. */
   d = D->dims[dim].d;
   k = D->dims[dim].k;
 
   /* allocate an index array for reordering datum and array dimensions. */
-  ord = hx_array_index_alloc(D->nd);
+  ord = hx_index_alloc(D->nd);
 
   /* ensure that allocation succeeded. */
   if (!ord)
@@ -543,7 +546,7 @@ int datum_array_project (datum *D, int dim, hx_array_projector_cb projector) {
       ord[i] = (i == d ? D->array.d : i);
 
     /* sort the ordering array. */
-    hx_array_index_sort(D->array.d, ord);
+    hx_index_sort(D->array.d, ord);
 
     /* reorder the core array basis elements. */
     if (!hx_array_reorder_bases(&D->array, ord))
@@ -555,7 +558,7 @@ int datum_array_project (datum *D, int dim, hx_array_projector_cb projector) {
   }
 
   /* free the allocated index array. */
-  free(ord);
+  hx_index_free(ord);
 
   /* return success. */
   return 1;

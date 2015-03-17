@@ -48,9 +48,5 @@ int hx_array_topo_cmp (hx_array *a, hx_array *b);
 
 int hx_array_conf_cmp (hx_array *a, hx_array *b);
 
-/* function declarations, indices: */
-
-int hx_array_index_cmp (int k, int *sza, int *szb);
-
 #endif /* __HXND_HX_CMP_H__ */
 

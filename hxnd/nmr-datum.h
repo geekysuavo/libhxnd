@@ -179,9 +179,9 @@ int datum_array_read (datum *D);
 
 int datum_array_free (datum *D);
 
-int datum_array_resize (datum *D, int *sz);
+int datum_array_resize (datum *D, hx_index sz);
 
-int datum_array_slice (datum *D, int *lower, int *upper);
+int datum_array_slice (datum *D, hx_index lower, hx_index upper);
 
 int datum_array_project (datum *D, int dim, hx_array_projector_cb projector);
 

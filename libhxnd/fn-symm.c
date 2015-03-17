@@ -112,7 +112,7 @@ int fn_symm (datum *D, const int dim, const fn_arg *args) {
   if (!dims) {
     /* allocate a default integer array. */
     ndims = 2;
-    dims = hx_array_index_alloc(ndims);
+    dims = hx_index_alloc(ndims);
     dims[0] = 1;
     dims[1] = 2;
   }
@@ -146,7 +146,7 @@ int fn_symm (datum *D, const int dim, const fn_arg *args) {
     throw("failed to apply symmetrization");
 
   /* free the index array. */
-  free(dims);
+  hx_index_free(dims);
 
   /* return success. */
   return 1;

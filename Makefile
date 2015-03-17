@@ -3,7 +3,7 @@
 CC=gcc
 
 # CFLAGS: compilation flags.
-CFLAGS=-g -O2 -std=c99 -Wall -Wformat -I. -fopenmp
+CFLAGS=-g -O2 -std=c99 -Wall -Wformat -Werror -I. -fopenmp
 CFLAGS+= $(shell pkg-config --cflags gtk+-3.0)
 
 # LIBS, GLIBS: linkage flags.

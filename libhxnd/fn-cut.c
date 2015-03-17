@@ -46,7 +46,8 @@ int fn_cut (datum *D, const int dim, const fn_arg *args) {
    * @nz: number of zeros in @ivtr or @ivpl.
    * @niv: number of final int-array elements.
    */
-  int *iv, *lower, *upper, i, nz;
+  hx_index lower, upper;
+  int i, nz, *iv;
   size_t niv;
 
   /* check that no dimension was specified. */
@@ -79,8 +80,8 @@ int fn_cut (datum *D, const int dim, const fn_arg *args) {
   niv = (ivtr ? ntr : npl);
 
   /* allocate the lower and upper bound index arrays. */
-  lower = hx_array_index_alloc(D->array.k);
-  upper = hx_array_index_alloc(D->array.k);
+  lower = hx_index_alloc(D->array.k);
+  upper = hx_index_alloc(D->array.k);
 
   /* check that allocation succeeded. */
   if (!lower || !upper)
@@ -132,8 +133,8 @@ int fn_cut (datum *D, const int dim, const fn_arg *args) {
     throw("failed to perform slice operation");
 
   /* free the lower and upper bound index arrays. */
-  free(lower);
-  free(upper);
+  hx_index_free(lower);
+  hx_index_free(upper);
 
   /* return success. */
   return 1;

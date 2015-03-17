@@ -36,9 +36,9 @@ int fn_ist (datum *D, const int dim, const fn_arg *args) {
   int iters;
 
   /* declare a few required variables. */
+  hx_index dv, kv;
   unsigned int d;
   int ncx, nnus;
-  int *dv, *kv;
 
   /* get the argument values from the argdef array. */
   if (!fn_args_get_all(args, &thresh, &iters))
@@ -68,8 +68,8 @@ int fn_ist (datum *D, const int dim, const fn_arg *args) {
     throw("unexpected nus dimension count (%d != %d)", nnus, D->d_sched);
 
   /* allocate the topological and algebraic dimension index arrays. */
-  dv = hx_array_index_alloc(D->nd);
-  kv = hx_array_index_alloc(D->nd);
+  dv = hx_index_alloc(D->nd);
+  kv = hx_index_alloc(D->nd);
 
   /* ensure the index arrays were allocated. */
   if (!dv || !kv)
@@ -88,8 +88,8 @@ int fn_ist (datum *D, const int dim, const fn_arg *args) {
     throw("failed to perform ist reconstruction");
 
   /* free the allocated index arrays. */
-  free(dv);
-  free(kv);
+  hx_index_free(dv);
+  hx_index_free(kv);
 
   /* return success. */
   return 1;

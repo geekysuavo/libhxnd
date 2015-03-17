@@ -819,19 +819,20 @@ int pipe_decode (datum *D, const char *fname) {
  * @D: pointer to the source datum structure.
  * @dim: current datum dimension in the recursion.
  * @n0: current coefficient offset in the recursion.
- * @arr: index array for looping through the datum core array.
+ * @idx: index array for looping through the datum core array.
  * @fh: the output file handle.
  */
-int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr, FILE *fh) {
+int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, hx_index idx,
+                     FILE *fh) {
   /* declare a few required variables:
    * @d: current array algebraic dimension index.
    * @k: current array topological dimension index.
    * @n: current array coefficient imaginary offset.
    * @num: size along current array dimension.
-   * @idx: array linear scalar index.
+   * @pidx: array linear scalar index.
    * @f: float output value.
    */
-  int d, k, n, num, idx;
+  int d, k, n, num, pidx;
   float f;
 
   /* determine the array dimension indices. */
@@ -847,10 +848,10 @@ int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr, FILE *fh) {
   /* check if we've reached the lowest dimension. */
   if (k == 0) {
     /* store the real points of the current trace. */
-    for (arr[k] = 0; arr[k] < num; arr[k]++) {
+    for (idx[k] = 0; idx[k] < num; idx[k]++) {
       /* pack the linear index and get the coefficient. */
-      hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
-      f = (float) D->array.x[D->array.n * idx + n0];
+      hx_index_pack(D->array.k, D->array.sz, idx, &pidx);
+      f = (float) D->array.x[D->array.n * pidx + n0];
 
       /* write the coefficient. */
       if (fwrite(&f, sizeof(float), 1, fh) != 1)
@@ -860,10 +861,10 @@ int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr, FILE *fh) {
     /* check if the trace is complex. */
     if (D->dims[dim].cx) {
       /* store the imaginary points of the current trace. */
-      for (arr[k] = 0; arr[k] < num; arr[k]++) {
+      for (idx[k] = 0; idx[k] < num; idx[k]++) {
         /* pack the linear index and get the coefficient. */
-        hx_array_index_pack(D->array.k, D->array.sz, arr, &idx);
-        f = (float) D->array.x[D->array.n * idx + n0 + n];
+        hx_index_pack(D->array.k, D->array.sz, idx, &pidx);
+        f = (float) D->array.x[D->array.n * pidx + n0 + n];
 
         /* write the coefficient. */
         if (fwrite(&f, sizeof(float), 1, fh) != 1)
@@ -873,13 +874,13 @@ int pipe_fwrite_dim (datum *D, unsigned int dim, int n0, int *arr, FILE *fh) {
   }
   else {
     /* recurse into the lower dimensions. */
-    for (arr[k] = 0; arr[k] < num; arr[k]++) {
+    for (idx[k] = 0; idx[k] < num; idx[k]++) {
       /* recurse the real component. */
-      if (!pipe_fwrite_dim(D, dim - 1, n0, arr, fh))
+      if (!pipe_fwrite_dim(D, dim - 1, n0, idx, fh))
         return 0;
 
       /* recurse the imaginary component. */
-      if (D->dims[dim].cx && !pipe_fwrite_dim(D, dim - 1, n0 + n, arr, fh))
+      if (D->dims[dim].cx && !pipe_fwrite_dim(D, dim - 1, n0 + n, idx, fh))
         return 0;
     }
   }

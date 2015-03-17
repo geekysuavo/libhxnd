@@ -82,8 +82,8 @@ int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest,
  * two-dimensional array using iterative soft thresholding.
  * see hx_array_ist() for details.
  */
-int hx_array_ist1d (hx_array *x, int *dx, int *kx,
-                    int nsched, int *sched,
+int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
+                    int nsched, hx_index sched,
                     int niter, real thresh) {
   /* declare a few required variables:
    * @iiter: iteration loop counter.
@@ -96,7 +96,8 @@ int hx_array_ist1d (hx_array *x, int *dx, int *kx,
    * @nbytes: number of bytes per hypercomplex scalar.
    * @zeros: linear indices of all unscheduled elements in @y.
    */
-  int d, k, sz, nnorms, nzeros, nbytes, *zeros;
+  int d, k, sz, nnorms, nzeros, nbytes;
+  hx_index zeros;
 
   /* get the slice dimensionalities. */
   d = x->d;
@@ -113,14 +114,14 @@ int hx_array_ist1d (hx_array *x, int *dx, int *kx,
   nzeros = sz - nsched;
 
   /* allocate an array of unscheduled elements in each trace. */
-  zeros = hx_array_index_unscheduled(k, &sz, 1, nsched, sched);
+  zeros = hx_index_unscheduled(k, &sz, 1, nsched, sched);
 
   /* check that allocation succeeded. */
   if (!zeros)
     throw("failed to allocate %d indices", nzeros);
 
   /* initialize the skipped iteration control variables. */
-  hx_array_index_jump_init(x->k, x->sz, 1, &ja, &jb, &jmax);
+  hx_index_jump_init(x->k, x->sz, 1, &ja, &jb, &jmax);
 
   /* create a team of threads to execute multiple parallel reconstructions. */
   #pragma omp parallel
@@ -132,12 +133,12 @@ int hx_array_ist1d (hx_array *x, int *dx, int *kx,
      * @z: output result sub-array.
      * @j: array skipped iteration master index.
      * @l: unscheduled array loop index.
-     * @idx: packed linear array index.
+     * @pidx: packed linear array index.
      * @ynorms: norms of all values in @y.
      */
     hx_scalar w, swp;
     hx_array y, z;
-    int j, l, idx;
+    int j, l, pidx;
     real *ynorms;
 
     /* allocate temporary scalars for use in the fft. */
@@ -157,10 +158,10 @@ int hx_array_ist1d (hx_array *x, int *dx, int *kx,
     #pragma omp for
     for (j = 0; j < jmax; j++) {
       /* compute the linear array index of the current vector. */
-      idx = hx_array_index_jump(j, ja, jb);
+      pidx = hx_index_jump(j, ja, jb);
 
       /* slice the currently indexed vector from the array. */
-      if (!hx_array_slice_vector(x, &y, 1, idx))
+      if (!hx_array_slice_vector(x, &y, 1, pidx))
         raise("failed to slice vector %d", j);
 
       /* loop over the iterations. */
@@ -187,7 +188,7 @@ int hx_array_ist1d (hx_array *x, int *dx, int *kx,
         raise("failed to execute final inverse fft");
 
       /* store the reconstructed vector back into the array. */
-      if (!hx_array_store_vector(x, &z, 1, idx))
+      if (!hx_array_store_vector(x, &z, 1, pidx))
         raise("failed to store vector %d", j);
 
       /* re-initialize the contents of the reconstructed vector. */
@@ -207,7 +208,7 @@ int hx_array_ist1d (hx_array *x, int *dx, int *kx,
   }
 
   /* free the array of unscheduled indices. */
-  free(zeros);
+  hx_index_free(zeros);
 
   /* return success. */
   return 1;
@@ -217,8 +218,8 @@ int hx_array_ist1d (hx_array *x, int *dx, int *kx,
  * an array having at least three dimensions using iterative soft thresholding.
  * see hx_array_ist() for details.
  */
-int hx_array_istnd (hx_array *x, int *dx, int *kx,
-                    int dsched, int nsched, int *sched,
+int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
+                    int dsched, int nsched, hx_index sched,
                     int niter, real thresh) {
   /* declare a few required variables:
    * @iiter: iteration loop counter.
@@ -226,8 +227,8 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
    * @upper: slice upper-bound index array.
    * @ymax: maximum value in @ynorm.
    */
-  int i, j, n, d, k, *sz;
-  int iiter, *lower, *upper;
+  hx_index sz, lower, upper;
+  int i, j, n, d, k, iiter;
 
   /* @y: currently sliced sub-array.
    * @z: output result sub-array.
@@ -243,7 +244,8 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
   /* @nzeros: number of unscheduled elements @y.
    * @zeros: linear indices of all unschedules elements in @y.
    */
-  int nbytes, nzeros, *zeros;
+  int nbytes, nzeros;
+  hx_index zeros;
 
   /* get the number of reconstructions required. */
   n = x->sz[kx[0]];
@@ -256,7 +258,7 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
   nbytes = x->n * sizeof(real);
 
   /* allocate the slice size array. */
-  sz = hx_array_index_alloc(k);
+  sz = hx_index_alloc(k);
 
   /* check that allocation was successful. */
   if (!sz)
@@ -267,8 +269,8 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
     sz[i] = x->sz[kx[i]];
 
   /* allocate the bounding array indices. */
-  lower = hx_array_index_alloc(k);
-  upper = hx_array_index_alloc(k);
+  lower = hx_index_alloc(k);
+  upper = hx_index_alloc(k);
 
   /* check that the bounding arrays were allocated. */
   if (!lower || !upper)
@@ -289,7 +291,7 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
 
   /* determine the number of un-scheduled elements in each slice. */
   nzeros = nnorms - nsched;
-  zeros = hx_array_index_unscheduled(k - 1, sz + 1, dsched, nsched, sched);
+  zeros = hx_index_unscheduled(k - 1, sz + 1, dsched, nsched, sched);
 
   /* check that the array of zero indices was allocated. */
   if (!zeros)
@@ -352,9 +354,6 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
     hx_array_zero(&z);
   }
 
-  /* free the array of un-scheduled indices. */
-  free(zeros);
-
   /* free the array of norm values. */
   free(ynorms);
 
@@ -362,10 +361,11 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
   hx_array_free(&y);
   hx_array_free(&z);
 
-  /* free the allocated index arrays. */
-  free(lower);
-  free(upper);
-  free(sz);
+  /* free the allocated multidimensional indices. */
+  hx_index_free(zeros);
+  hx_index_free(lower);
+  hx_index_free(upper);
+  hx_index_free(sz);
 
   /* return success. */
   return 1;
@@ -382,8 +382,8 @@ int hx_array_istnd (hx_array *x, int *dx, int *kx,
  * @niter: number of iterations to perform.
  * @thresh: threshold magnitude.
  */
-int hx_array_ist (hx_array *x, int *dx, int *kx,
-                  int dsched, int nsched, int *sched,
+int hx_array_ist (hx_array *x, hx_index dx, hx_index kx,
+                  int dsched, int nsched, hx_index sched,
                   int niter, real thresh) {
   /* determine which reconstruction function to use. */
   if (dsched == 1) {

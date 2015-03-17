@@ -195,14 +195,15 @@ int ucsf_tiler (hx_array *x,
    * @nt: array of tile counts.
    * @szt: array of tile sizes.
    */
-  int i, k, *nt, *szt;
+  hx_index nt, szt;
+  int i, k;
 
   /* gain a handle on the dimensionality of the array data. */
   k = (int) fhdr->ndims;
 
   /* allocate the size index arrays. */
-  nt = hx_array_index_alloc(k);
-  szt = hx_array_index_alloc(k);
+  nt = hx_index_alloc(k);
+  szt = hx_index_alloc(k);
 
   /* check that all index allocations were successful. */
   if (!nt || !szt)
@@ -232,8 +233,8 @@ int ucsf_tiler (hx_array *x,
     throw("failed to perform tile mapping");
 
   /* free the allocated index arrays. */
-  free(nt);
-  free(szt);
+  hx_index_free(nt);
+  hx_index_free(szt);
 
   /* return success. */
   return 1;

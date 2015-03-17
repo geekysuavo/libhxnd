@@ -32,26 +32,27 @@
  * @dir: direction, either 0 (linearize) or 1 (tileize).
  * @incr: incrementation mode, either 0 (normal) or 1 (reverse).
  */
-int hx_array_tiler (hx_array *x, int k, int *nt, int *szt,
+int hx_array_tiler (hx_array *x, int k, hx_index nt, hx_index szt,
                     int dir, int incr) {
   /* declare a few required variables:
-   * @idxi: input array linear index.
-   * @idxo: output array linear index.
-   * @arr: multidimensional point index array.
-   * @arrt: multidimensional tile index array.
+   * @pidxi: input array packed linear index.
+   * @pidxo: output array packed linear index.
+   * @idx: multidimensional point index array.
+   * @idxt: multidimensional tile index array.
    * @xcpy: temporary tile array.
    * @res: result of inner array incrementation.
    * @rest: result of outer array incrementation.
    */
-  int n, ncpy, idxi, idxo, *arr, *arrt, res, rest;
+  int n, ncpy, pidxi, pidxo, res, rest;
+  hx_index idx, idxt;
   hx_array xcpy;
 
   /* allocate the loop index arrays. */
-  arr = hx_array_index_alloc(k);
-  arrt = hx_array_index_alloc(k);
+  idx = hx_index_alloc(k);
+  idxt = hx_index_alloc(k);
 
   /* check that all index allocations were successful. */
-  if (!arr || !arrt)
+  if (!idx || !idxt)
     throw("failed to allocate two sets of %d indices", k);
 
   /* allocate a temporary array for storing tile data. */
@@ -64,42 +65,42 @@ int hx_array_tiler (hx_array *x, int k, int *nt, int *szt,
   ncpy = n * sizeof(real);
 
   /* loop over the data tiles. initialize the input linear index. */
-  idxi = 0;
+  pidxi = 0;
   do {
     /* loop over the tile points. */
     do {
       /* pack the tiled indices into a linear index. */
-      hx_array_index_pack_tiled(k, nt, szt, arr, arrt, &idxo);
+      hx_index_pack_tiled(k, nt, szt, idx, idxt, &pidxo);
 
       /* determine the copy direction. */
       switch (dir) {
         /* forward: tiles -> linear. */
         case HX_ARRAY_TILER_FORWARD:
           /* copy coefficients from the tiled array into the linear array. */
-          memcpy(x->x + idxo * n, xcpy.x + idxi * n, ncpy);
+          memcpy(x->x + pidxo * n, xcpy.x + pidxi * n, ncpy);
           break;
 
         /* reverse: linear -> tiles. */
         case HX_ARRAY_TILER_REVERSE:
           /* copy coefficients from the linear array into the tiled array. */
-          memcpy(x->x + idxi * n, xcpy.x + idxo * n, ncpy);
+          memcpy(x->x + pidxi * n, xcpy.x + pidxo * n, ncpy);
           break;
       }
 
       /* increment the tile linear index. */
-      idxi++;
+      pidxi++;
 
       /* increment the point multidimensional index. */
       res = 0;
       switch (incr) {
         /* normal: lowest dimension varies fastest. */
         case HX_ARRAY_INCR_NORMAL:
-          res = hx_array_index_incr(k, szt, arr);
+          res = hx_index_incr(k, szt, idx);
           break;
 
         /* reverse: highest dimension varies fastest. */
         case HX_ARRAY_INCR_REVERSE:
-          res = hx_array_index_incr_rev(k, szt, arr);
+          res = hx_index_incr_rev(k, szt, idx);
           break;
       }
     } while (res);
@@ -109,12 +110,12 @@ int hx_array_tiler (hx_array *x, int k, int *nt, int *szt,
     switch (incr) {
       /* normal: lowest dimension varies fastest. */
       case HX_ARRAY_INCR_NORMAL:
-        rest = hx_array_index_incr(k, nt, arrt);
+        rest = hx_index_incr(k, nt, idxt);
         break;
 
       /* reverse: highest dimension varies fastest. */
       case HX_ARRAY_INCR_REVERSE:
-        rest = hx_array_index_incr_rev(k, nt, arrt);
+        rest = hx_index_incr_rev(k, nt, idxt);
         break;
     }
   } while (rest);
@@ -122,9 +123,9 @@ int hx_array_tiler (hx_array *x, int k, int *nt, int *szt,
   /* free the allocated tile array. */
   hx_array_free(&xcpy);
 
-  /* free the allocated index arrays. */
-  free(arr);
-  free(arrt);
+  /* free the allocated multidimensional indices. */
+  hx_index_free(idx);
+  hx_index_free(idxt);
 
   /* return success. */
   return 1;
@@ -137,7 +138,8 @@ int hx_array_tiler (hx_array *x, int k, int *nt, int *szt,
  * @nt: pointer to the output array of tile counts.
  * @szt: pointer to the output array of tile sizes.
  */
-int hx_array_tiling (hx_array *x, unsigned int nwords, int *nt, int *szt) {
+int hx_array_tiling (hx_array *x, unsigned int nwords,
+                     hx_index nt, hx_index szt) {
   /* declare a few required variables:
    * @k: general purpose dimension loop counter.
    * @k_div: current array dimension to subdivide.

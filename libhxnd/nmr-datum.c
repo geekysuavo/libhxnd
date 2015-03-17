@@ -45,7 +45,8 @@ int datum_read_sched (datum *D, const char *fname) {
    */
   char buf[N_BUF], **tokv;
   unsigned int toki, tokc;
-  int d, n, i, *sched;
+  hx_index sched;
+  int d, n, i;
   FILE *fh;
 
   /* initialize the results. */
@@ -86,7 +87,7 @@ int datum_read_sched (datum *D, const char *fname) {
       n++;
 
       /* reallocate the schedule array. */
-      sched = (int*) realloc(sched, d * n * sizeof(int));
+      sched = (hx_index) realloc(sched, d * n * sizeof(int));
 
       /* check that the reallocation succeeded. */
       if (!sched)

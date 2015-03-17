@@ -38,7 +38,8 @@ int hx_array_print (hx_array *x, const char *fname) {
   /* declare a few required variables:
    * @fh: the file handle used for writing.
    */
-  int *arr, idx, i;
+  hx_index idx;
+  int pidx, i;
   FILE *fh;
 
   /* open the output file. */
@@ -52,32 +53,31 @@ int hx_array_print (hx_array *x, const char *fname) {
     throw("failed to open '%s'", fname);
 
   /* allocate an index array for iteration. */
-  arr = hx_array_index_alloc(x->k);
+  idx = hx_index_alloc(x->k);
 
   /* check that allocation was successful. */
-  if (!arr)
+  if (!idx)
     throw("failed to allocate %d indices", x->k);
 
   /* iterate over the points of the array. */
-  idx = 0;
   do {
+    /* pack the multidimensional index into a linear index. */
+    hx_index_pack(x->k, x->sz, idx, &pidx);
+
     /* print the indices. */
     for (i = 0; i < x->k; i++)
-      fprintf(fh, "%6d ", arr[i]);
+      fprintf(fh, "%6d ", idx[i]);
 
     /* print the coefficients. */
     for (i = 0; i < x->n; i++)
-      fprintf(fh, "%18.8e ", x->x[i + x->n * idx]);
+      fprintf(fh, "%18.8e ", x->x[i + x->n * pidx]);
 
     /* print a newline. */
     fprintf(fh, "\n");
-
-    /* increment the linear index. */
-    idx++;
-  } while (hx_array_index_incr(x->k, x->sz, arr));
+  } while (hx_index_incr(x->k, x->sz, idx));
 
   /* free the index array. */
-  free(arr);
+  hx_index_free(idx);
 
   /* close the output file. */
   if (fname)

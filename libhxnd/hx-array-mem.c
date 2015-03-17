@@ -47,7 +47,7 @@ void hx_array_init (hx_array *x) {
  * dimensionality. a pointer to the array structure is required by this
  * function.
  */
-int hx_array_alloc (hx_array *x, int d, int k, int *sz) {
+int hx_array_alloc (hx_array *x, int d, int k, hx_index sz) {
   /* declare a few required variables. */
   int i, len;
 
@@ -71,7 +71,7 @@ int hx_array_alloc (hx_array *x, int d, int k, int *sz) {
     throw("failed to retrieve %d-algebra", d);
 
   /* allocate the array of sizes. return failure if allocation fails. */
-  x->sz = hx_array_index_alloc(x->k);
+  x->sz = hx_index_alloc(x->k);
   if (x->sz == NULL)
     throw("failed to allocate size array");
 
@@ -160,8 +160,7 @@ void hx_array_free (hx_array *x) {
     free(x->x);
 
   /* free the size array. */
-  if (x->sz)
-    free(x->sz);
+  hx_index_free(x->sz);
 
   /* re-initialize the array structure contents. */
   hx_array_init(x);

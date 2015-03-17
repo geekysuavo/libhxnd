@@ -79,10 +79,11 @@ int hx_array_compact (hx_array *x) {
    * @kadj: compacted dimension index.
    * @sznew: new topological size array.
    */
-  int k, kadj, *sznew;
+  hx_index sznew;
+  int k, kadj;
 
   /* allocate a new size array. */
-  sznew = hx_array_index_alloc(x->k);
+  sznew = hx_index_alloc(x->k);
 
   /* check that allocation succeeded. */
   if (!sznew)
@@ -106,7 +107,7 @@ int hx_array_compact (hx_array *x) {
   }
 
   /* free the new size array. */
-  free(sznew);
+  hx_index_free(sznew);
 
   /* return success. */
   return 1;

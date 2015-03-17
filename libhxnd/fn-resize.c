@@ -37,7 +37,8 @@ int fn_resize (datum *D, const int dim, const fn_arg *args) {
    * @nszv: number of array elements in @szv.
    * @i: loop counter.
    */
-  int *sznew, *szv, szd, i;
+  int *szv, szd, i;
+  hx_index sznew;
   size_t nszv;
 
   /* get the argument values from the argdef array. */
@@ -59,7 +60,7 @@ int fn_resize (datum *D, const int dim, const fn_arg *args) {
       throw("invalid array length (%d != %d)", nszv, D->array.k);
 
     /* allocate memory for the size array. */
-    sznew = hx_array_index_alloc(D->array.k);
+    sznew = hx_index_alloc(D->array.k);
 
     /* check that allocation succeeded. */
     if (!sznew)
@@ -78,7 +79,7 @@ int fn_resize (datum *D, const int dim, const fn_arg *args) {
       throw("expected 'size' argument not found");
 
     /* allocate memory for the size array. */
-    sznew = hx_array_index_alloc(D->array.k);
+    sznew = hx_index_alloc(D->array.k);
 
     /* check that allocation succeeded. */
     if (!sznew)
@@ -106,7 +107,7 @@ int fn_resize (datum *D, const int dim, const fn_arg *args) {
     throw("failed to resize datum");
 
   /* free the size array. */
-  free(sznew);
+  hx_index_free(sznew);
 
   /* return success. */
   return 1;

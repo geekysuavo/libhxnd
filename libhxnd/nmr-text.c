@@ -29,13 +29,14 @@
  */
 int text_encode (datum *D, const char *fname) {
   /* declare required variables:
-   * @arr: unpacked multidimensional array indices.
-   * @idx: packed linear array index.
+   * @idx: unpacked multidimensional array indices.
+   * @pidx: packed linear array index.
    * @d: dimension loop counter.
    * @fh: output file handle.
    */
-  int i, *arr, idx;
   unsigned int d;
+  hx_index idx;
+  int i, pidx;
   FILE *fh;
 
   /* open the output file. */
@@ -67,35 +68,34 @@ int text_encode (datum *D, const char *fname) {
   }
 
   /* allocate an index array for iteration. */
-  arr = hx_array_index_alloc(D->array.k);
+  idx = hx_index_alloc(D->array.k);
 
   /* check that allocation was successful. */
-  if (!arr)
+  if (!idx)
     throw("failed to allocate %d indices", D->array.k);
 
   /* iterate over the points in the core array. */
-  idx = 0;
   do {
+    /* pack the linear index. */
+    hx_index_pack(D->array.k, D->array.sz, idx, &pidx);
+
     /* print the indices. */
     for (i = 0; i < D->array.k; i++)
-      fprintf(fh, "%6d ", arr[i]);
+      fprintf(fh, "%6d ", idx[i]);
 
     /* print the coefficients. */
     for (i = 0; i < D->array.n; i++)
-      fprintf(fh, "%18.8e ", D->array.x[i + D->array.n * idx]);
+      fprintf(fh, "%18.8e ", D->array.x[i + D->array.n * pidx]);
 
     /* print a newline. */
     fprintf(fh, "\n");
-
-    /* increment the linear index. */
-    idx++;
-  } while (hx_array_index_incr(D->array.k, D->array.sz, arr));
+  } while (hx_index_incr(D->array.k, D->array.sz, idx));
 
   /* close the output file. */
   fclose(fh);
 
-  /* free the index array. */
-  free(arr);
+  /* free the multidimensional index. */
+  hx_index_free(idx);
 
   /* return success. */
   return 1;

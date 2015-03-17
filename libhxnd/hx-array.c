@@ -31,7 +31,8 @@
  */
 int hx_array_set_coeff (hx_array *x, int di, real value, ...) {
   /* declare a few required variables. */
-  int i, idx, *arr;
+  hx_index idx;
+  int i, pidx;
   va_list vl;
 
   /* check that the coefficient index is in bounds. */
@@ -39,10 +40,10 @@ int hx_array_set_coeff (hx_array *x, int di, real value, ...) {
     throw("dimension %d out of bounds [0,%d)", di, x->n);
 
   /* allocate an index array. */
-  arr = hx_array_index_alloc(x->k);
+  idx = hx_index_alloc(x->k);
 
   /* check that the array was allocated successfully. */
-  if (!arr)
+  if (!idx)
     throw("failed to allocate %d indices", x->k);
 
   /* initialize the variable arguments list. */
@@ -50,21 +51,21 @@ int hx_array_set_coeff (hx_array *x, int di, real value, ...) {
 
   /* loop over the arguments list. */
   for (i = 0; i < x->k; i++)
-    arr[i] = va_arg(vl, int);
+    idx[i] = va_arg(vl, int);
 
   /* free the variable arguments list. */
   va_end(vl);
 
   /* pack the arrayed indices into a linear index. */
-  hx_array_index_pack(x->k, x->sz, arr, &idx);
-  idx *= x->n;
-  idx += di;
+  hx_index_pack(x->k, x->sz, idx, &pidx);
+  pidx *= x->n;
+  pidx += di;
 
   /* store the value in the coefficients array. */
-  x->x[idx] = value;
+  x->x[pidx] = value;
 
   /* free the allocated index array. */
-  free(arr);
+  hx_index_free(idx);
 
   /* return success. */
   return 1;
@@ -301,7 +302,8 @@ int hx_array_real (hx_array *x, int d) {
    * @i: general-purpose loop counter.
    * @ord: new dimension ordering.
    */
-  int i, *ord;
+  hx_index ord;
+  int i;
 
   /* check if all dimensions are to be realified. */
   if (d < 0) {
@@ -314,7 +316,7 @@ int hx_array_real (hx_array *x, int d) {
     throw("dimension index %d out of bounds (-inf,%d)", x->d);
 
   /* allocate a dimension ordering array. */
-  ord = hx_array_index_alloc(x->d);
+  ord = hx_index_alloc(x->d);
 
   /* check that allocation succeeded. */
   if (!ord)
@@ -328,7 +330,7 @@ int hx_array_real (hx_array *x, int d) {
   ord[d] = x->d;
 
   /* sort the ordering array into a valid index list. */
-  hx_array_index_sort(x->d, ord);
+  hx_index_sort(x->d, ord);
 
   /* reorder the array basis elements. */
   if (!hx_array_reorder_bases(x, ord))
@@ -339,7 +341,7 @@ int hx_array_real (hx_array *x, int d) {
     throw("failed to resize array");
 
   /* free the ordering array. */
-  free(ord);
+  hx_index_free(ord);
 
   /* return success. */
   return 1;
@@ -351,7 +353,7 @@ int hx_array_real (hx_array *x, int d) {
  * @k: the new array dimensionality.
  * @sz: the new array dimension sizes.
  */
-int hx_array_reshape (hx_array *x, int k, int *sz) {
+int hx_array_reshape (hx_array *x, int k, hx_index sz) {
   /* declare a few required variables:
    * @i: array dimension loop counter.
    * @newlen: new array total coefficient count.

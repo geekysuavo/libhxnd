@@ -117,7 +117,7 @@ int hx_array_resize_d (hx_array *x, int d) {
  * @k: the new topological dimensionality.
  * @sz: the new size array.
  */
-int hx_array_resize (hx_array *x, int d, int k, int *sz) {
+int hx_array_resize (hx_array *x, int d, int k, hx_index sz) {
   /* define a few required variables:
    * @arr: array of indices for iteration.
    * @idx: new linear iteration index.
@@ -130,16 +130,17 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
    * @kmax: larger of new and old @k.
    * @xnew: new coefficient array.
    */
-  int *arr, idx, idxprev, i, n, len, ok;
+  int pidx, pidxprev, i, n, len, ok;
   int nmin, kmax;
+  hx_index idx;
   real *xnew;
 
   /* check if the array needs no resizing. */
-  if (d == x->d && k == x->k && hx_array_index_cmp(k, sz, x->sz) == 0)
+  if (d == x->d && k == x->k && hx_index_cmp(k, sz, x->sz) == 0)
     return 1;
 
   /* check if only algebraic dimensionality is to be changed. */
-  if (k == x->k && hx_array_index_cmp(k, sz, x->sz) == 0)
+  if (k == x->k && hx_index_cmp(k, sz, x->sz) == 0)
     return hx_array_resize_d(x, d);
 
   /* check if the specified dimensionalities are supported. */
@@ -154,11 +155,13 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
 
   /* allocate an array to hold the iteration indices. */
   kmax = (k > x->k ? k : x->k);
-  arr = hx_array_index_alloc(kmax);
-  idxprev = 0;
+  idx = hx_index_alloc(kmax);
+
+  /* initialize the linear indices. */
+  pidx = pidxprev = 0;
 
   /* check that the index array was successfully allocated. */
-  if (!arr)
+  if (!idx)
     throw("failed to allocate %d indices", kmax);
 
   /* compute the final size of the new coefficients array. */
@@ -179,7 +182,7 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
     throw("failed to allocate %d reals", len);
 
   /* loop over the set of indices. */
-  for (idx = 0; idx < len / n;) {
+  for (pidx = 0; pidx < len / n;) {
     /* loop over the dimensions to check if we're in bounds. */
     for (i = 0, ok = 1; i < k; i++) {
       /* check if we've exceeded one of the following:
@@ -187,8 +190,8 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
        *  - the dimensionality of the original array.
        *  - the size of the currently indexed (original) dimension.
        */
-      if (arr[i] >= sz[i] ||
-          (arr[i] && (i >= x->k || arr[i] >= x->sz[i]))) {
+      if (idx[i] >= sz[i] ||
+          (idx[i] && (i >= x->k || idx[i] >= x->sz[i]))) {
         /* yes. break the loop. */
         ok = 0;
         break;
@@ -198,20 +201,20 @@ int hx_array_resize (hx_array *x, int d, int k, int *sz) {
     /* check if we're on a copiable index. */
     if (ok) {
       /* pack the indices into the old array linear index. */
-      hx_array_index_pack(x->k, x->sz, arr, &idxprev);
+      hx_index_pack(x->k, x->sz, idx, &pidxprev);
 
       /* loop over the coefficients. */
       for (i = 0; i < nmin; i++)
-        xnew[i + n * idx] = x->x[i + x->n * idxprev];
+        xnew[i + n * pidx] = x->x[i + x->n * pidxprev];
     }
 
     /* increment the multidimensional indices. */
-    hx_array_index_incr(k, sz, arr);
-    idx++;
+    hx_index_incr(k, sz, idx);
+    pidx++;
   }
 
-  /* free the index arrays. */
-  free(arr);
+  /* free the allocated index array. */
+  hx_index_free(idx);
 
   /* store the new data array. */
   free(x->x);
