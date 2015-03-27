@@ -27,7 +27,9 @@
 /* fn_tilt_cb(): vector callback function used to shift each vector
  * along a given dimension of an array, relative to another dimension.
  */
-int fn_tilt_cb (hx_array *x, hx_array *y, int *arr, int idx, va_list *vl) {
+int fn_tilt_cb (hx_array *x, hx_array *y,
+                hx_index idx, int pidx,
+                va_list *vl) {
   /* declare a few required variables:
    * @f: tilt factor to apply.
    * @n: number of points to shift.
@@ -43,7 +45,7 @@ int fn_tilt_cb (hx_array *x, hx_array *y, int *arr, int idx, va_list *vl) {
   k = va_arg(*vl, int);
 
   /* compute the shift amount. */
-  n = f * ((real) x->sz[k] / 2.0 - (real) arr[k]);
+  n = f * ((real) x->sz[k] / 2.0 - (real) idx[k]);
 
   /* shift the sliced vector. */
   if (!hx_array_fshift(y, d, 0, n))

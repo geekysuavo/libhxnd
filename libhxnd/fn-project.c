@@ -26,8 +26,8 @@
 
 /* define type strings for all available projection operations. */
 #define FN_PROJECT_SUM  "sum"
-#define FN_PROJECT_MIN  "min"
 #define FN_PROJECT_MAX  "max"
+#define FN_PROJECT_MIN  "min"
 
 /* fn_project_sum(): projector callback for sum-type projection.
  * see fn_project() and hx_array_projector_cb() for more details.
@@ -47,16 +47,20 @@ int fn_project_sum (hx_array *y, real *val) {
   return 1;
 }
 
-/* fn_project_min(): projector callback for floor-type projection.
+/* fn_project_max(): projector callback for skyline-type projection.
  * see fn_project() and hx_array_projector_cb() for more details.
  */
-int fn_project_min (hx_array *y, real *val) {
+int fn_project_max (hx_array *y, real *val) {
   /* declare a few required variables. */
   real yi, ymax;
   int i, imax;
 
+  /* compute the first vector element norm. */
+  ymax = hx_data_real_norm(y->x, y->d, y->n);
+  imax = 0;
+
   /* loop over the vector elements. */
-  for (i = imax = 0, ymax = 0.0; i < y->len; i += y->n) {
+  for (i = y->n; i < y->len; i += y->n) {
     /* compute the current vector element norm. */
     yi = hx_data_real_norm(y->x + i, y->d, y->n);
 
@@ -75,10 +79,10 @@ int fn_project_min (hx_array *y, real *val) {
   return 1;
 }
 
-/* fn_project_max(): projector callback for skyline-type projection.
+/* fn_project_min(): projector callback for baseline-type projection.
  * see fn_project() and hx_array_projector_cb() for more details.
  */
-int fn_project_max (hx_array *y, real *val) {
+int fn_project_min (hx_array *y, real *val) {
   /* declare a few required variables. */
   real yi, ymin;
   int i, imin;
@@ -88,7 +92,7 @@ int fn_project_max (hx_array *y, real *val) {
   imin = 0;
 
   /* loop over the vector elements. */
-  for (i = 1; i < y->len; i += y->n) {
+  for (i = y->n; i < y->len; i += y->n) {
     /* compute the current vector element norm. */
     yi = hx_data_real_norm(y->x + i, y->d, y->n);
 

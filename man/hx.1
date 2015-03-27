@@ -214,6 +214,14 @@ scale factor applied to the contents of \fBfile\fR before addition.
 \fBsubtract\fR (boolean) [false]
 negates the value of \fBscale\fR prior to addition when set.
 
+.SS baseline
+The \fBbaseline\fR command removes frequency-domain baseline offset and curve
+from all first-dimension traces of the current datum.
+.TP
+\fBsmooth\fR (float) [1.0]
+relative smoothness of the baseline being fit to the data; larger values
+produce smoother baseline fits at the expense of fidelity to the data.
+
 .SS complex
 The \fBcomplex\fR command promotes one or all dimensions of the current datum
 to complex status by adding imaginary algebraic components.

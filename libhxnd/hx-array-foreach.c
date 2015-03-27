@@ -217,7 +217,7 @@ int hx_array_projector (hx_array *x, int k, hx_array_projector_cb fn,
    * @slice: linear slice index used for counting progress.
    * @y: hypercomplex array holding the currently sliced vector values.
    */
-  int pidx, szk, slice;
+  int xloc, xploc, szk, slice;
   hx_index idx, sznew;
   hx_array y;
 
@@ -252,19 +252,22 @@ int hx_array_projector (hx_array *x, int k, hx_array_projector_cb fn,
   }
 
   /* initialize the linear indices. */
-  pidx = slice = 0;
+  xloc = xploc = slice = 0;
 
   /* iterate over the elements of the array. */
   do {
-    /* pack the index array into an output linear index. */
-    hx_index_pack(x->k, sznew, idx, &pidx);
+    /* pack the index array into the input linear index. */
+    hx_index_pack(x->k, x->sz, idx, &xloc);
+
+    /* pack the index array into the output linear index. */
+    hx_index_pack(x->k, sznew, idx, &xploc);
 
     /* slice the currently indexed vector from the array. */
-    if (!hx_array_slice_vector(x, &y, k, pidx))
+    if (!hx_array_slice_vector(x, &y, k, xloc))
       throw("failed to slice vector %d", slice);
 
     /* execute the callback function. */
-    if (!fn(&y, xp->x + pidx * xp->n))
+    if (!fn(&y, xp->x + xploc * xp->n))
       throw("failed to execute callback %d", slice);
 
     /* increment the slice index. */

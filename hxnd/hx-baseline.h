@@ -21,45 +21,17 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_HX_H__
-#define __HXND_HX_H__
+#ifndef __HXND_HX_BASELINE_H__
+#define __HXND_HX_BASELINE_H__
 
-/* include required standard c library headers. */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <string.h>
-#include <math.h>
-#include <time.h>
+/* include the n-dimensional math header. */
+#include <hxnd/hx.h>
 
-/* include the openmp library header. */
-#include <omp.h>
+/* function declarations: */
 
-/* define 'pi' if needed. */
-#ifndef M_PI
-#define M_PI 3.1415926539
-#endif
+int hx_baseline_weight (hx_array *x, hx_array *w);
 
-/* include the definition of real scalar values. */
-#include <hxnd/hx-real.h>
+int hx_baseline (hx_array *x, hx_array *w, real lambda, hx_array *x0);
 
-/* include the traceback header. */
-#include <hxnd/trace.h>
-
-/* include all hypercomplex math headers. */
-#include <hxnd/hx-algebra.h>
-#include <hxnd/hx-scalar.h>
-#include <hxnd/hx-index.h>
-#include <hxnd/hx-array.h>
-#include <hxnd/hx-cmp.h>
-#include <hxnd/hx-arith.h>
-#include <hxnd/hx-blas.h>
-#include <hxnd/hx-phasor.h>
-#include <hxnd/hx-fourier.h>
-#include <hxnd/hx-baseline.h>
-#include <hxnd/hx-ist.h>
-
-#endif /* __HXND_HX_H__ */
+#endif /* __HXND_HX_BASELINE_H__ */
 

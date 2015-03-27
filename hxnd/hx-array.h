@@ -85,8 +85,8 @@ hx_array;
  * per-matrix operations that act on hypercomplex arrays.
  * @x: the host array pointer.
  * @y: the current slice from the host array.
- * @arr: the set of array indices for the first vector point.
- * @idx: the linear array index for the first vector point.
+ * @idx: the set of array indices for the first vector point.
+ * @pidx: the packed linear array index for the first vector point.
  * @vl: custom arguments, stored in a variable arguments list.
  */
 typedef int (*hx_array_foreach_cb) (hx_array *x, hx_array *y,

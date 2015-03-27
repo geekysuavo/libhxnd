@@ -35,6 +35,7 @@
 static fn functions[] = {
   { FN_NAME_ABS,      (fn_pointer) &fn_abs,      NULL },
   { FN_NAME_ADD,      (fn_pointer) &fn_add,      fn_args_add },
+  { FN_NAME_BASELINE, (fn_pointer) &fn_baseline, fn_args_baseline },
   { FN_NAME_COMPLEX,  (fn_pointer) &fn_complex,  NULL },
   { FN_NAME_CUT,      (fn_pointer) &fn_cut,      fn_args_cut },
   { FN_NAME_FFT,      (fn_pointer) &fn_fft,      fn_args_fft },

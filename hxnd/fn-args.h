@@ -35,6 +35,11 @@ static fn_arg fn_args_add[] = {
   { NULL,       {},            0, FN_VALTYPE_UNKNOWN }
 };
 
+static fn_arg fn_args_baseline[] = {
+  { "smooth", { .f = 1.0 }, 0, FN_VALTYPE_FLOAT },
+  { NULL,     {},           0, FN_VALTYPE_UNKNOWN }
+};
+
 static fn_arg fn_args_cut[] = {
   { "trace", { .iv = NULL }, 0, FN_VALTYPE_INTS },
   { "plane", { .iv = NULL }, 0, FN_VALTYPE_INTS },

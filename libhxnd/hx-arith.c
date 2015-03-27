@@ -664,7 +664,7 @@ int hx_array_mul_array (hx_array *a, hx_array *b, hx_array *c) {
  *  @ytmp: temporary array, same configuration as @b.
  */
 int hx_array_mul_vector_cb (hx_array *x, hx_array *y,
-                            int *arr, int idx,
+                            hx_index idx, int pidx,
                             va_list *vl) {
   /* extract the varargs. */
   hx_array *b = va_arg(*vl, hx_array*);

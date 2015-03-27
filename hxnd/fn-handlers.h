@@ -32,6 +32,7 @@
  */
 #define FN_NAME_ABS       "abs"
 #define FN_NAME_ADD       "add"
+#define FN_NAME_BASELINE  "baseline"
 #define FN_NAME_COMPLEX   "complex"
 #define FN_NAME_CUT       "cut"
 #define FN_NAME_FFT       "fft"
@@ -60,6 +61,8 @@
 int fn_abs (datum *D, const int dim, const fn_arg *args);
 
 int fn_add (datum *D, const int dim, const fn_arg *args);
+
+int fn_baseline (datum *D, const int dim, const fn_arg *args);
 
 int fn_complex (datum *D, const int dim, const fn_arg *args);
 
