@@ -21,7 +21,7 @@ LIBSRC+= hx-baseline hx-filter hx-ist
 LIBSRC+= trace opts str bytes
 
 # LIBSRC: library source basenames: core nmr datum structure.
-LIBSRC+= nmr-datum nmr-datum-mem nmr-datum-io nmr-datum-array
+LIBSRC+= nmr-datum-mem nmr-datum-io nmr-datum-array nmr-datum-sched
 LIBSRC+= nmr-datum-type nmr-datum-dims
 
 # LIBSRC: library source basenames: nmr data formats.
@@ -34,8 +34,8 @@ LIBSRC+= mx-stats mx-scaling mx-dataset mx-dataset-mem mx-dataset-matrix
 # LIBSRC: library source basenames: processing functions.
 LIBSRC+= fn fn-args fn-list fn-abs fn-add fn-baseline fn-complex fn-cut
 LIBSRC+= fn-fft fn-filter fn-ht fn-ist fn-mirror fn-multiply fn-phase
-LIBSRC+= fn-project fn-real fn-resize fn-shift fn-symm fn-tilt fn-window
-LIBSRC+= fn-zerofill
+LIBSRC+= fn-project fn-real fn-resize fn-shift fn-subsamp fn-symm fn-tilt
+LIBSRC+= fn-window fn-zerofill
 
 # GUISRC: graphical interface source basenames.
 GUISRC=ghx-proc-main

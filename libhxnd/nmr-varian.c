@@ -709,7 +709,7 @@ int varian_decode (datum *D, const char *dname) {
   snprintf(fname_parm, n_fname, "%s/nls.hdr_3", dname);
 
   /* read the schedule file, if one exists. */
-  if (bytes_fexist(fname_parm) && !datum_read_sched(D, fname_parm))
+  if (bytes_fexist(fname_parm) && !datum_sched_read(D, fname_parm))
     throw("failed to read varian schedule");
 
   /* free the allocated filename strings. */

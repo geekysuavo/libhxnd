@@ -46,6 +46,7 @@
 #define FN_NAME_REAL      "real"
 #define FN_NAME_RESIZE    "resize"
 #define FN_NAME_SHIFT     "shift"
+#define FN_NAME_SUBSAMP   "subsample"
 #define FN_NAME_SYMM      "symmetrize"
 #define FN_NAME_TILT      "tilt"
 #define FN_NAME_WINDOW    "window"
@@ -89,6 +90,8 @@ int fn_real (datum *D, const int dim, const fn_arg *args);
 int fn_resize (datum *D, const int dim, const fn_arg *args);
 
 int fn_shift (datum *D, const int dim, const fn_arg *args);
+
+int fn_subsamp (datum *D, const int dim, const fn_arg *args);
 
 int fn_symm (datum *D, const int dim, const fn_arg *args);
 

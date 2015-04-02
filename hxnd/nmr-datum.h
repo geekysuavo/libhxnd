@@ -139,10 +139,6 @@ datum;
 #include <hxnd/nmr-nv.h>
 #include <hxnd/nmr-rnmrtk.h>
 
-/* function declarations (nmr-datum.c): */
-
-int datum_read_sched (datum *D, const char *fname);
-
 /* function declarations (nmr-datum-mem.c): */
 
 void datum_init (datum *D);
@@ -184,6 +180,12 @@ int datum_array_resize (datum *D, hx_index sz);
 int datum_array_slice (datum *D, hx_index lower, hx_index upper);
 
 int datum_array_project (datum *D, int dim, hx_array_projector_cb projector);
+
+/* function declarations (nmr-datum-sched.c): */
+
+int datum_sched_read (datum *D, const char *fname);
+
+int datum_sched_free (datum *D);
 
 /* function declarations (nmr-datum-type.c): */
 

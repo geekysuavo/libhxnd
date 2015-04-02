@@ -106,6 +106,11 @@ static fn_arg fn_args_shift[] = {
   { NULL,     {},           0, FN_VALTYPE_UNKNOWN }
 };
 
+static fn_arg fn_args_subsamp[] = {
+  { "sched", { .s = NULL }, 0, FN_VALTYPE_STRING },
+  { NULL,    {},            0, FN_VALTYPE_UNKNOWN }
+};
+
 static fn_arg fn_args_symm[] = {
   { "dims", { .iv = NULL }, 0, FN_VALTYPE_INTS },
   { NULL,   {},             0, FN_VALTYPE_UNKNOWN }

@@ -27,12 +27,12 @@
  */
 #define N_BUF  256
 
-/* datum_read_sched(): reads a bruker/varian schedule file into the schedule
+/* datum_sched_read(): read a bruker/varian schedule file into the schedule
  * array of a datum structure.
  * @D: pointer to the datum structure to manipulate.
  * @fname: the input filename.
  */
-int datum_read_sched (datum *D, const char *fname) {
+int datum_sched_read (datum *D, const char *fname) {
   /* declare required variables:
    * @buf: character buffer for reading lines.
    * @tokv: array of token strings.
@@ -111,6 +111,33 @@ int datum_read_sched (datum *D, const char *fname) {
 
   /* store the constructed schedule array. */
   D->sched = sched;
+
+  /* return success. */
+  return 1;
+}
+
+/* datum_sched_free(): free the nonuniform schedule information contained
+ * within a datum structure, if any exists.
+ * @D: pointer to the datum to manipulate.
+ */
+int datum_sched_free (datum *D) {
+  /* declare a required variable:
+   * @d: datum dimension index.
+   */
+  int d;
+
+  /* free the datum schedule array, if it exists. */
+  if (D->sched)
+    free(D->sched);
+
+  /* re-initialize the datum schedule information. */
+  D->sched = NULL;
+  D->d_sched = 0;
+  D->n_sched = 0;
+
+  /* set all datum array dimensions to uniformly sampled. */
+  for (d = 0; d < D->nd; d++)
+    D->dims[d].nus = 0;
 
   /* return success. */
   return 1;

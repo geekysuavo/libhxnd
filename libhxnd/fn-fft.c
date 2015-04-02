@@ -73,7 +73,7 @@ int fn_fft (datum *D, const int dim, const fn_arg *args) {
 
   /* change the fourier transform status flag in the datum dimension.
    */
-  D->dims[dim].ft = 1;
+  D->dims[dim].ft = (inv ? 0 : 1);
 
   /* return success. */
   return 1;

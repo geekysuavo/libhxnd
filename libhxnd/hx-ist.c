@@ -207,6 +207,10 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
     hx_array_free(&z);
   }
 
+  /* scale the final reconstructed array. */
+  if (!hx_array_scale(x, 1.0 - thresh, x))
+    throw("failed to scale reconstructed array");
+
   /* free the array of unscheduled indices. */
   hx_index_free(zeros);
 
@@ -354,6 +358,10 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
     hx_array_zero(&z);
   }
 
+  /* scale the final reconstructed array. */
+  if (!hx_array_scale(x, 1.0 - thresh, x))
+    throw("failed to scale reconstructed array");
+
   /* free the array of norm values. */
   free(ynorms);
 
@@ -385,6 +393,14 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
 int hx_array_ist (hx_array *x, hx_index dx, hx_index kx,
                   int dsched, int nsched, hx_index sched,
                   int niter, real thresh) {
+  /* ensure the iteration count is in bounds. */
+  if (niter < 1)
+    throw("iteration count %d out of bounds [1,inf)", niter);
+
+  /* ensure the threshold is in bounds. */
+  if (thresh <= 0.0 || thresh >= 1.0)
+    throw("threshold %.2f out of bounds (0,1)", thresh);
+
   /* determine which reconstruction function to use. */
   if (dsched == 1) {
     /* execute the one-dimensional function. */

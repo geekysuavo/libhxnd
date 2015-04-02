@@ -384,6 +384,14 @@ interprets the shift amount as a frequency in Hertz when set.
 when set, forces the rounding of the shift amount, allowing the shifting of
 non power-of-two dimensions.
 
+.SS subsample
+The \fBsubsample\fR command transforms a uniformly sampled datum into a
+nonuniformly sampled datum by inserting a nonuniform sampling schedule
+into the datum and zeroing out all non-scheduled data points.
+.TP
+\fBsched\fR (string) ['']
+filename of an \fIhx\fR-compatible nonuniform sampling schedule to load.
+
 .SS symmetrize
 The \fBsymmetrize\fR command symmetrizes a given pair of dimensions of the
 current datum by replacing each pair of points off their diagonal with
