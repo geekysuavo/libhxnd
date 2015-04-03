@@ -40,8 +40,8 @@ int fn_subsamp (datum *D, const int dim, const fn_arg *args) {
    * @pidx: packed linear sampling schedule index.
    * @d: datum dimension index.
    */
-  hx_index idx;
-  int pidx, i, d;
+  hx_index idx, sz, zeros;
+  int i, d, pidx, nzeros;
 
   /* get the argument values from the argdef array. */
   if (!fn_args_get_all(args, &fsched))
@@ -63,26 +63,57 @@ int fn_subsamp (datum *D, const int dim, const fn_arg *args) {
   if (D->d_sched != D->nd - 1)
     throw("sampling schedule in '%s' has invalid dimensionality", fsched);
 
-  /* allocate a multidimensional index for zeroing out data points. */
+  /* allocate the schedule size array. */
+  sz = hx_index_alloc(D->d_sched);
+
+  /* check that allocation was successful. */
+  if (!sz)
+    throw("failed to allocate %d indices", D->d_sched);
+
+  /* build the schedule size array. */
+  for (i = 0, nzeros = 1; i < D->d_sched; i++) {
+    /* store the current schedule size and increase the total count. */
+    sz[i] = D->array.sz[i + 1];
+    nzeros *= sz[i];
+  }
+
+  /* compute the number of unscheduled indices. */
+  nzeros -= D->n_sched;
+
+  /* create a list of unscheduled array indices. */
+  zeros = hx_index_unscheduled(D->d_sched, sz, D->d_sched, D->n_sched,
+                               D->sched);
+
+  /* check that creation was successful. */
+  if (!zeros)
+    throw("failed to compute unscheduled array indices");
+
+  /* allocate a multidimensional index. */
   idx = hx_index_alloc(D->nd);
 
-  /* loop over the points in the sampling schedule. */
-  for (i = 0; i < D->n_sched; i++) {
-    /* fill the multidimensional index. */
-    for (d = 0, idx[0] = 0; d < D->d_sched; d++) {
-      /* store the current schedule index. */
-      idx[d + 1] = D->sched[i * D->d_sched + d];
-    }
+  /* check that allocation was successful. */
+  if (!idx)
+    throw("failed to allocate %d indices", D->nd);
 
-    /* compute the packed linear index. */
+  /* loop over the points in the sampling schedule. */
+  for (i = 0; i < nzeros; i++) {
+    /* zero the index elements. */
+    hx_index_init(D->nd, idx);
+
+    /* unpack the currently unscheduled sub-index, then immediately
+     * repack the linear index into a complete-array multidimensional
+     * index.
+     */
+    hx_index_unpack(D->d_sched, sz, idx + 1, zeros[i]);
     hx_index_pack(D->array.k, D->array.sz, idx, &pidx);
 
-    /* ensure the linear index is in bounds. */
+    /* check that the linear index is in bounds. */
     if (pidx >= D->array.len / D->array.n)
       throw("sampling schedule entry #%d out of bounds", i);
 
-    /* zero the currently indexed data vector. */
-    if (!hx_data_zero(D->array.x, D->array.sz[0] * D->array.n))
+    /* zero out the trace corresponding to the current index. */
+    if (!hx_data_zero(D->array.x + pidx * D->array.n,
+                      D->array.sz[0] * D->array.n))
       throw("failed to zero currently indexed trace");
   }
 
@@ -90,8 +121,10 @@ int fn_subsamp (datum *D, const int dim, const fn_arg *args) {
   for (d = 1; d < D->nd; d++)
     D->dims[d].nus = 1;
 
-  /* free the array index and the filename string. */
+  /* free the array indices and the filename string. */
+  hx_index_free(zeros);
   hx_index_free(idx);
+  hx_index_free(sz);
   free(fsched);
 
   /* return success. */
