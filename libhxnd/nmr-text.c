@@ -38,7 +38,6 @@ int text_encode (datum *D, const char *fname) {
   hx_index idx;
   int i, pidx;
   FILE *fh;
-  real fi;
 
   /* open the output file. */
   if (fname)
@@ -81,10 +80,8 @@ int text_encode (datum *D, const char *fname) {
     hx_index_pack(D->array.k, D->array.sz, idx, &pidx);
 
     /* print the indices. */
-    for (i = 0; i < D->array.k; i++) {
-      fi = (real) idx[i] / (real) (D->dims[i].sz - 1) - 0.5;
-      fprintf(fh, "%18.8e ", D->dims[i].offset + fi * D->dims[i].width);
-    }
+    for (i = 0; i < D->array.k; i++)
+      fprintf(fh, "%6d ", idx[i]);
 
     /* print the coefficients. */
     for (i = 0; i < D->array.n; i++)
