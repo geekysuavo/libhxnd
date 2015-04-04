@@ -34,7 +34,7 @@ int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest,
                          real *norms, real thresh) {
   /* declare a few required variables. */
   int i, j, n, xd, xn;
-  real maxnorm, tau;
+  real maxnorm;
 
   /* locally store some array features. */
   xd = xsrc->d;
@@ -42,12 +42,6 @@ int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest,
 
   /* determine the number of norm elements. */
   n = xsrc->len / xn;
-
-  /* compute the 'inverse' of the threshold value. this is the factor by
-   * which the thresholded source values are multiplied each time, thus
-   * it must be negative.
-   */
-  tau = -(1.0 - thresh);
 
   /* loop over the elements to compute the norms. */
   for (i = 0, j = 0, maxnorm = 0.0; i < n; i++, j += xn) {
@@ -68,9 +62,10 @@ int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest,
     if (norms[i] > maxnorm) {
       /* sum the element into the destination array. */
       hx_data_add(xdest->x + j, xsrc->x + j, xdest->x + j, 1.0, xd, xn);
-
-      /* subtract the thresholded element from the source array. */
-      hx_data_add(xsrc->x + j, xsrc->x + j, xsrc->x + j, tau, xd, xn);
+    }
+    else {
+      /* zero the current source array element. */
+      hx_data_zero(xsrc->x + j, xsrc->n);
     }
   }
 
@@ -136,8 +131,8 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
      * @pidx: packed linear array index.
      * @ynorms: norms of all values in @y.
      */
+    hx_array y, yth, z;
     hx_scalar w, swp;
-    hx_array y, z;
     int j, l, pidx;
     real *ynorms;
 
@@ -147,9 +142,10 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
       raise("failed to allocate temporary %d-scalars", d);
 
     /* allocate the slice destination arrays. */
-    if (!hx_array_alloc(&y, d, k, &sz) ||
-        !hx_array_alloc(&z, d, k, &sz))
-      raise("failed to allocate temporary (%d,1)-arrays", d);
+    if (!hx_array_alloc(&z, d, k, &sz) ||
+        !hx_array_alloc(&y, d, k, &sz) ||
+        !hx_array_alloc(&yth, d, k, &sz))
+      raise("failed to allocate temporary (%d, 1)-arrays", d);
 
     /* allocate an array of d-norm values. */
     ynorms = (real*) calloc(nnorms, sizeof(real));
@@ -166,21 +162,28 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
 
       /* loop over the iterations. */
       for (iiter = 0; iiter < niter; iiter++) {
+        /* copy the current residual vector array. */
+        memcpy(yth.x, y.x, y.len * sizeof(real));
+
         /* fourier transform the sliced vector array. */
-        if (!hx_array_fft1d(&y, dx[1], HX_FFT_FORWARD, &w, &swp))
+        if (!hx_array_fft1d(&yth, dx[1], HX_FFT_FORWARD, &w, &swp))
           raise("failed to execute forward fft");
 
         /* threshold the frequency-domain vector. */
-        if (!hx_array_ist_thresh(&y, &z, ynorms, thresh))
+        if (!hx_array_ist_thresh(&yth, &z, ynorms, thresh))
           raise("failed to threshold sub-array %d", j);
 
         /* inverse fourier transform the sliced vector array. */
-        if (!hx_array_fft1d(&y, dx[1], HX_FFT_REVERSE, &w, &swp))
+        if (!hx_array_fft1d(&yth, dx[1], HX_FFT_REVERSE, &w, &swp))
           raise("failed to execute inverse fft");
 
         /* reset the time-domain non-sampled points. */
         for (l = 0; l < nzeros; l++)
-          memset(y.x + y.n * zeros[l], 0, nbytes);
+          memset(yth.x + yth.n * zeros[l], 0, nbytes);
+
+        /* subtract the thresholded time-domain data from the residuals. */
+        if (!hx_array_add_array(&y, &yth, -1.0, &y))
+          raise("failed to deflate residual sub-array %d", j);
       }
 
       /* inverse fourier transform the reconstructed vector. */
@@ -203,13 +206,10 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
     hx_scalar_free(&swp);
 
     /* free the slice destination arrays. */
-    hx_array_free(&y);
     hx_array_free(&z);
+    hx_array_free(&y);
+    hx_array_free(&yth);
   }
-
-  /* scale the final reconstructed array. */
-  if (!hx_array_scale(x, 1.0 - thresh, x))
-    throw("failed to scale reconstructed array");
 
   /* free the array of unscheduled indices. */
   hx_index_free(zeros);
@@ -237,7 +237,7 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
   /* @y: currently sliced sub-array.
    * @z: output result sub-array.
    */
-  hx_array y, z;
+  hx_array y, yth, z;
 
   /* @nnorms: number of scalar elements in @y.
    * @ynorms: norms of all values in @y.
@@ -281,9 +281,10 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
     throw("failed to allocate bounding arrays");
 
   /* allocate the slice destination arrays. */
-  if (!hx_array_alloc(&y, d, k, sz) ||
-      !hx_array_alloc(&z, d, k, sz))
-    throw("failed to allocate (%d, %d)-array", d, k);
+  if (!hx_array_alloc(&z, d, k, sz) ||
+      !hx_array_alloc(&y, d, k, sz) ||
+      !hx_array_alloc(&yth, d, k, sz))
+    throw("failed to allocate (%d, %d)-arrays", d, k);
 
   /* allocate an array of d-norm values. */
   nnorms = y.len / y.n;
@@ -320,27 +321,34 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
 
     /* loop over the iterations. */
     for (iiter = 0; iiter < niter; iiter++) {
+      /* copy the current residual data. */
+      memcpy(yth.x, y.x, y.len * sizeof(real));
+
       /* loop over the sliced dimensions. */
       for (j = 1; j < k; j++) {
         /* forward fourier transform the slice. */
-        if (!hx_array_fft(&y, dx[j], kx[j]))
+        if (!hx_array_fft(&yth, dx[j], kx[j]))
           throw("failed to apply forward fft");
       }
 
       /* threshold the frequency-domain sub-array. */
-      if (!hx_array_ist_thresh(&y, &z, ynorms, thresh))
+      if (!hx_array_ist_thresh(&yth, &z, ynorms, thresh))
         throw("failed to threshold sub-array %d", i);
 
       /* loop over the sliced dimensions. */
       for (j = 1; j < k; j++) {
         /* inverse fourier transform the slice. */
-        if (!hx_array_ifft(&y, dx[j], kx[j]))
+        if (!hx_array_ifft(&yth, dx[j], kx[j]))
           throw("failed to apply inverse fft");
       }
 
       /* reset the time-domain non-sampled points. */
       for (j = 0; j < nzeros; j++)
-        memset(y.x + y.n * zeros[j], 0, nbytes);
+        memset(yth.x + yth.n * zeros[j], 0, nbytes);
+
+      /* subtract the thresholded time-domain data from the residuals. */
+      if (!hx_array_add_array(&y, &yth, -1.0, &y))
+        throw("failed to deflate residual sub-array %d", i);
     }
 
     /* loop over the sliced dimensions. */
@@ -358,16 +366,13 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
     hx_array_zero(&z);
   }
 
-  /* scale the final reconstructed array. */
-  if (!hx_array_scale(x, 1.0 - thresh, x))
-    throw("failed to scale reconstructed array");
-
   /* free the array of norm values. */
   free(ynorms);
 
   /* free the slice destination arrays. */
-  hx_array_free(&y);
   hx_array_free(&z);
+  hx_array_free(&y);
+  hx_array_free(&yth);
 
   /* free the allocated multidimensional indices. */
   hx_index_free(zeros);
