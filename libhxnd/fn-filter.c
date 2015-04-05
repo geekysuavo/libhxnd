@@ -57,7 +57,7 @@ int fn_filter (datum *D, const int dim, const fn_arg *args) {
   hx_array b, ph;
 
   /* get the argument values from the argdef array. */
-  if (!fn_args_get_all(args, &order, &fhi, &flo, &ppm, &hz))
+  if (!fn_args_get_all(args, &order, &flo, &fhi, &ppm, &hz))
     throw("failed to get filter arguments");
 
   /* store the dimensionality into a local variable. */
@@ -166,7 +166,6 @@ int fn_filter (datum *D, const int dim, const fn_arg *args) {
   if (!hx_array_phasor(&ph, d, 0.0, f0, 0.0) ||
       !hx_array_mul_vector(&D->array, &ph, k, &D->array))
     throw("failed to undo frequency modulation");
-
 
   /* free the allocated temporary arrays. */
   hx_array_free(&ph);

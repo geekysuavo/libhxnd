@@ -34,6 +34,7 @@
 #define FN_NAME_ADD       "add"
 #define FN_NAME_BASELINE  "baseline"
 #define FN_NAME_COMPLEX   "complex"
+#define FN_NAME_CROP      "crop"
 #define FN_NAME_CUT       "cut"
 #define FN_NAME_FFT       "fft"
 #define FN_NAME_FILTER    "filter"
@@ -44,6 +45,7 @@
 #define FN_NAME_PHASE     "phase"
 #define FN_NAME_PROJECT   "project"
 #define FN_NAME_REAL      "real"
+#define FN_NAME_REPORT    "report"
 #define FN_NAME_RESIZE    "resize"
 #define FN_NAME_SHIFT     "shift"
 #define FN_NAME_SUBSAMP   "subsample"
@@ -67,6 +69,8 @@ int fn_baseline (datum *D, const int dim, const fn_arg *args);
 
 int fn_complex (datum *D, const int dim, const fn_arg *args);
 
+int fn_crop (datum *D, const int dim, const fn_arg *args);
+
 int fn_cut (datum *D, const int dim, const fn_arg *args);
 
 int fn_fft (datum *D, const int dim, const fn_arg *args);
@@ -86,6 +90,8 @@ int fn_phase (datum *D, const int dim, const fn_arg *args);
 int fn_project (datum *D, const int dim, const fn_arg *args);
 
 int fn_real (datum *D, const int dim, const fn_arg *args);
+
+int fn_report (datum *D, const int dim, const fn_arg *args);
 
 int fn_resize (datum *D, const int dim, const fn_arg *args);
 

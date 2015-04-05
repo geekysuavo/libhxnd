@@ -40,6 +40,14 @@ static fn_arg fn_args_baseline[] = {
   { NULL,     {},           0, FN_VALTYPE_UNKNOWN }
 };
 
+static fn_arg fn_args_crop[] = {
+  { "from", { .f = 0.0 }, 0, FN_VALTYPE_FLOAT },
+  { "to",   { .f = 1.0 }, 0, FN_VALTYPE_FLOAT },
+  { "ppm",  { .b = 0   }, 0, FN_VALTYPE_BOOL },
+  { "hz",   { .b = 0   }, 0, FN_VALTYPE_BOOL },
+  { NULL,   {},           0, FN_VALTYPE_UNKNOWN }
+};
+
 static fn_arg fn_args_cut[] = {
   { "trace", { .iv = NULL }, 0, FN_VALTYPE_INTS },
   { "plane", { .iv = NULL }, 0, FN_VALTYPE_INTS },
@@ -88,6 +96,11 @@ static fn_arg fn_args_phase[] = {
 static fn_arg fn_args_project[] = {
   { "type", { .s = NULL }, 0, FN_VALTYPE_STRING },
   { NULL,   {},            0, FN_VALTYPE_UNKNOWN }
+};
+
+static fn_arg fn_args_report[] = {
+  { "sumsq", { .b = 0 }, 0, FN_VALTYPE_BOOL },
+  { NULL,    {},         0, FN_VALTYPE_UNKNOWN }
 };
 
 static fn_arg fn_args_resize[] = {

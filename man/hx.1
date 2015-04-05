@@ -226,6 +226,22 @@ produce smoother baseline fits at the expense of fidelity to the data.
 The \fBcomplex\fR command promotes one or all dimensions of the current datum
 to complex status by adding imaginary algebraic components.
 
+.SS crop
+The \fBcrop\fR command removes any frequency content outside a given range
+of one dimension of the current datum.
+.TP
+\fBfrom\fR (float) [0.0]
+lower bound of the frequency region to retain after cropping.
+.TP
+\fBto\fR (float) [1.0]
+upper bound of the frequency region to retain after cropping.
+.TP
+\fBppm\fR (boolean) [false]
+interprets the cropping bounds as values in parts per million when set.
+.TP
+\fBhz\fR (boolean) [false]
+interprets the cropping bounds as values in Hertz when set.
+
 .SS cut
 The \fBcut\fR command cuts a single trace or plane from the current datum,
 removing all other content.
@@ -349,6 +365,13 @@ type of vector-to-scalar projection operation to apply. must be one of
 .SS real
 The \fBreal\fR command compresses one or all dimensions of the current datum
 by dropping imaginary algebraic components.
+
+.SS report
+The \fBreport\fR command prints a variety of interesting reports and statistics
+relating to the current datum.
+.TP
+\fBsumsq\fR (boolean) [false]
+prints the sum of squared datum array elements when set.
 
 .SS resize
 The \fBresize\fR command resizes the current datum by truncation and/or
