@@ -29,15 +29,15 @@
  */
 int fn_report_sumsq (datum *D) {
   /* declare a few required variables:
-   * @pidx: packed linear array index.
    * @S: total sum of squares of the data.
+   * @i: linear array index.
    */
-  int pidx;
   real S;
+  int i;
 
   /* loop over the datum array. */
-  for (pidx = 0, S = 0.0; pidx < D->array.len; pidx += D->array.n)
-    S += hx_data_real_norm(D->array.x + pidx, D->array.d, D->array.n);
+  for (i = 0, S = 0.0; i < D->array.len; i++)
+    S += D->array.x[i] * D->array.x[i];
 
   /* print the output value. */
   fprintf(stdout, "sumsq = %18.8le\n", S);
