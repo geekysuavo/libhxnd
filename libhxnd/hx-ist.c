@@ -27,45 +27,44 @@
  * output array.
  * @xsrc: pointer to the source hypercomplex array.
  * @xdest: pointer to the destination hypercomplex array.
- * @norms: pre-allocated array to hold array norm values.
- * @thresh: relative threshold value to apply.
+ * @lambda: pointer to the current thresholding magnitude, which should be
+ *          zero on the first iteration to force an initialization.
  */
-int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest,
-                         real *norms, real thresh) {
+int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest, real *lambda) {
   /* declare a few required variables. */
-  int i, j, n, xd, xn;
-  real maxnorm;
+  int i, xd, xn;
+  real norm;
 
   /* locally store some array features. */
   xd = xsrc->d;
   xn = xsrc->n;
 
-  /* determine the number of norm elements. */
-  n = xsrc->len / xn;
+  /* check if the thresholding magnitude has been initialized. */
+  if (*lambda <= 0.0) {
+    /* loop over the elements to compute the maximum norm. */
+    for (i = 0; i < xsrc->len; i += xn) {
+      /* compute the current norm. */
+      norm = hx_data_real_norm(xsrc->x + i, xd, xn);
 
-  /* loop over the elements to compute the norms. */
-  for (i = 0, j = 0, maxnorm = 0.0; i < n; i++, j += xn) {
-    /* compute the norm. */
-    norms[i] = hx_data_real_norm(xsrc->x + j, xd, xn);
-
-    /* see if the new norm is the largest so far. */
-    if (norms[i] > maxnorm)
-      maxnorm = norms[i];
+      /* check if the current norm exceeds the current maximum. */
+      if (norm > *lambda)
+        *lambda = norm;
+    }
   }
 
-  /* scale the maximum norm value by the threshold. */
-  maxnorm *= thresh;
+  /* loop over the elements to apply the soft thresholding operation. */
+  for (i = 0; i < xsrc->len; i += xn) {
+    /* compute the current norm. */
+    norm = hx_data_real_norm(xsrc->x + i, xd, xn);
 
-  /* loop a final time over the elements to apply the threshold. */
-  for (i = 0, j = 0; i < n; i++, j += xn) {
     /* determine whether the current norm exceeds the threshold. */
-    if (norms[i] > maxnorm) {
+    if (norm > *lambda) {
       /* sum the element into the destination array. */
-      hx_data_add(xdest->x + j, xsrc->x + j, xdest->x + j, 1.0, xd, xn);
+      hx_data_add(xdest->x + i, xsrc->x + i, xdest->x + i, 1.0, xd, xn);
     }
     else {
       /* zero the current source array element. */
-      hx_data_zero(xsrc->x + j, xsrc->n);
+      hx_data_zero(xsrc->x + i, xsrc->n);
     }
   }
 
@@ -81,17 +80,17 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
                     int nsched, hx_index sched,
                     int niter, real thresh) {
   /* declare a few required variables:
-   * @iiter: iteration loop counter.
-   * @idx: slice location.
-   */
-  int iiter, ja, jb, jmax;
-
-  /* @nnorms: number of scalar elements in @y.
+   * @d: slice algebraic dimension index.
+   * @k: slice topological dimension index.
+   * @sz: current slice topological size.
+   * @iiter: main ist algorithm iteration loop counter.
+   * @ja, @jb, @jmax: skipped iteration control variables.
    * @nzeros: number of unscheduled elements in @y.
    * @nbytes: number of bytes per hypercomplex scalar.
    * @zeros: linear indices of all unscheduled elements in @y.
    */
-  int d, k, sz, nnorms, nzeros, nbytes;
+  int d, k, sz, iiter, ja, jb, jmax;
+  int nzeros, nbytes;
   hx_index zeros;
 
   /* get the slice dimensionalities. */
@@ -105,7 +104,6 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
   nbytes = x->n * sizeof(real);
 
   /* get the number of norms and zeros. */
-  nnorms = sz;
   nzeros = sz - nsched;
 
   /* allocate an array of unscheduled elements in each trace. */
@@ -129,12 +127,12 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
      * @j: array skipped iteration master index.
      * @l: unscheduled array loop index.
      * @pidx: packed linear array index.
-     * @ynorms: norms of all values in @y.
+     * @lambda: current iteration thresholding magnitude.
      */
     hx_array y, yth, z;
     hx_scalar w, swp;
     int j, l, pidx;
-    real *ynorms;
+    real lambda;
 
     /* allocate temporary scalars for use in the fft. */
     if (!hx_scalar_alloc(&w, d) ||
@@ -147,12 +145,12 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
         !hx_array_alloc(&yth, d, k, &sz))
       raise("failed to allocate temporary (%d, 1)-arrays", d);
 
-    /* allocate an array of d-norm values. */
-    ynorms = (real*) calloc(nnorms, sizeof(real));
-
     /* distribute tasks to the team of threads. */
     #pragma omp for
     for (j = 0; j < jmax; j++) {
+      /* initialize the thresholding magnitude. */
+      lambda = 0.0;
+
       /* compute the linear array index of the current vector. */
       pidx = hx_index_jump(j, ja, jb);
 
@@ -170,7 +168,7 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
           raise("failed to execute forward fft");
 
         /* threshold the frequency-domain vector. */
-        if (!hx_array_ist_thresh(&yth, &z, ynorms, thresh))
+        if (!hx_array_ist_thresh(&yth, &z, &lambda))
           raise("failed to threshold sub-array %d", j);
 
         /* inverse fourier transform the sliced vector array. */
@@ -184,6 +182,9 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
         /* subtract the thresholded time-domain data from the residuals. */
         if (!hx_array_add_array(&y, &yth, -1.0, &y))
           raise("failed to deflate residual sub-array %d", j);
+
+        /* scale down the threshold magnitude. */
+        lambda *= thresh;
       }
 
       /* inverse fourier transform the reconstructed vector. */
@@ -197,9 +198,6 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
       /* re-initialize the contents of the reconstructed vector. */
       hx_array_zero(&z);
     }
-
-    /* free the d-norm array. */
-    free(ynorms);
 
     /* free the temporary scalars. */
     hx_scalar_free(&w);
@@ -239,17 +237,13 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
    */
   hx_array y, yth, z;
 
-  /* @nnorms: number of scalar elements in @y.
-   * @ynorms: norms of all values in @y.
-   */
-  real *ynorms;
-  int nnorms;
-
   /* @nzeros: number of unscheduled elements @y.
    * @zeros: linear indices of all unschedules elements in @y.
+   * @lambda: current iteration thresholding magnitude.
    */
   int nbytes, nzeros;
   hx_index zeros;
+  real lambda;
 
   /* get the number of reconstructions required. */
   n = x->sz[kx[0]];
@@ -286,16 +280,8 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
       !hx_array_alloc(&yth, d, k, sz))
     throw("failed to allocate (%d, %d)-arrays", d, k);
 
-  /* allocate an array of d-norm values. */
-  nnorms = y.len / y.n;
-  ynorms = (real*) calloc(nnorms, sizeof(real));
-
-  /* check that the array of d-norm values was allocated. */
-  if (!ynorms)
-    throw("failed to allocate array of %d norms", nnorms);
-
   /* determine the number of un-scheduled elements in each slice. */
-  nzeros = nnorms - nsched;
+  nzeros = y.len / y.n - nsched;
   zeros = hx_index_unscheduled(k - 1, sz + 1, dsched, nsched, sched);
 
   /* check that the array of zero indices was allocated. */
@@ -311,6 +297,9 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
 
   /* loop serially over the slices. */
   for (i = 0; i < n; i++) {
+    /* initialize the thresholding magnitude. */
+    lambda = 0.0;
+
     /* store the direct dimension bounds. */
     upper[0] = i;
     lower[0] = i;
@@ -332,7 +321,7 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
       }
 
       /* threshold the frequency-domain sub-array. */
-      if (!hx_array_ist_thresh(&yth, &z, ynorms, thresh))
+      if (!hx_array_ist_thresh(&yth, &z, &lambda))
         throw("failed to threshold sub-array %d", i);
 
       /* loop over the sliced dimensions. */
@@ -349,6 +338,9 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
       /* subtract the thresholded time-domain data from the residuals. */
       if (!hx_array_add_array(&y, &yth, -1.0, &y))
         throw("failed to deflate residual sub-array %d", i);
+
+      /* scale down the threshold magnitude. */
+      lambda *= thresh;
     }
 
     /* loop over the sliced dimensions. */
@@ -365,9 +357,6 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
     /* re-initialize the reconstructed slice for the next round. */
     hx_array_zero(&z);
   }
-
-  /* free the array of norm values. */
-  free(ynorms);
 
   /* free the slice destination arrays. */
   hx_array_free(&z);

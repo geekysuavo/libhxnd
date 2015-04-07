@@ -40,7 +40,7 @@ unsigned int hx_nextpow2 (unsigned int value);
 int hx_array_fft1d (hx_array *y, int d, real dir,
                     hx_scalar *w, hx_scalar *swp);
 
-int hx_array_fftfn (hx_array *x, int d, int k, float dir);
+int hx_array_fftfn (hx_array *x, int d, int k, real dir);
 
 #define hx_array_fft(x, d, k) \
   hx_array_fftfn(x, d, k, HX_FFT_FORWARD)
