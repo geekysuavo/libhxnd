@@ -52,8 +52,8 @@ int fn_symm_cb (hx_array *x, hx_array *y, int *arr, int idx, va_list *vl) {
       }
       else {
         /* compute the absolute values of the two elements. */
-        unorm = hx_data_real_norm(y->x + idxu * y->n, y->d, y->n);
-        lnorm = hx_data_real_norm(y->x + idxl * y->n, y->d, y->n);
+        unorm = hx_data_real_norm(y->x + idxu * y->n, y->n);
+        lnorm = hx_data_real_norm(y->x + idxl * y->n, y->n);
       }
 
       /* determine which point has the smaller absolute value. */

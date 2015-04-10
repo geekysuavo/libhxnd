@@ -46,8 +46,8 @@ const struct wnd_def windows[] = {
   { NULL,                  HX_WINDOW_TYPE_UNDEFINED }
 };
 
-/* hx_window_lookup_type(): returns the enumerated type based on its string
- * representation.
+/* hx_window_lookup_type(): return the enumerated window function type based
+ * on a specified string representation.
  * @name: the window name string.
  */
 enum hx_window_type hx_window_lookup_type (const char *name) {

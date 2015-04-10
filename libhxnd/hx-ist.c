@@ -44,7 +44,7 @@ int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest, real *lambda) {
     /* loop over the elements to compute the maximum norm. */
     for (i = 0; i < xsrc->len; i += xn) {
       /* compute the current norm. */
-      norm = hx_data_real_norm(xsrc->x + i, xd, xn);
+      norm = hx_data_real_norm(xsrc->x + i, xn);
 
       /* check if the current norm exceeds the current maximum. */
       if (norm > *lambda)
@@ -55,7 +55,7 @@ int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest, real *lambda) {
   /* loop over the elements to apply the soft thresholding operation. */
   for (i = 0; i < xsrc->len; i += xn) {
     /* compute the current norm. */
-    norm = hx_data_real_norm(xsrc->x + i, xd, xn);
+    norm = hx_data_real_norm(xsrc->x + i, xn);
 
     /* determine whether the current norm exceeds the threshold. */
     if (norm > *lambda) {

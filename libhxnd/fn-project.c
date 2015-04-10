@@ -56,13 +56,13 @@ int fn_project_max (hx_array *y, real *val) {
   int i, imax;
 
   /* compute the first vector element norm. */
-  ymax = hx_data_real_norm(y->x, y->d, y->n);
+  ymax = hx_data_real_norm(y->x, y->n);
   imax = 0;
 
   /* loop over the vector elements. */
   for (i = y->n; i < y->len; i += y->n) {
     /* compute the current vector element norm. */
-    yi = hx_data_real_norm(y->x + i, y->d, y->n);
+    yi = hx_data_real_norm(y->x + i, y->n);
 
     /* check if the current norm is greater than previously found. */
     if (yi > ymax) {
@@ -88,13 +88,13 @@ int fn_project_min (hx_array *y, real *val) {
   int i, imin;
 
   /* compute the first vector element norm. */
-  ymin = hx_data_real_norm(y->x, y->d, y->n);
+  ymin = hx_data_real_norm(y->x, y->n);
   imin = 0;
 
   /* loop over the vector elements. */
   for (i = y->n; i < y->len; i += y->n) {
     /* compute the current vector element norm. */
-    yi = hx_data_real_norm(y->x + i, y->d, y->n);
+    yi = hx_data_real_norm(y->x + i, y->n);
 
     /* check if the current norm is less than previously found. */
     if (yi < ymin) {

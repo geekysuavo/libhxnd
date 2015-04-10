@@ -65,8 +65,8 @@ int fn_mirror_cb (hx_array *x, hx_array *y, int *arr, int idx, va_list *vl) {
     }
     else {
       /* compute the absolute values of the two elements. */
-      inorm = hx_data_real_norm(y->x + i * y->n, y->d, y->n);
-      jnorm = hx_data_real_norm(y->x + j * y->n, y->d, y->n);
+      inorm = hx_data_real_norm(y->x + i * y->n, y->n);
+      jnorm = hx_data_real_norm(y->x + j * y->n, y->n);
     }
 
     /* determine which point has the smaller absolute value. */

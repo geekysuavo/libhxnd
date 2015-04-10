@@ -42,9 +42,9 @@ int hx_data_zero (real *x, int n);
 
 int hx_data_fill (real *x, int n, real val);
 
-int hx_data_norm (real *x, int d, int n);
+int hx_data_norm (real *x, int n);
 
-real hx_data_real_norm (real *x, int d, int n);
+real hx_data_real_norm (real *x, int n);
 
 int hx_data_negate_basis (real *x, int d, int n, int dneg);
 

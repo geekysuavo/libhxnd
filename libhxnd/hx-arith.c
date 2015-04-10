@@ -223,7 +223,6 @@ int hx_data_fill (real *x, int n, real val) {
 /* hx_data_norm(): compute the norm of the raw array elements of
  * a hypercomplex value.
  * @x: the raw array data of the input operand.
- * @d: the algebraic dimensionality of the operand.
  * @n: the number of array elements of the operand.
  *
  * operation:
@@ -232,7 +231,7 @@ int hx_data_fill (real *x, int n, real val) {
  * operands:
  *   x: hypercomplex scalar.
  */
-int hx_data_norm (real *x, int d, int n) {
+int hx_data_norm (real *x, int n) {
   /* declare a few required variables. */
   int i;
 
@@ -256,7 +255,6 @@ int hx_data_norm (real *x, int d, int n) {
 /* hx_data_real_norm(): compute the norm of the raw array elements of a
  * hypercomplex value, and return the result as a real number.
  * @x: the raw array data of the input operand.
- * @d: the algebraic dimensionality of the operand.
  * @n: the number of array elements of the operand.
  *
  * operation:
@@ -265,7 +263,7 @@ int hx_data_norm (real *x, int d, int n) {
  * operands:
  *   x: hypercomplex scalar.
  */
-real hx_data_real_norm (real *x, int d, int n) {
+real hx_data_real_norm (real *x, int n) {
   /* declare a few required variables. */
   real nrm;
   int i;
@@ -468,7 +466,7 @@ int hx_scalar_fill (hx_scalar *a, real val) {
  */
 int hx_scalar_norm (hx_scalar *a) {
   /* perform the raw data operation. */
-  return hx_data_norm(a->x, a->d, a->n);
+  return hx_data_norm(a->x, a->n);
 }
 
 /* hx_scalar_negate_basis(): negates the specified basis element of a
@@ -814,7 +812,7 @@ int hx_array_norm (hx_array *a) {
   /* loop over the array elements. */
   for (i = 0; i < a->len; i += a->n) {
     /* perform the raw scalar data operation. */
-    if (!hx_data_norm(a->x + i, a->d, a->n))
+    if (!hx_data_norm(a->x + i, a->n))
       return 0;
   }
 
