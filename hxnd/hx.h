@@ -60,6 +60,7 @@
 #include <hxnd/hx-fourier.h>
 #include <hxnd/hx-baseline.h>
 #include <hxnd/hx-ist.h>
+#include <hxnd/hx-irls.h>
 #include <hxnd/hx-maxent.h>
 
 #endif /* __HXND_HX_H__ */

@@ -52,8 +52,6 @@ typedef int (*hx_entropy_functional) (real *x, real *S, int n);
 
 enum hx_entropy_type hx_entropy_lookup_type (const char *name);
 
-/* entropy functional declarations: */
-
 int hx_entropy_norm_f (real *x, real *S, int n);
 
 int hx_entropy_norm_df (real *x, real *S, int n);
@@ -69,6 +67,10 @@ int hx_entropy_skilling_df (real *x, real *S, int n);
 int hx_entropy_hoch_f (real *x, real *S, int n);
 
 int hx_entropy_hoch_df (real *x, real *S, int n);
+
+int hx_array_ffm (hx_array *x, hx_index dx, hx_index kx,
+                  int dsched, int nsched, hx_index sched,
+                  int niter, enum hx_entropy_type type);
 
 #endif /* __HXND_HX_MAXENT_H__ */
 

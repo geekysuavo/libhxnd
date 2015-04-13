@@ -373,7 +373,7 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
   return 1;
 }
 
-/* hx_array_ist(): performs iterative soft thresholding to reconstruct
+/* hx_array_ist(): perform iterative soft thresholding to reconstruct
  * nonuniformly subsampled time-domain data in a hypercomplex array.
  * @x: pointer to the array to reconstruct.
  * @dx: array of algebraic dimension indices in @x.
@@ -398,14 +398,20 @@ int hx_array_ist (hx_array *x, hx_index dx, hx_index kx,
   /* determine which reconstruction function to use. */
   if (dsched == 1) {
     /* execute the one-dimensional function. */
-    return hx_array_ist1d(x, dx, kx, nsched, sched, niter, thresh);
+    if (!hx_array_ist1d(x, dx, kx, nsched, sched, niter, thresh))
+      throw("failed to execute one-dimensional reconstruction");
   }
   else if (dsched > 1) {
     /* execute the multidimensional function. */
-    return hx_array_istnd(x, dx, kx, dsched, nsched, sched, niter, thresh);
+    if (!hx_array_istnd(x, dx, kx, dsched, nsched, sched, niter, thresh))
+      throw("failed to execute n-dimensional reconstruction");
+  }
+  else {
+    /* throw an exception. */
+    throw("invalid schedule configuration (%dx%d)", dsched, nsched);
   }
 
-  /* return failure, because @dsched < 1 */
-  throw("invalid schedule dimensionality");
+  /* return success. */
+  return 1;
 }
 
