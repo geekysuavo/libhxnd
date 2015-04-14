@@ -398,6 +398,51 @@ int hx_index_incr_mask (int k, hx_index sz, hx_index idx, hx_index mask) {
   return !roundtrip;
 }
 
+/* hx_index_incr_bounded(): increment a multidimensional index in a similar
+ * fashion to hx_index_incr(), but skip incrementation over all indices not
+ * within a set of specified bounds. initialization must be performed before
+ * calling this function.
+ * @k: the size of the array.
+ * @lower: the lower bound of incrementation.
+ * @upper: the upper bound of incrementation.
+ * @idx: the array of unpacked indices to increment.
+ */
+int hx_index_incr_bounded (int k, hx_index lower, hx_index upper,
+                           hx_index idx) {
+  /* declare a few required variables. */
+  int ki, roundtrip;
+
+  /* initialize the round trip indicator. */
+  roundtrip = 0;
+
+  /* loop over the dimensions of the array. */
+  for (ki = 0; ki < k; ki++) {
+    /* skip any indices not included in the bounds. */
+    if (lower[ki] == upper[ki])
+      continue;
+
+    /* increment the current index. */
+    idx[ki]++;
+
+    /* check if the current index has overflowed. */
+    if (idx[ki] > upper[ki]) {
+      /* reset the index. */
+      idx[ki] = lower[ki];
+    }
+    else {
+      /* break the loop. */
+      break;
+    }
+  }
+
+  /* check if a round trip was made. */
+  if (ki == k)
+    roundtrip = 1;
+
+  /* return success. */
+  return !roundtrip;
+}
+
 /* hx_index_skip(): increment a multidimensional index in a similar fashion
  * to hx_index_incr(), but skip the incrementation over a specified index.
  * @k: the size of the array.

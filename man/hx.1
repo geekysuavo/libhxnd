@@ -296,6 +296,19 @@ The \fBht\fR command applies a discrete Hilbert transform to the current
 datum in order to reconstruct the imaginary component along a given dimension
 \fID\fR. If the datum contains imaginary values, they will be replaced.
 
+.SS irls
+The \fBirls\fR command reconstructs all nonuniformly subsampled dimensions
+in the current datum using Iteratively Reweighted Least Squares regression
+(\fIIRLS\fR).
+.TP
+\fBnorm\fR (float) [1.0]
+value of \fIp\fR in the \fILp\fR norm that iteration should terminate upon.
+iteration begins with an \fIL1\fR norm and ends at an \fIL1\fR norm by
+default.
+.TP
+\fBiters\fR (integer) [10]
+number of iterations to perform.
+
 .SS ist
 The \fBist\fR command reconstructs all nonuniformly subsampled dimensions in
 the current datum using Iterative Soft Thresholding (\fIIST\fR).

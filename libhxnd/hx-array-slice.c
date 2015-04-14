@@ -41,27 +41,24 @@ int hx_array_slicer (hx_array *x, hx_array *y,
    * @xycmp: set high if @y needs allocation.
    * @n: number of coefficients per scalar.
    * @ncpy: number of bytes per scalar.
-   * @pidxi: input array packed linear index.
-   * @pidxo: output array packed linear index.
-   * @idxi: input array index set.
-   * @idxo: output array index set.
+   * @pidx: input array packed linear index.
+   * @pidxy: output array packed linear index.
+   * @idx: input array index set.
    * @sznew: output array sizes.
    */
-  hx_index idxi, idxo, sznew;
-  int i, xycmp, n, ncpy;
-  int pidxi, pidxo;
+  int i, xycmp, n, ncpy, pidx, pidxy;
+  hx_index idx, sznew;
 
   /* store the number of coefficients and bytes per hypercomplex scalar. */
   n = x->n;
   ncpy = n * sizeof(real);
 
   /* allocate three index arrays for use during iteration. */
-  idxi = hx_index_alloc(x->k);
-  idxo = hx_index_alloc(x->k);
+  idx = hx_index_copy(x->k, lower);
   sznew = hx_index_alloc(x->k);
 
   /* check that the index arrays were allocated successfully. */
-  if (!idxi || !idxo || !sznew)
+  if (!idx || !sznew)
     throw("failed to allocate %d indices", x->k);
 
   /* subtract the lower bound from the upper bound. */
@@ -90,47 +87,40 @@ int hx_array_slicer (hx_array *x, hx_array *y,
   /* allocate memory for the sliced outputs, but only if the output
    * array does pass the tests performed above that yield @xycmp.
    */
-  if (xycmp && !hx_array_alloc(y, x->d, x->k, sznew))
+  if (xycmp && dir == HX_ARRAY_SLICER_SLICE &&
+      !hx_array_alloc(y, x->d, x->k, sznew))
     throw("failed to allocate slice destination array");
 
-  /* iterate over the larger (input) array. */
-  pidxi = 0;
+  /* iterate over the array indices to copy. */
+  pidxy = 0;
   do {
-    /* check if the current input array index is in the slice bounds. */
-    if (hx_index_bounded(x->k, idxi, lower, upper)) {
-      /* yes. compute the output array indices. */
-      for (i = 0; i < x->k; i++)
-        idxo[i] = idxi[i] - lower[i];
+    /* pack the input array index into a linear index. */
+    hx_index_pack(x->k, x->sz, idx, &pidx);
 
-      /* linearize the output indices. */
-      hx_index_pack(x->k, sznew, idxo, &pidxo);
+    /* copy the coefficient memory. */
+    switch (dir) {
+      /* slice: x ==> y */
+      case HX_ARRAY_SLICER_SLICE:
+        memcpy(y->x + n * pidxy, x->x + n * pidx, ncpy);
+        break;
 
-      /* copy the coefficient memory. */
-      switch (dir) {
-        /* slice: x ==> y */
-        case HX_ARRAY_SLICER_SLICE:
-          memcpy(y->x + n * pidxo, x->x + n * pidxi, ncpy);
-          break;
+      /* store: x <== y */
+      case HX_ARRAY_SLICER_STORE:
+        memcpy(x->x + n * pidx, y->x + n * pidxy, ncpy);
+        break;
 
-        /* store: x <== y */
-        case HX_ARRAY_SLICER_STORE:
-          memcpy(x->x + n * pidxi, y->x + n * pidxo, ncpy);
-          break;
-
-        /* other: no-op. */
-        default:
-          break;
-      }
+      /* other: no-op. */
+      default:
+        break;
     }
 
     /* incremenet the input array linear index. */
-    pidxi++;
-  } while (hx_index_incr(x->k, x->sz, idxi));
+    pidxy++;
+  } while (hx_index_incr_bounded(x->k, lower, upper, idx));
 
   /* free the allocated index arrays. */
   hx_index_free(sznew);
-  hx_index_free(idxi);
-  hx_index_free(idxo);
+  hx_index_free(idx);
 
   /* return success. */
   return 1;
@@ -282,6 +272,58 @@ int hx_array_matrix_slicer (hx_array *x, hx_array *y,
         default:
           break;
       }
+    }
+  }
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_sched_slicer(): slice or store a scheduled set of points from
+ * an array.
+ * @x: pointer to the input array.
+ * @y: pointer to the output array.
+ * @off: array slice offset index.
+ * @n: array slice output point count.
+ * @sched: array of off-dimension slice origins.
+ * @dir: either HX_ARRAY_SLICER_SLICE or HX_ARRAY_SLICER_STORE.
+ */
+int hx_array_sched_slicer (hx_array *x, hx_array *y,
+                           int off, int n, hx_index sched,
+                           int dir) {
+  /* declare required variables. */
+  int idx, idxy, ncpy;
+
+  /* compute the number of bytes per scalar. */
+  ncpy = x->n * sizeof(real);
+
+  /* allocate the output array, if its configuration does not match
+   * the required configuration.
+   */
+  if ((y->d != x->d || y->k != 1 || y->sz[0] != n) &&
+      !hx_array_alloc(y, x->d, 1, &n))
+    throw("failed to allocate slice destination array");
+
+  /* loop over the points in the schedule. */
+  for (idxy = 0; idxy < n; idxy++) {
+    /* compute the input matrix coefficient index. */
+    idx = off + sched[idxy];
+
+    /* copy the coefficient memory. */
+    switch (dir) {
+      /* slice: x ==> y */
+      case HX_ARRAY_SLICER_SLICE:
+        memcpy(y->x + y->n * idxy, x->x + x->n * idx, ncpy);
+        break;
+
+      /* store: x <== y */
+      case HX_ARRAY_SLICER_STORE:
+        memcpy(x->x + x->n * idx, y->x + y->n * idxy, ncpy);
+        break;
+
+      /* other: no-op. */
+      default:
+        break;
     }
   }
 

@@ -39,6 +39,7 @@
 #define FN_NAME_FFT       "fft"
 #define FN_NAME_FILTER    "filter"
 #define FN_NAME_HT        "ht"
+#define FN_NAME_IRLS      "irls"
 #define FN_NAME_IST       "ist"
 #define FN_NAME_MIRROR    "mirror"
 #define FN_NAME_MULTIPLY  "multiply"
@@ -78,6 +79,8 @@ int fn_fft (datum *D, const int dim, const fn_arg *args);
 int fn_filter (datum *D, const int dim, const fn_arg *args);
 
 int fn_ht (datum *D, const int dim, const fn_arg *args);
+
+int fn_irls (datum *D, const int dim, const fn_arg *args);
 
 int fn_ist (datum *D, const int dim, const fn_arg *args);
 

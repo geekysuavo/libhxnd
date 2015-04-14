@@ -42,6 +42,7 @@ static fn functions[] = {
   { FN_NAME_FFT,      (fn_pointer) &fn_fft,      fn_args_fft },
   { FN_NAME_FILTER,   (fn_pointer) &fn_filter,   fn_args_filter },
   { FN_NAME_HT,       (fn_pointer) &fn_ht,       NULL },
+  { FN_NAME_IRLS,     (fn_pointer) &fn_irls,     fn_args_irls },
   { FN_NAME_IST,      (fn_pointer) &fn_ist,      fn_args_ist },
   { FN_NAME_MIRROR,   (fn_pointer) &fn_mirror,   NULL },
   { FN_NAME_MULTIPLY, (fn_pointer) &fn_multiply, fn_args_multiply },

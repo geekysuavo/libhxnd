@@ -70,6 +70,12 @@ static fn_arg fn_args_filter[] = {
   { NULL,    {},                0, FN_VALTYPE_UNKNOWN }
 };
 
+static fn_arg fn_args_irls[] = {
+  { "norm",  { .f = 1.0 }, 0, FN_VALTYPE_FLOAT },
+  { "iters", { .i = 10  }, 0, FN_VALTYPE_INT },
+  { NULL,    {},           0, FN_VALTYPE_UNKNOWN }
+};
+
 static fn_arg fn_args_ist[] = {
   { "thresh", { .f = 0.9 }, 0, FN_VALTYPE_FLOAT },
   { "iters",  { .i = 200 }, 0, FN_VALTYPE_INT },

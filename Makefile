@@ -33,9 +33,9 @@ LIBSRC+= mx-stats mx-scaling mx-dataset mx-dataset-mem mx-dataset-matrix
 
 # LIBSRC: library source basenames: processing functions.
 LIBSRC+= fn fn-args fn-list fn-abs fn-add fn-baseline fn-complex fn-crop
-LIBSRC+= fn-cut fn-fft fn-filter fn-ht fn-ist fn-mirror fn-multiply fn-phase
-LIBSRC+= fn-project fn-real fn-report fn-resize fn-shift fn-subsamp fn-symm
-LIBSRC+= fn-tilt fn-window fn-zerofill
+LIBSRC+= fn-cut fn-fft fn-filter fn-ht fn-irls fn-ist fn-mirror fn-multiply
+LIBSRC+= fn-phase fn-project fn-real fn-report fn-resize fn-shift fn-subsamp
+LIBSRC+= fn-symm fn-tilt fn-window fn-zerofill
 
 # GUISRC: graphical interface source basenames.
 GUISRC=ghx-proc-main

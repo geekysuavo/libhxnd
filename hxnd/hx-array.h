@@ -218,6 +218,16 @@ int hx_array_matrix_slicer (hx_array *x, hx_array *y,
 #define hx_array_store_matrix(x, y, k1, k2, loc) \
   hx_array_matrix_slicer(x, y, k1, k2, loc, HX_ARRAY_SLICER_STORE)
 
+int hx_array_sched_slicer (hx_array *x, hx_array *y,
+                           int off, int n, hx_index sched,
+                           int dir);
+
+#define hx_array_slice_sched(x, y, off, n, sched) \
+  hx_array_sched_slicer(x, y, off, n, sched, HX_ARRAY_SLICER_SLICE)
+
+#define hx_array_store_sched(x, y, off, n, sched) \
+  hx_array_sched_slicer(x, y, off, n, sched, HX_ARRAY_SLICER_STORE)
+
 /* function declarations (hx-array-tile.c): */
 
 int hx_array_tiler (hx_array *x, int k, hx_index nt, hx_index szt,

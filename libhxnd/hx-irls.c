@@ -58,8 +58,8 @@ int hx_array_irls_dftmatrix (int d, int k, int n, hx_index sz,
   real theta;
 
   /* compute the number of frequency-domain indices. */
-  for (i = 0, N = 1; i < k; i++)
-    N *= sz[i];
+  for (i = 1, N = 1; i < k; i++)
+    N *= sz[kx[i]];
 
   /* allocate the input and output multidimensional indices. */
   idxi = hx_index_alloc(k);
@@ -89,31 +89,31 @@ int hx_array_irls_dftmatrix (int d, int k, int n, hx_index sz,
   /* loop over the output matrix rows. */
   for (i = 0; i < n; i++) {
     /* unpack the current scheduled time-domain index. */
-    hx_index_unpack(k, sz, idxi, sched[i]);
+    hx_index_unpack(k - 1, sz + 1, idxi, sched[i]);
 
     /* loop over the output matrix columns. */
     for (j = 0; j < N; j++) {
       /* unpack the current frequency-domain index. */
-      hx_index_unpack(k, sz, idxk, j);
+      hx_index_unpack(k - 1, sz + 1, idxk, j);
 
       /* initialize the final scalar phase factor. */
       hx_scalar_zero(&ph);
       ph.x[0] = 1.0;
 
       /* loop over the transform dimensions. */
-      for (di = 0; di < d; di++) {
+      for (di = 1; di < k; di++) {
         /* compute the current dimension phase angle. */
         theta = 2.0 * M_PI;
-        theta *= (real) idxi[di];
-        theta *= (real) idxk[di];
-        theta /= (real) sz[di];
+        theta *= (real) idxi[kx[di]];
+        theta *= (real) idxk[kx[di]];
+        theta /= (real) sz[kx[di]];
 
         /* 1. compute the current dimension phase factor.
          * 2. copy the current phase factor into a temporary scalar.
          * 3. multiply the phase factor into the final phase factor.
          */
         if (!hx_data_copy(ph.x, phtmp.x, ph.n) ||
-            !hx_scalar_phasor(&phd, di, theta) ||
+            !hx_scalar_phasor(&phd, dx[di], theta) ||
             !hx_scalar_mul(&phtmp, &phd, &ph))
           throw("failed to compute phase factors");
       }
@@ -148,6 +148,61 @@ int hx_array_irls_dftmatrix (int d, int k, int n, hx_index sz,
   return 1;
 }
 
+/* hx_array_irlsfun(): compute a single irls reconstruction.
+ * @X: vector of frequency-domain spectral estimates.
+ * @x: vector of time-domain acquired values.
+ * @w: vector of real spectral weights.
+ * @z: vector of time-domain estimates.
+ * @wx: vector of weighted spectral estimates.
+ * @rx: vector of time-domain residuals.
+ * @A: hermitian positive definite array of regression factors.
+ * @niter, @pa, @pb: see hx_array_irls().
+ */
+int hx_array_irlsfun (hx_array *X, hx_array *x, hx_array *w, hx_array *z,
+                      hx_array *wx, hx_array *rx, hx_array *A,
+                      int niter, real pa, real pb) {
+  /* declare a few required variables:
+   */
+  real p, dp;
+  int iiter;
+
+  /* compute the change in norm p-value per iteration. */
+  dp = (pb - pa) / (real) (niter - 1);
+
+  /* FIXME: compute the initial spectral estimate. */
+
+  /* loop over the reconstruction iterations. */
+  for (iiter = 0; iiter < niter; iiter++) {
+    /* compute the current norm p-value. */
+    p = pa + (real) iiter * dp;
+
+    /* FIXME: compute the current weights. */
+
+    /* FIXME: compute the current weighted spectral estimate. */
+
+    /* FIXME: compute the current time-domain residual. */
+
+    /* FIXME: compute the sum of squared weighted estimates. */
+
+    /* FIXME: compute the sum of squared residuals. */
+
+    /* FIXME: compute the current lagrange multiplier value. */
+
+    /* FIXME: compute the final inverted weights. */
+
+    /* FIXME: compute the normal matrix. */
+
+    /* FIXME: decompose the normal matrix. */
+
+    /* FIXME: solve for the time-domain factors. */
+
+    /* FIXME: compute the new spectral estimate. */
+  }
+
+  /* return success. */
+  return 1;
+}
+
 /* hx_array_irls(): perform iteratively reweighted least squares regression
  * to reconstruct nonuniformly subsampled time-domain data in a hypercomplex
  * array.
@@ -163,6 +218,17 @@ int hx_array_irls_dftmatrix (int d, int k, int n, hx_index sz,
 int hx_array_irls (hx_array *x, hx_index dx, hx_index kx,
                    int dsched, int nsched, hx_index sched,
                    int niter, real pa, real pb) {
+  /* declare a few required variables:
+   * @F: discrete Fourier transform matrix.
+   * @Y: spectral estimate array.
+   * @y: time-domain data vector.
+   * @w: weight vector.
+   * @psched: packed schedule indices.
+   */
+  hx_index Asz, sz, xsched, ysched, lower, upper;
+  hx_array A, F, Y, y, w, z, wx, rx;
+  int d, k, i, n, is, ns, N;
+
   /* ensure the schedule is allocated and properly sized. */
   if (!sched || dsched < 1 || nsched < 1)
     throw("invalid schedule configuration (%dx%d)", dsched, nsched);
@@ -183,7 +249,115 @@ int hx_array_irls (hx_array *x, hx_index dx, hx_index kx,
   if (pa < pb)
     throw("norm orders must decrease during iteration");
 
-  /* FIXME: implement hx_array_irls() */
+  /* store the input array dimensionalities. */
+  d = x->d;
+  k = x->k;
+
+  /* store the number of slices to reconstruct. */
+  ns = x->sz[kx[0]];
+
+  /* allocate a size multidimensional index. */
+  sz = hx_index_alloc(k);
+
+  /* ensure the index was allocated. */
+  if (!sz)
+    throw("failed to allocate %d indices", k);
+
+  /* store the elements of the size index. */
+  for (i = 0; i < k; i++)
+    sz[i] = x->sz[kx[i]];
+
+  /* allocate the bounding array indices. */
+  lower = hx_index_alloc(k);
+  upper = hx_index_alloc(k);
+
+  /* ensure the bounding arrays were allocated. */
+  if (!lower || !upper)
+    throw("failed to allocate bounding arrays");
+
+  /* store the elements of the bounding arrays. */
+  for (i = 1; i < k; i++) {
+    /* store the upper and lower bound. */
+    upper[i] = x->sz[kx[i]] - 1;
+    lower[i] = 0;
+  }
+
+  /* build a list of packed schedule indices for each slice. */
+  ysched = hx_index_scheduled(k - 1, sz + 1, dsched, nsched, sched);
+
+  /* allocate a list of packed schedule indices for the input array. */
+  xsched = hx_index_copy(nsched, ysched);
+
+  /* ensure the schedule lists were built successfully. */
+  if (!xsched || !ysched)
+    throw("failed to build packed schedule arrays");
+
+  /* adjust the elements of the input array's schedule. */
+  for (i = 0; i < nsched; i++)
+    xsched[i] *= sz[0];
+
+  /* compute the discrete Fourier transform matrix. */
+  hx_array_init(&F);
+  if (!hx_array_irls_dftmatrix(d, k, nsched, sz, dx, kx, ysched, &F))
+    throw("failed to compute dft matrix");
+
+  /* store the dft matrix row and column sizes. */
+  n = F.sz[0];
+  N = F.sz[1];
+
+  /* allocate a size index for the normal matrix. */
+  Asz = hx_index_build(2, n, n);
+
+  /* ensure the index was allocated. */
+  if (!Asz)
+    throw("failed to allocate matrix size index");
+
+  /* allocate temporary vectors for use during reconstruction. */
+  if (!hx_array_alloc(&z, d, 1, &n) ||
+      !hx_array_alloc(&y, d, 1, &n) ||
+      !hx_array_alloc(&Y, d, 1, &N) ||
+      !hx_array_alloc(&w, 0, 1, &N) ||
+      !hx_array_alloc(&wx, d, 1, &N) ||
+      !hx_array_alloc(&rx, d, 1, &n) ||
+      !hx_array_alloc(&A, d, 2, Asz))
+    throw("failed to allocate reconstruction arrays");
+
+  /* loop over each reconstruction to be performed. */
+  for (is = 0; is < ns; is++) {
+    /* store the direct dimension bounds. */
+    upper[0] = is;
+    lower[0] = is;
+
+    /* slice the indirect dimensions from the input array. */
+    if (!hx_array_slice_sched(x, &y, is, nsched, xsched))
+      throw("failed to slice sub-matrix %d", is);
+
+    /* reconstruct the current slice. */
+    if (!hx_array_irlsfun(&Y, &y, &w, &z, &wx, &rx, &A, niter, pa, pb))
+      throw("failed to reconstruct sub-matrix %d", is);
+
+    /* store the reconstructed slice back into the input array. */
+    if (!hx_array_store(x, &Y, lower, upper))
+      throw("failed to store sub-matrix %d", is);
+  }
+
+  /* free the allocated arrays. */
+  hx_array_free(&A);
+  hx_array_free(&F);
+  hx_array_free(&Y);
+  hx_array_free(&y);
+  hx_array_free(&w);
+  hx_array_free(&z);
+  hx_array_free(&wx);
+  hx_array_free(&rx);
+
+  /* free the allocated indices. */
+  hx_index_free(xsched);
+  hx_index_free(ysched);
+  hx_index_free(lower);
+  hx_index_free(upper);
+  hx_index_free(Asz);
+  hx_index_free(sz);
 
   /* return success. */
   return 1;

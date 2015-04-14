@@ -67,6 +67,9 @@ int hx_index_decr_rev (int k, hx_index sz, hx_index idx);
 
 int hx_index_incr_mask (int k, hx_index sz, hx_index idx, hx_index mask);
 
+int hx_index_incr_bounded (int k, hx_index lower, hx_index upper,
+                           hx_index idx);
+
 int hx_index_skip (int k, hx_index sz, hx_index idx, int kskip);
 
 int hx_index_jump_init (int k, hx_index sz, int kskip,

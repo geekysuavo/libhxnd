@@ -83,13 +83,12 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
    * @d: slice algebraic dimension index.
    * @k: slice topological dimension index.
    * @sz: current slice topological size.
-   * @iiter: main ist algorithm iteration loop counter.
    * @ja, @jb, @jmax: skipped iteration control variables.
    * @nzeros: number of unscheduled elements in @y.
    * @nbytes: number of bytes per hypercomplex scalar.
    * @zeros: linear indices of all unscheduled elements in @y.
    */
-  int d, k, sz, iiter, ja, jb, jmax;
+  int d, k, sz, ja, jb, jmax;
   int nzeros, nbytes;
   hx_index zeros;
 
@@ -127,11 +126,12 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
      * @j: array skipped iteration master index.
      * @l: unscheduled array loop index.
      * @pidx: packed linear array index.
+     * @iiter: main ist algorithm iteration loop counter.
      * @lambda: current iteration thresholding magnitude.
      */
+    int j, l, pidx, iiter;
     hx_array y, yth, z;
     hx_scalar w, swp;
-    int j, l, pidx;
     real lambda;
 
     /* allocate temporary scalars for use in the fft. */
@@ -288,7 +288,7 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
   if (!zeros)
     throw("failed to allocate %d indices", nzeros);
 
-  /* build the bounding arrays. */
+  /* store the elements of the bounding arrays. */
   for (i = 1; i < k; i++) {
     /* store the upper and lower bound. */
     upper[i] = x->sz[kx[i]] - 1;
