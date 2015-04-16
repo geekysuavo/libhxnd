@@ -173,7 +173,7 @@ int hx_data_copy (real *x, real *xcpy, int n) {
   return 1;
 }
 
-/* hx_data_conj(): conjugate the imaginary coefficients in the raw array
+/* hx_data_conj(): negate all the imaginary coefficients in the raw array
  * of a hypercomplex value.
  * @x: the raw array data of the input operand.
  * @xh: the raw array data of the output operand.
@@ -186,6 +186,37 @@ int hx_data_conj (real *x, real *xh, int n) {
   /* loop over the imaginary elements. */
   for (i = 1; i < n; i++)
     xh[i] = -1.0 * x[i];
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_data_semiconj(): negate all the imaginary basis elements in the raw
+ * array of a hypercomplex value.
+ * @x: the raw array data of the input operand.
+ * @xh: the raw array data of the output operand.
+ * @d: the algebraic dimensionality of the operands.
+ * @n: the number of array elements of the operands.
+ */
+int hx_data_semiconj (real *x, real *xh, int d, int n) {
+  /* declare a required variable. */
+  int i, dneg, ineg;
+
+  /* copy the data into the output array. */
+  hx_data_copy(x, xh, n);
+
+  /* loop over the basis elements. */
+  for (dneg = 0; dneg < d; dneg++) {
+    /* compute the negation index. */
+    ineg = 1 << dneg;
+
+    /* loop over the imaginary coefficients. */
+    for (i = ineg; i < n; i++) {
+      /* check if the current index needs negation. */
+      if (i & ineg)
+        xh[i] *= -1.0;
+    }
+  }
 
   /* return success. */
   return 1;

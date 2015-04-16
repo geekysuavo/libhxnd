@@ -38,6 +38,8 @@ int hx_data_copy (real *x, real *xcpy, int n);
 
 int hx_data_conj (real *x, real *xh, int n);
 
+int hx_data_semiconj (real *x, real *xh, int d, int n);
+
 int hx_data_zero (real *x, int n);
 
 int hx_data_fill (real *x, int n, real val);
