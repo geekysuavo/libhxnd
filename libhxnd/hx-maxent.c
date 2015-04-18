@@ -277,9 +277,8 @@ int hx_entropy_hoch_df (real *x, real *S, int n) {
 int hx_array_ffmfn (hx_array *X, hx_array *x, hx_array *x0,
                     hx_array *g, hx_array *h, hx_array *S, hx_array *Y,
                     hx_array *alpha, hx_array *beta, hx_array *rho,
-                    hx_entropy_functional f,
-                    hx_entropy_functional df,
-                    int niter) {
+                    hx_index sched, hx_entropy_functional f,
+                    hx_entropy_functional df, int niter) {
   /* FIXME: implement hx_array_ffmfn() */
 
   /* return success. */
@@ -423,7 +422,8 @@ int hx_array_ffm (hx_array *x, hx_index dx, hx_index kx,
 
     /* reconstruct the current slice. */
     if (!hx_array_ffmfn(&Y, &y, &y0, &g, &h, &W, &Z,
-                        &alpha, &beta, &rho, f, df, niter))
+                        &alpha, &beta, &rho, ysched,
+                        f, df, niter))
       throw("failed to reconstruct sub-matrix %d", is);
 
     /* store the reconstructed slice back into the input array. */
