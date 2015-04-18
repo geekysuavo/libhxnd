@@ -153,7 +153,7 @@ int hx_array_fft1d (hx_array *y, int d, real dir,
          * x[i+k] <- x[i] - swp;
          * x[i] <- x[i] + swp;
          */
-        memset(swp->x, 0, ncpy);
+        hx_scalar_zero(swp);
         hx_data_mul(w->x, pxxik, swp->x, y->d, y->n, y->tbl);
         hx_data_add(pxxi, swp->x, pxxik, -1.0, y->d, y->n);
         hx_data_add(pxxi, swp->x, pxxi, 1.0, y->d, y->n);

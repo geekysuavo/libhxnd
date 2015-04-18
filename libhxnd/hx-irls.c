@@ -26,7 +26,8 @@
 /* declare a few fixed constants used during optimization.
  */
 #define HX_IRLS_EPSILON     0.0001
-#define HX_IRLS_LAMBDA_MIN  0.001
+#define HX_IRLS_LAMBDA_MIN  1.0e-3
+#define HX_IRLS_LAMBDA_MAX  1.0e+9
 
 /* hx_array_irls_dftmatrix(): compute the matrix form of the multidimensional
  * inverse discrete Fourier transform (IDFT) matrix of a nonuniformly sampled
@@ -118,6 +119,7 @@ int hx_array_irls_dftmatrix (int d, int k, int n, hx_index sz,
          * 3. multiply the phase factor into the final phase factor.
          */
         if (!hx_data_copy(ph.x, phtmp.x, ph.n) ||
+            !hx_scalar_zero(&ph) ||
             !hx_scalar_phasor(&phd, dx[di], theta) ||
             !hx_scalar_mul(&phtmp, &phd, &ph))
           throw("failed to compute phase factors");
@@ -296,9 +298,6 @@ int hx_array_irls_sumsq (hx_array *X, hx_array *x,
     rx += rxi * rxi;
   }
 
-  /* free the temporary scalar. */
-  hx_scalar_free(&r);
-
   /* loop over the second sum of squares computation. */
   for (i = 0, wx = 0.0; i < w->len; i++) {
     /* update the sum of squares. */
@@ -313,9 +312,19 @@ int hx_array_irls_sumsq (hx_array *X, hx_array *x,
   if (lambda < HX_IRLS_LAMBDA_MIN)
     lambda = HX_IRLS_LAMBDA_MIN;
 
-  /* scale the vector of weights by the lagrange multiplier. */
+  /* ensure lambda is never too large. */
+  if (lambda > HX_IRLS_LAMBDA_MAX)
+    lambda = HX_IRLS_LAMBDA_MAX;
+
+  /* scale the vector of weights by the lagrange multiplier and then
+   * invert the vector element such that the weight vector contains
+   * diag(inv(W)).
+   */
   for (i = 0; i < w->len; i++)
-    w->x[i] = lambda / w->x[i];
+    w->x[i] = 1.0 / (lambda * w->x[i]);
+
+  /* free the temporary scalar. */
+  hx_scalar_free(&r);
 
   /* return success. */
   return 1;
@@ -404,16 +413,17 @@ int hx_array_irls_design (hx_array *F, hx_array *w, hx_array *A) {
 int hx_array_irls_solve (hx_array *A, hx_array *x, hx_array *b) {
   /* declare a few required variables:
    */
-  int j, k, n, idxjj;
+  int i, j, k, n, idxjj;
+  hx_scalar tmp, Lh;
   real Anrm, diag;
-  hx_scalar tmp;
 
   /* store the problem size locally. */
   n = A->sz[0];
 
   /* allocate the temporary substitution scalar. */
-  if (!hx_scalar_alloc(&tmp, A->d))
-    throw("failed to allocate temporary %d-scalar", A->d);
+  if (!hx_scalar_alloc(&tmp, A->d) ||
+      !hx_scalar_alloc(&Lh, A->d))
+    throw("failed to allocate temporary %d-scalars", A->d);
 
   /* loop serially over the rows of the matrix. */
   for (j = idxjj = 0; j < n; j++, idxjj += A->n * (n + 1)) {
@@ -437,15 +447,13 @@ int hx_array_irls_solve (hx_array *A, hx_array *x, hx_array *b) {
     diag = A->x[idxjj];
 
     /* create a team of threads to execute the inner loop. */
-/*FIXME
-    #pragma omp parallel
+    #pragma omp parallel private(i, k)
     {
-  FIXME*/
       /* declare a few required variables:
        * @sum: temporary hypercomplex summand.
        * @Ah: conjugated matrix element.
        */
-      int i, idxij, idxik, idxjk;
+      int idxij, idxik, idxjk;
       hx_scalar sum, Ah;
 
       /* allocate the temporary scalars. */
@@ -454,7 +462,7 @@ int hx_array_irls_solve (hx_array *A, hx_array *x, hx_array *b) {
         raise("failed to allocate %d-scalars", A->d);
 
       /* loop over the elements of the column update. */
-//FIXME      #pragma omp for
+      #pragma omp for
       for (i = j + 1; i < n; i++) {
         /* build the output matrix element index. */
         idxij = (i + j * n) * A->n;
@@ -483,15 +491,16 @@ int hx_array_irls_solve (hx_array *A, hx_array *x, hx_array *b) {
       /* free the allocated scalars. */
       hx_scalar_free(&sum);
       hx_scalar_free(&Ah);
-/*FIXME
     }
-  FIXME*/
   }
+
+  /* initialize the output vector. */
+  hx_array_zero(x);
 
   /* perform the first step of substitution. */
   for (j = idxjj = 0; j < n; j++, idxjj += A->n * (n + 1)) {
     /* initialize the temporary sum. */
-    hx_data_zero(tmp.x, tmp.n);
+    hx_scalar_zero(&tmp);
 
     /* compute the temporary sum. */
     for (k = j - 1; k >= 0; k--) {
@@ -501,30 +510,36 @@ int hx_array_irls_solve (hx_array *A, hx_array *x, hx_array *b) {
     }
 
     /* store the final result. */
-    hx_data_add(b->x + j * b->n, tmp.x, x->x + j * x->n,
-                -1.0 / A->x[idxjj], A->d, A->n);
+    hx_data_add(b->x + j * b->n, tmp.x, x->x + j * x->n, -1.0, A->d, A->n);
+    hx_data_add(NULL, x->x + j * x->n, x->x + j * x->n,
+                1.0 / A->x[idxjj], A->d, A->n);
   }
 
   /* perform the second step of substitution. */
-  for (j = n - 1, idxjj = j * (n + 1) * A->n; j >= 0;
+  for (j = n - 1, idxjj = (n * n - 1) * A->n; j >= 0;
        j--, idxjj -= A->n * (n + 1)) {
     /* initialize the temporary sum. */
-    hx_data_zero(tmp.x, tmp.n);
+    hx_scalar_zero(&tmp);
 
     /* compute the temporary sum. */
     for (k = j + 1; k < n; k++) {
+      /* copy-semiconjugate the current matrix element. */
+      hx_data_semiconj(A->x + (k + j * n) * A->n, Lh.x, A->d, A->n);
+
       /* compute the current term. */
-      hx_data_mul(A->x + (k + j * n) * A->n, x->x + k * x->n, tmp.x,
+      hx_data_mul(Lh.x, x->x + k * x->n, tmp.x,
                   A->d, A->n, A->tbl);
     }
 
     /* store the final result. */
-    hx_data_add(x->x + j * x->n, tmp.x, x->x + j * x->n,
-                -1.0 / A->x[idxjj], A->d, A->n);
+    hx_data_add(x->x + j * x->n, tmp.x, x->x + j * x->n, -1.0, A->d, A->n);
+    hx_data_add(NULL, x->x + j * x->n, x->x + j * x->n,
+                1.0 / A->x[idxjj], A->d, A->n);
   }
 
-  /* free the temporary scalar. */
+  /* free the temporary scalars. */
   hx_scalar_free(&tmp);
+  hx_scalar_free(&Lh);
 
   /* return success. */
   return 1;
@@ -573,9 +588,6 @@ int hx_array_irlsfn (hx_array *F, hx_array *X, hx_array *x,
   /* compute the initial spectral estimate. */
   if (!hx_array_irls_dft(F, X, x, HX_FFT_FORWARD))
     throw("failed to compute initial dft");
-/*FIXME*/hx_array_print(F, "F.arr");
-/*FIXME*/hx_array_print(X, "X0.arr");
-/*FIXME*/hx_array_print(x, "x0.arr");
 
   /* store the initial time-domain estimate. */
   if (!hx_data_copy(x->x, z->x, x->len))
@@ -589,22 +601,18 @@ int hx_array_irlsfn (hx_array *F, hx_array *X, hx_array *x,
     /* compute the current weights. */
     if (!hx_array_irls_reweight(X, w, p))
       throw("failed to compute new weights");
-/*FIXME*/hx_array_print(w, "w1.arr");
 
     /* adjust the weights to equalize the terms of the minimization. */
     if (!hx_array_irls_sumsq(X, x, z, w))
       throw("failed to adjust new weights");
-/*FIXME*/hx_array_print(w, "ws1.arr");
 
     /* compute the regression design matrix. */
     if (!hx_array_irls_design(F, w, A))
       throw("failed to compute design matrix");
-/*FIXME*/hx_array_print(A, "A1.arr");
 
     /* decompose the design matrix and solve for the time-domain vector. */
     if (!hx_array_irls_solve(A, z, x))
       throw("failed to solve linear system");
-/*FIXME*/hx_array_print(A, "L1.arr");
 
     /* compute the unweighted frequency-domain estimate. */
     if (!hx_array_irls_dft(F, X, z, HX_FFT_FORWARD))
@@ -757,6 +765,13 @@ int hx_array_irls (hx_array *x, hx_index dx, hx_index kx,
     /* store the reconstructed slice back into the input array. */
     if (!hx_array_store(x, &Y, lower, upper))
       throw("failed to store sub-matrix %d", is);
+  }
+
+  /* inverse fourier transform the shifted result. */
+  for (i = 1; i < k; i++) {
+    /* fourier transform the current dimension. */
+    if (!hx_array_ifft(x, dx[i], kx[i]))
+      throw("failed to apply final inverse fft");
   }
 
   /* free the allocated arrays. */
