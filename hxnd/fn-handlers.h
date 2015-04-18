@@ -36,6 +36,7 @@
 #define FN_NAME_COMPLEX   "complex"
 #define FN_NAME_CROP      "crop"
 #define FN_NAME_CUT       "cut"
+#define FN_NAME_FFM       "ffm"
 #define FN_NAME_FFT       "fft"
 #define FN_NAME_FILTER    "filter"
 #define FN_NAME_HT        "ht"
@@ -73,6 +74,8 @@ int fn_complex (datum *D, const int dim, const fn_arg *args);
 int fn_crop (datum *D, const int dim, const fn_arg *args);
 
 int fn_cut (datum *D, const int dim, const fn_arg *args);
+
+int fn_ffm (datum *D, const int dim, const fn_arg *args);
 
 int fn_fft (datum *D, const int dim, const fn_arg *args);
 

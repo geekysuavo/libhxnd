@@ -83,6 +83,10 @@ enum hx_entropy_type hx_entropy_lookup_type (const char *name) {
   /* declare a required variable. */
   unsigned int i;
 
+  /* return an undefined entropy type if the name is null. */
+  if (!name)
+    return HX_ENTROPY_TYPE_UNDEFINED;
+
   /* loop over all supported entropy functionals. */
   for (i = 0; functionals[i].name; i++) {
     /* check if the functional name matches. */
@@ -256,6 +260,26 @@ int hx_entropy_hoch_df (real *x, real *S, int n) {
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)
     S[i] = Snrm * x[i];
+
+  /* return success. */
+  return 1;
+}
+
+/* hx_array_ffm(): use the fast forward maximum entropy algorithm to
+ * reconstruct nonuniformly subsampled time-domain data in a hypercomplex
+ * array.
+ * @x: pointer to the array to reconstruct.
+ * @dx: array of algebraic dimension indices in @x.
+ * @kx: array of topological dimension indices in @x.
+ * @dsched: number of reconstruction dimensions.
+ * @nsched: number of sampled @dsched-dimensional points.
+ * @niter: maximum number of iterations to perform.
+ * @type: entropy functional type to utilize..
+ */
+int hx_array_ffm (hx_array *x, hx_index dx, hx_index kx,
+                  int dsched, int nsched, hx_index sched,
+                  int niter, enum hx_entropy_type type) {
+  /* FIXME: implement hx_array_ffm() */
 
   /* return success. */
   return 1;

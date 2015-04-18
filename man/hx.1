@@ -254,6 +254,17 @@ dimension should be indicated by a zero-value or \fIx\fR.
 array of (one-based) indices specifying the plane location. the two plane
 dimensions should be indicated by zero-values or \fIx\fR.
 
+.SS ffm
+The \fBffm\fR command reconstructs all nonuniformly subsampled dimensions in
+the current datum using the Fast Forward Maximum Entropy (\fIFFM\fR)
+reconstruction algorithm.
+.TP
+\fBfunc\fR (string) ['hoch']
+name of the entropy functional to utilize during gradient calculations.
+.TP
+\fBiters\fR (integer) [100]
+maximum number of iterations to perform.
+
 .SS fft
 The \fBfft\fR command applies a radix-2 fast Fourier transform to the
 current datum along a given dimension \fID\fR.
