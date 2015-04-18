@@ -647,15 +647,29 @@ int hx_array_irls (hx_array *x, hx_index dx, hx_index kx,
                    int dsched, int nsched, hx_index sched,
                    int niter, real pa, real pb) {
   /* declare a few required variables:
+   * @Asz: size index of the regression coefficient matrix.
+   * @sz: size of each slice to be reconstructed.
+   * @xsched: array of packed schedule indices within @x.
+   * @ysched: array of packed schedule indices within @y.
+   * @lower: reconstruction slice lower bound index.
+   * @upper: reconstruction slice upper bound index.
+   * @A: regression coefficient matrix.
    * @F: discrete Fourier transform matrix.
-   * @Y: spectral estimate array.
+   * @Y: spectral estimate vector.
    * @y: time-domain data vector.
-   * @w: weight vector.
-   * @psched: packed schedule indices.
+   * @w: real spectral weight vector.
+   * @z: time-domain estimate vector.
+   * @d: number of array/slice algebraic dimensions.
+   * @k: number of array/slice topological dimensions.
+   * @i: general purpose loop counter.
+   * @is: loop counter of reconstruction slices.
+   * @ns: number of slices to reconstruct.
+   * @n: total number of sampled time-domain points per slice.
+   * @N: total number of frequency-domain points per slice.
    */
   hx_index Asz, sz, xsched, ysched, lower, upper;
   hx_array A, F, Y, y, w, z;
-  int d, k, i, n, is, ns, N;
+  int d, k, i, is, ns, n, N;
 
   /* ensure the schedule is allocated and properly sized. */
   if (!sched || dsched < 1 || nsched < 1)
