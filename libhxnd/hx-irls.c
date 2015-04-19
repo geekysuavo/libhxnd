@@ -330,13 +330,13 @@ int hx_array_irls_sumsq (hx_array *X, hx_array *x,
   return 1;
 }
 
-/* hx_array_irls_design(): compute the regression design matrix which will
- * be decomposed during solution for the new time-domain estimate.
+/* hx_array_irls_gramian(): compute the regression coefficient matrix which
+ * will be decomposed during solution for the new time-domain estimate.
  * @F: matrix of Fourier coefficients.
  * @w: vector of weighting factors.
- * @A: output design matrix.
+ * @A: output gram matrix.
  */
-int hx_array_irls_design (hx_array *F, hx_array *w, hx_array *A) {
+int hx_array_irls_gramian (hx_array *F, hx_array *w, hx_array *A) {
   /* declare a few required variables:
    * @n: number of transform matrix rows.
    * @N: number of transform matrix columns.
@@ -606,9 +606,9 @@ int hx_array_irlsfn (hx_array *F, hx_array *X, hx_array *x,
     if (!hx_array_irls_sumsq(X, x, z, w))
       throw("failed to adjust new weights");
 
-    /* compute the regression design matrix. */
-    if (!hx_array_irls_design(F, w, A))
-      throw("failed to compute design matrix");
+    /* compute the regression coefficient matrix. */
+    if (!hx_array_irls_gramian(F, w, A))
+      throw("failed to compute gram matrix");
 
     /* decompose the design matrix and solve for the time-domain vector. */
     if (!hx_array_irls_solve(A, z, x))
