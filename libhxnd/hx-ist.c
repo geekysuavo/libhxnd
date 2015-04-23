@@ -31,7 +31,12 @@
  *          zero on the first iteration to force an initialization.
  */
 int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest, real *lambda) {
-  /* declare a few required variables. */
+  /* declare a few required variables:
+   * @i: hypercomplex scalar first coefficient index.
+   * @xd: number of algebraic dimensions per scalar.
+   * @xn: number of real coefficients per scalar.
+   * @norm: current scalar norm value.
+   */
   int i, xd, xn;
   real norm;
 
