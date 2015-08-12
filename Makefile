@@ -38,7 +38,7 @@ LIBSRC+= fn-multiply fn-phase fn-project fn-real fn-report fn-resize
 LIBSRC+= fn-shift fn-subsamp fn-symm fn-tilt fn-window fn-zerofill
 
 # GUISRC: graphical interface source basenames.
-GUISRC=ghx-proc-main
+GUISRC=ghx-app ghx-app-window
 
 # LIBOBJ, GUIOBJ: library and graphical interface object filenames.
 LIBOBJ=$(addprefix libhxnd/,$(addsuffix .o,$(LIBSRC)))

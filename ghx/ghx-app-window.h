@@ -20,6 +20,31 @@
  *   Boston, MA  02110-1301, USA.
  */
 
-/* include the graphical interface header. */
-#include <ghx/ghx.h>
+/* ensure once-only inclusion. */
+#ifndef __GHX_GHX_APP_WINDOW_H__
+#define __GHX_GHX_APP_WINDOW_H__
+
+/* include the gtk library header. */
+#include <gtk/gtk.h>
+
+/* define a macro that returns the GhxAppWindow GType. */
+#define GHX_APP_WINDOW_TYPE (ghx_app_window_get_type())
+
+/* define a macro that casts a GObject as a GhxAppWindow. */
+#define GHX_APP_WINDOW(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj), GHX_APP_WINDOW_TYPE, GhxAppWindow))
+
+/* declare the required structures. */
+typedef struct _GhxAppWindow      GhxAppWindow;
+typedef struct _GhxAppWindowClass GhxAppWindowClass;
+
+/* function declarations: */
+
+GType ghx_app_window_get_type (void);
+
+GhxAppWindow *ghx_app_window_new (GhxApp *app);
+
+void ghx_app_window_open (GhxAppWindow *win, GFile *file);
+
+#endif /* __GHX_GHX_APP_WINDOW_H__ */
 

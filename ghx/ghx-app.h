@@ -20,15 +20,29 @@
  *   Boston, MA  02110-1301, USA.
  */
 
-/* include the graphical interface headers. */
-#include <ghx/ghx.h>
+/* ensure once-only inclusion. */
+#ifndef __GHX_GHX_APP_H__
+#define __GHX_GHX_APP_H__
 
-/* main(): application entry point.
- * @argc: argument count.
- * @argv: argument array.
- */
-int main (int argc, char **argv) {
-  /* run the graphical hx application. */
-  return g_application_run(G_APPLICATION(ghx_app_new()), argc, argv);
-}
+/* include the gtk library header. */
+#include <gtk/gtk.h>
+
+/* define a macro that returns the GhxApp GType. */
+#define GHX_APP_TYPE (ghx_app_get_type())
+
+/* define a macro that casts a GObject as a GhxApp. */
+#define GHX_APP(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj), GHX_APP_TYPE, GhxApp))
+
+/* declare the required structures. */
+typedef struct _GhxApp      GhxApp;
+typedef struct _GhxAppClass GhxAppClass;
+
+/* function declarations: */
+
+GType ghx_app_get_type (void);
+
+GhxApp *ghx_app_new (void);
+
+#endif /* __GHX_GHX_APP_H__ */
 

@@ -31,5 +31,9 @@
 /* include required glib and gtk library headers. */
 #include <gtk/gtk.h>
 
+/* include required ghx headers. */
+#include <ghx/ghx-app.h>
+#include <ghx/ghx-app-window.h>
+
 #endif /* __GHX_GHX_H__ */
 
