@@ -35,8 +35,9 @@
   (G_TYPE_CHECK_INSTANCE_CAST((obj), GHX_APP_WINDOW_TYPE, GhxAppWindow))
 
 /* declare the required structures. */
-typedef struct _GhxAppWindow      GhxAppWindow;
-typedef struct _GhxAppWindowClass GhxAppWindowClass;
+typedef struct _GhxAppWindow        GhxAppWindow;
+typedef struct _GhxAppWindowClass   GhxAppWindowClass;
+typedef struct _GhxAppWindowPrivate GhxAppWindowPrivate;
 
 /* function declarations: */
 
