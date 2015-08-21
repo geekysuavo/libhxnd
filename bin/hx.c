@@ -38,7 +38,7 @@
 \n\
  Options:\n\
    -h, --help             Display this help message\n\
-   -n, --new              Create a new datum, do not read input\n\
+   -n, --new DIMS         Create a new datum, do not read input\n\
    -i, --input FIN        Specify an input filename [stdin]\n\
    -o, --output FOUT      Specify an output filename [stdout]\n\
    -F, --format FMT       Specify an output format [hx]\n\

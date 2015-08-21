@@ -23,14 +23,12 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
-/* hx_array_ist_thresh(): soft-thresholds the values of one array into an
- * output array.
- * @xsrc: pointer to the source hypercomplex array.
- * @xdest: pointer to the destination hypercomplex array.
+/* hx_array_ist_thresh(): soft-thresholds the values of an array in place.
+ * @x: pointer to the hypercomplex array to threshold.
  * @lambda: pointer to the current thresholding magnitude, which should be
  *          zero on the first iteration to force an initialization.
  */
-int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest, real *lambda) {
+int hx_array_ist_thresh (hx_array *x, real *lambda) {
   /* declare a few required variables:
    * @i: hypercomplex scalar first coefficient index.
    * @xd: number of algebraic dimensions per scalar.
@@ -41,15 +39,15 @@ int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest, real *lambda) {
   real norm;
 
   /* locally store some array features. */
-  xd = xsrc->d;
-  xn = xsrc->n;
+  xd = x->d;
+  xn = x->n;
 
   /* check if the thresholding magnitude has been initialized. */
   if (*lambda <= 0.0) {
     /* loop over the elements to compute the maximum norm. */
-    for (i = 0; i < xsrc->len; i += xn) {
+    for (i = 0; i < x->len; i += xn) {
       /* compute the current norm. */
-      norm = hx_data_real_norm(xsrc->x + i, xn);
+      norm = hx_data_real_norm(x->x + i, xn);
 
       /* check if the current norm exceeds the current maximum. */
       if (norm > *lambda)
@@ -58,18 +56,18 @@ int hx_array_ist_thresh (hx_array *xsrc, hx_array *xdest, real *lambda) {
   }
 
   /* loop over the elements to apply the soft thresholding operation. */
-  for (i = 0; i < xsrc->len; i += xn) {
+  for (i = 0; i < x->len; i += xn) {
     /* compute the current norm. */
-    norm = hx_data_real_norm(xsrc->x + i, xn);
+    norm = hx_data_real_norm(x->x + i, xn);
 
     /* determine whether the current norm exceeds the threshold. */
     if (norm > *lambda) {
-      /* sum the element into the destination array. */
-      hx_data_add(xdest->x + i, xsrc->x + i, xdest->x + i, 1.0, xd, xn);
+      /* scale the element by the threshold ratio. */
+      hx_data_add(NULL, x->x + i, x->x + i, 1.0 - *lambda / norm, xd, xn);
     }
     else {
-      /* zero the current source array element. */
-      hx_data_zero(xsrc->x + i, xsrc->n);
+      /* zero the element. */
+      hx_data_zero(x->x + i, x->n);
     }
   }
 
@@ -87,7 +85,7 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
   /* declare a few required variables:
    * @d: slice algebraic dimension index.
    * @k: slice topological dimension index.
-   * @sz: current slice topological size.
+   * @sz: twice the current slice topological size.
    * @ja, @jb, @jmax: skipped iteration control variables.
    * @nzeros: number of unscheduled elements in @y.
    * @nbytes: number of bytes per hypercomplex scalar.
@@ -102,7 +100,7 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
   k = 1;
 
   /* get the slice length. */
-  sz = x->sz[kx[1]];
+  sz = 2 * x->sz[kx[1]];
 
   /* get the byte count per hypercomplex scalar. */
   nbytes = x->n * sizeof(real);
@@ -126,8 +124,9 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
     /* declare a few required thread-local variables:
      * @w: temporary twiddle-factor scalar.
      * @swp: temporary swap value scalar.
-     * @y: currently sliced sub-array.
-     * @z: output result sub-array.
+     * @xj: currently sliced sub-array.
+     * @y: final output result sub-array.
+     * @Y: intermediate result sub-array.
      * @j: array skipped iteration master index.
      * @l: unscheduled array loop index.
      * @pidx: packed linear array index.
@@ -135,7 +134,7 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
      * @lambda: current iteration thresholding magnitude.
      */
     int j, l, pidx, iiter;
-    hx_array y, yth, z;
+    hx_array xj, y, Y;
     hx_scalar w, swp;
     real lambda;
 
@@ -145,9 +144,9 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
       raise("failed to allocate temporary %d-scalars", d);
 
     /* allocate the slice destination arrays. */
-    if (!hx_array_alloc(&z, d, k, &sz) ||
-        !hx_array_alloc(&y, d, k, &sz) ||
-        !hx_array_alloc(&yth, d, k, &sz))
+    if (!hx_array_alloc(&y, d, k, &sz) ||
+        !hx_array_alloc(&Y, d, k, &sz) ||
+        !hx_array_alloc(&xj, d, k, &sz))
       raise("failed to allocate temporary (%d, 1)-arrays", d);
 
     /* distribute tasks to the team of threads. */
@@ -160,48 +159,49 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
       pidx = hx_index_jump(j, ja, jb);
 
       /* slice the currently indexed vector from the array. */
-      if (!hx_array_slice_vector(x, &y, 1, pidx))
+      if (!hx_array_slice_vector(x, &xj, kx[1], pidx))
         raise("failed to slice vector %d", j);
 
       /* loop over the iterations. */
       for (iiter = 0; iiter < niter; iiter++) {
-        /* copy the current residual vector array. */
-        memcpy(yth.x, y.x, y.len * sizeof(real));
+        /* compute the new residual vector. */
+        if (!hx_array_add_array(&xj, &y, -1.0, &y))
+          raise("failed to compute residual");
+
+        /* reset the unsampled time-domain points in the residual. */
+        for (l = 0; l < nzeros; l++)
+          memset(y.x + y.n * zeros[l], 0, nbytes);
 
         /* fourier transform the sliced vector array. */
-        if (!hx_array_fft1d(&yth, dx[1], HX_FFT_FORWARD, &w, &swp))
+        if (!hx_array_fft1d(&y, dx[1], HX_FFT_FORWARD, &w, &swp))
           raise("failed to execute forward fft");
 
+        /* sum the result into the frequency-domain output vector. */
+        if (!hx_array_add_array(&Y, &y, 1.0, &Y))
+          raise("failed to perform replacement");
+
         /* threshold the frequency-domain vector. */
-        if (!hx_array_ist_thresh(&yth, &z, &lambda))
+        if (!hx_array_ist_thresh(&Y, &lambda))
           raise("failed to threshold sub-array %d", j);
 
+        /* copy the thresholded frequency-domain data. */
+        memcpy(y.x, Y.x, y.len * sizeof(real));
+
         /* inverse fourier transform the sliced vector array. */
-        if (!hx_array_fft1d(&yth, dx[1], HX_FFT_REVERSE, &w, &swp))
+        if (!hx_array_fft1d(&y, dx[1], HX_FFT_REVERSE, &w, &swp))
           raise("failed to execute inverse fft");
-
-        /* reset the time-domain non-sampled points. */
-        for (l = 0; l < nzeros; l++)
-          memset(yth.x + yth.n * zeros[l], 0, nbytes);
-
-        /* subtract the thresholded time-domain data from the residuals. */
-        if (!hx_array_add_array(&y, &yth, -1.0, &y))
-          raise("failed to deflate residual sub-array %d", j);
 
         /* scale down the threshold magnitude. */
         lambda *= thresh;
       }
 
-      /* inverse fourier transform the reconstructed vector. */
-      if (!hx_array_fft1d(&z, dx[1], HX_FFT_REVERSE, &w, &swp))
-        raise("failed to execute final inverse fft");
-
       /* store the reconstructed vector back into the array. */
-      if (!hx_array_store_vector(x, &z, 1, pidx))
+      if (!hx_array_store_vector(x, &y, kx[1], pidx))
         raise("failed to store vector %d", j);
 
-      /* re-initialize the contents of the reconstructed vector. */
-      hx_array_zero(&z);
+      /* re-initialize the contents of the temporary vectors. */
+      hx_array_zero(&y);
+      hx_array_zero(&Y);
     }
 
     /* free the temporary scalars. */
@@ -209,9 +209,9 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
     hx_scalar_free(&swp);
 
     /* free the slice destination arrays. */
-    hx_array_free(&z);
     hx_array_free(&y);
-    hx_array_free(&yth);
+    hx_array_free(&Y);
+    hx_array_free(&xj);
   }
 
   /* free the array of unscheduled indices. */
@@ -228,19 +228,21 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
 int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
                     int dsched, int nsched, hx_index sched,
                     int niter, real thresh) {
+  /* FIXME: verify correct function of hx_array_istnd() */
   /* declare a few required variables:
-   * @iiter: iteration loop counter.
+   * @sz: size of the temporary arrays.
    * @lower: slice lower-bound index array.
    * @upper: slice upper-bound index array.
-   * @ymax: maximum value in @ynorm.
+   * @iiter: iteration loop counter.
    */
   hx_index sz, lower, upper;
   int i, j, n, d, k, iiter;
 
-  /* @y: currently sliced sub-array.
-   * @z: output result sub-array.
+  /* @xi: currently sliced sub-array.
+   * @y: final output result sub-array.
+   * @Y: intermediate result sub-array.
    */
-  hx_array y, yth, z;
+  hx_array xi, y, Y;
 
   /* @nzeros: number of unscheduled elements @y.
    * @zeros: linear indices of all unschedules elements in @y.
@@ -269,7 +271,7 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
 
   /* build the slice size array. */
   for (i = 1, sz[0] = 1; i < k; i++)
-    sz[i] = x->sz[kx[i]];
+    sz[i] = 2 * x->sz[kx[i]];
 
   /* allocate the bounding array indices. */
   lower = hx_index_alloc(k);
@@ -280,9 +282,9 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
     throw("failed to allocate bounding arrays");
 
   /* allocate the slice destination arrays. */
-  if (!hx_array_alloc(&z, d, k, sz) ||
-      !hx_array_alloc(&y, d, k, sz) ||
-      !hx_array_alloc(&yth, d, k, sz))
+  if (!hx_array_alloc(&y, d, k, sz) ||
+      !hx_array_alloc(&Y, d, k, sz) ||
+      !hx_array_alloc(&xi, d, k, sz))
     throw("failed to allocate (%d, %d)-arrays", d, k);
 
   /* determine the number of un-scheduled elements in each slice. */
@@ -310,63 +312,61 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
     lower[0] = i;
 
     /* slice the indirect dimensions from the input array. */
-    if (!hx_array_slice(x, &y, lower, upper))
+    if (!hx_array_slice(x, &xi, lower, upper))
       throw("failed to slice out sub-array %d", i);
 
     /* loop over the iterations. */
     for (iiter = 0; iiter < niter; iiter++) {
-      /* copy the current residual data. */
-      memcpy(yth.x, y.x, y.len * sizeof(real));
+      /* compute the new residual array. */
+      if (!hx_array_add_array(&xi, &y, -1.0, &y))
+        throw("failed to compute residual");
+
+      /* reset the unsampled time-domain points in the residual. */
+      for (j = 0; j < nzeros; j++)
+        memset(y.x + y.n * zeros[j], 0, nbytes);
 
       /* loop over the sliced dimensions. */
       for (j = 1; j < k; j++) {
         /* forward fourier transform the slice. */
-        if (!hx_array_fft(&yth, dx[j], kx[j]))
+        if (!hx_array_fft(&y, dx[j], kx[j]))
           throw("failed to apply forward fft");
       }
 
-      /* threshold the frequency-domain sub-array. */
-      if (!hx_array_ist_thresh(&yth, &z, &lambda))
+      /* sum the result into the frequency-domain output array. */
+      if (!hx_array_add_array(&Y, &y, 1.0, &Y))
+        throw("failed to perform replacement");
+
+      /* threshold the frequency-domain array. */
+      if (!hx_array_ist_thresh(&Y, &lambda))
         throw("failed to threshold sub-array %d", i);
+
+      /* copy the thresholded frequency-domain data. */
+      memcpy(y.x, Y.x, y.len * sizeof(real));
 
       /* loop over the sliced dimensions. */
       for (j = 1; j < k; j++) {
         /* inverse fourier transform the slice. */
-        if (!hx_array_ifft(&yth, dx[j], kx[j]))
+        if (!hx_array_ifft(&y, dx[j], kx[j]))
           throw("failed to apply inverse fft");
       }
-
-      /* reset the time-domain non-sampled points. */
-      for (j = 0; j < nzeros; j++)
-        memset(yth.x + yth.n * zeros[j], 0, nbytes);
-
-      /* subtract the thresholded time-domain data from the residuals. */
-      if (!hx_array_add_array(&y, &yth, -1.0, &y))
-        throw("failed to deflate residual sub-array %d", i);
 
       /* scale down the threshold magnitude. */
       lambda *= thresh;
     }
 
-    /* loop over the sliced dimensions. */
-    for (j = 1; j < k; j++) {
-      /* inverse fourier transform the reconstructed slice. */
-      if (!hx_array_ifft(&z, dx[j], kx[j]))
-        throw("failed to apply final inverse fft");
-    }
-
     /* store the reconstructed slice back into the input array. */
-    if (!hx_array_store(x, &z, lower, upper))
+    if (!hx_array_store(x, &y, lower, upper))
       throw("failed to store in sub-array %d", i);
 
-    /* re-initialize the reconstructed slice for the next round. */
-    hx_array_zero(&z);
+    /* re-initialize the contents of the temporary arrays. */
+    hx_array_zero(&y);
+    hx_array_zero(&Y);
   }
 
   /* free the slice destination arrays. */
-  hx_array_free(&z);
   hx_array_free(&y);
-  hx_array_free(&yth);
+  hx_array_free(&Y);
+  hx_array_free(&xi);
 
   /* free the allocated multidimensional indices. */
   hx_index_free(zeros);

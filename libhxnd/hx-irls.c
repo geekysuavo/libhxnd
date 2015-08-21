@@ -65,7 +65,7 @@ int hx_array_irls_dftmatrix (int d, int k, int n, hx_index sz,
 
   /* compute the number of frequency-domain indices. */
   for (i = 1, N = 1; i < k; i++)
-    N *= sz[kx[i]];
+    N *= sz[i];
 
   /* allocate the input and output multidimensional indices. */
   idxi = hx_index_alloc(k);
@@ -110,9 +110,9 @@ int hx_array_irls_dftmatrix (int d, int k, int n, hx_index sz,
       for (di = 1; di < k; di++) {
         /* compute the current dimension phase angle. */
         theta = 2.0 * M_PI;
-        theta *= (real) idxi[kx[di]];
-        theta *= (real) idxk[kx[di]];
-        theta /= (real) sz[kx[di]];
+        theta *= (real) idxi[di];
+        theta *= (real) idxk[di];
+        theta /= (real) sz[di];
 
         /* 1. compute the current dimension phase factor.
          * 2. copy the current phase factor into a temporary scalar.
@@ -706,8 +706,8 @@ int hx_array_irls (hx_array *x, hx_index dx, hx_index kx,
     throw("failed to allocate %d indices", k);
 
   /* store the elements of the size index. */
-  for (i = 0; i < k; i++)
-    sz[i] = x->sz[kx[i]];
+  for (i = 1, sz[0] = 1; i < k; i++)
+    sz[i] = 2 * x->sz[kx[i]];
 
   /* allocate the bounding array indices. */
   lower = hx_index_alloc(k);
@@ -727,8 +727,8 @@ int hx_array_irls (hx_array *x, hx_index dx, hx_index kx,
   /* build a list of packed schedule indices for each slice. */
   ysched = hx_index_scheduled(k - 1, sz + 1, dsched, nsched, sched);
 
-  /* allocate a list of packed schedule indices for the input array. */
-  xsched = hx_index_copy(nsched, ysched);
+  /* build a list of packed schedule indices for the input array. */
+  xsched = hx_index_scheduled(k - 1, x->sz + 1, dsched, nsched, sched);
 
   /* ensure the schedule lists were built successfully. */
   if (!xsched || !ysched)
@@ -736,7 +736,7 @@ int hx_array_irls (hx_array *x, hx_index dx, hx_index kx,
 
   /* adjust the elements of the input array's schedule. */
   for (i = 0; i < nsched; i++)
-    xsched[i] *= sz[0];
+    xsched[i] *= ns;
 
   /* compute the discrete Fourier transform matrix. */
   hx_array_init(&F);
@@ -757,7 +757,7 @@ int hx_array_irls (hx_array *x, hx_index dx, hx_index kx,
   /* allocate temporary vectors for use during reconstruction. */
   if (!hx_array_alloc(&z, d, 1, &n) ||
       !hx_array_alloc(&y, d, 1, &n) ||
-      !hx_array_alloc(&Y, d, 1, &N) ||
+      !hx_array_alloc(&Y, d, k, sz) ||
       !hx_array_alloc(&w, 0, 1, &N) ||
       !hx_array_alloc(&A, d, 2, Asz))
     throw("failed to allocate reconstruction arrays");
@@ -776,16 +776,16 @@ int hx_array_irls (hx_array *x, hx_index dx, hx_index kx,
     if (!hx_array_irlsfn(&F, &Y, &y, &w, &z, &A, niter, pa, pb))
       throw("failed to reconstruct sub-matrix %d", is);
 
+    /* inverse fourier transform the shifted result. */
+    for (i = 1; i < k; i++) {
+      /* fourier transform the current dimension. */
+      if (!hx_array_ifft(&Y, dx[i], kx[i]))
+        throw("failed to apply final inverse fft");
+    }
+
     /* store the reconstructed slice back into the input array. */
     if (!hx_array_store(x, &Y, lower, upper))
       throw("failed to store sub-matrix %d", is);
-  }
-
-  /* inverse fourier transform the shifted result. */
-  for (i = 1; i < k; i++) {
-    /* fourier transform the current dimension. */
-    if (!hx_array_ifft(x, dx[i], kx[i]))
-      throw("failed to apply final inverse fft");
   }
 
   /* free the allocated arrays. */

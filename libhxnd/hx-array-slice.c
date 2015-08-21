@@ -44,10 +44,11 @@ int hx_array_slicer (hx_array *x, hx_array *y,
    * @pidx: input array packed linear index.
    * @pidxy: output array packed linear index.
    * @idx: input array index set.
+   * @idxy: output array index set.
    * @sznew: output array sizes.
    */
   int i, xycmp, n, ncpy, pidx, pidxy;
-  hx_index idx, sznew;
+  hx_index idx, idxy, sznew;
 
   /* store the number of coefficients and bytes per hypercomplex scalar. */
   n = x->n;
@@ -55,10 +56,11 @@ int hx_array_slicer (hx_array *x, hx_array *y,
 
   /* allocate three index arrays for use during iteration. */
   idx = hx_index_copy(x->k, lower);
+  idxy = hx_index_alloc(x->k);
   sznew = hx_index_alloc(x->k);
 
   /* check that the index arrays were allocated successfully. */
-  if (!idx || !sznew)
+  if (!idx || !idxy || !sznew)
     throw("failed to allocate %d indices", x->k);
 
   /* subtract the lower bound from the upper bound. */
@@ -81,7 +83,7 @@ int hx_array_slicer (hx_array *x, hx_array *y,
   if (!xycmp) {
     /* check that the output array has the desired size. */
     for (i = 0; i < x->k; i++)
-      xycmp = (xycmp || (y->sz[i] != sznew[i]));
+      xycmp = (xycmp || (y->sz[i] < sznew[i]));
   }
 
   /* allocate memory for the sliced outputs, but only if the output
@@ -92,10 +94,10 @@ int hx_array_slicer (hx_array *x, hx_array *y,
     throw("failed to allocate slice destination array");
 
   /* iterate over the array indices to copy. */
-  pidxy = 0;
   do {
-    /* pack the input array index into a linear index. */
+    /* pack the i/o array indices into linear indices. */
     hx_index_pack(x->k, x->sz, idx, &pidx);
+    hx_index_pack(x->k, y->sz, idxy, &pidxy);
 
     /* copy the coefficient memory. */
     switch (dir) {
@@ -114,13 +116,14 @@ int hx_array_slicer (hx_array *x, hx_array *y,
         break;
     }
 
-    /* incremenet the input array linear index. */
-    pidxy++;
+    /* increment the output array index. */
+    hx_index_incr(x->k, sznew, idxy);
   } while (hx_index_incr_bounded(x->k, lower, upper, idx));
 
   /* free the allocated index arrays. */
-  hx_index_free(sznew);
   hx_index_free(idx);
+  hx_index_free(idxy);
+  hx_index_free(sznew);
 
   /* return success. */
   return 1;
@@ -163,7 +166,7 @@ int hx_array_vector_slicer (hx_array *x, hx_array *y,
   /* allocate the output array, if its configuration does not match
    * the required configuration.
    */
-  if ((y->d != x->d || y->k != 1 || y->sz[0] != n) &&
+  if ((y->d != x->d || y->k != 1 || y->sz[0] < n) &&
       !hx_array_alloc(y, x->d, 1, &n))
     throw("failed to allocate slice destination array");
 
