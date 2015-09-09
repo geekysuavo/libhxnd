@@ -23,9 +23,9 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
-/* hx_array_slicer(): slices a portion of an array based on @lower and @upper
- * index boundaries. the operation returns its output in a new array @y,
- * which should not be allocated prior to the slice.
+/* hx_array_slicer(): slice or store a portion of an array based on lower
+ * and upper index boundaries. the operation returns its output in a new
+ * array, which need not be allocated prior to the slice.
  * @x: pointer to the input array.
  * @y: pointer to the output array.
  * @lower: the lower index bounds.

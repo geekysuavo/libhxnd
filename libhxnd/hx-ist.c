@@ -23,7 +23,7 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
-/* hx_array_ist_thresh(): soft-thresholds the values of an array in place.
+/* hx_array_ist_thresh(): soft-threshold the values of an array in place.
  * @x: pointer to the hypercomplex array to threshold.
  * @lambda: pointer to the current thresholding magnitude, which should be
  *          zero on the first iteration to force an initialization.
@@ -75,8 +75,8 @@ int hx_array_ist_thresh (hx_array *x, real *lambda) {
   return 1;
 }
 
-/* hx_array_ist1d(): performs a set of one-dimensional reconstructions over a
- * two-dimensional array using iterative soft thresholding.
+/* hx_array_ist1d(): perform a set of one-dimensional reconstructions
+ * over a two-dimensional array using iterative soft thresholding.
  * see hx_array_ist() for details.
  */
 int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
@@ -221,14 +221,14 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
   return 1;
 }
 
-/* hx_array_istnd(): performs a set of multidimensional reconstructions over
- * an array having at least three dimensions using iterative soft thresholding.
+/* hx_array_istnd(): perform a set of multidimensional reconstructions over
+ * an array having at least three dimensions using iterative soft
+ * thresholding.
  * see hx_array_ist() for details.
  */
 int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
                     int dsched, int nsched, hx_index sched,
                     int niter, real thresh) {
-  /* FIXME: verify correct function of hx_array_istnd() */
   /* declare a few required variables:
    * @sz: size of the temporary arrays.
    * @lower: slice lower-bound index array.

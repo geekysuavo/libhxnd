@@ -1,6 +1,6 @@
 
 /* hxnd: A framework for n-dimensional hypercomplex calculations for NMR.
- * Copyright (C) 2014  Bradley Worley  <geekysuavo@gmail.com>.
+ * Copyright (C) 2014-2015  Bradley Worley  <geekysuavo@gmail.com>.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -683,7 +683,7 @@ hx_index hx_index_scheduled (int k, hx_index sz, int dsched, int nsched,
   return idx;
 }
 
-/* hx_index_unscheduled(): returns a list of packed linear indices locating
+/* hx_index_unscheduled(): return a list of packed linear indices locating
  * the non-sampled elements of an array based on a schedule.
  */
 hx_index hx_index_unscheduled (int k, hx_index sz, int dsched, int nsched,
