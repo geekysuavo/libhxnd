@@ -46,27 +46,27 @@ enum hx_entropy_type {
  * @S: output entropy or entropy derivative pointer.
  * @n: number of coefficients per hypercomplex scalar.
  */
-typedef int (*hx_entropy_functional) (real *x, real *S, int n);
+typedef void (*hx_entropy_functional) (real *x, real *S, int n);
 
 /* function declarations: */
 
 enum hx_entropy_type hx_entropy_lookup_type (const char *name);
 
-int hx_entropy_norm_f (real *x, real *S, int n);
+void hx_entropy_norm_f (real *x, real *S, int n);
 
-int hx_entropy_norm_df (real *x, real *S, int n);
+void hx_entropy_norm_df (real *x, real *S, int n);
 
-int hx_entropy_shannon_f (real *x, real *S, int n);
+void hx_entropy_shannon_f (real *x, real *S, int n);
 
-int hx_entropy_shannon_df (real *x, real *S, int n);
+void hx_entropy_shannon_df (real *x, real *S, int n);
 
-int hx_entropy_skilling_f (real *x, real *S, int n);
+void hx_entropy_skilling_f (real *x, real *S, int n);
 
-int hx_entropy_skilling_df (real *x, real *S, int n);
+void hx_entropy_skilling_df (real *x, real *S, int n);
 
-int hx_entropy_hoch_f (real *x, real *S, int n);
+void hx_entropy_hoch_f (real *x, real *S, int n);
 
-int hx_entropy_hoch_df (real *x, real *S, int n);
+void hx_entropy_hoch_df (real *x, real *S, int n);
 
 int hx_array_ffm (hx_array *x, hx_index dx, hx_index kx,
                   int dsched, int nsched, hx_index sched,

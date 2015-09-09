@@ -131,21 +131,45 @@ int hx_entropy_get_functionals (enum hx_entropy_type type,
   return 0;
 }
 
+/* hx_entropy_sum_functional(): compute the sum of all (real) scalar entropy
+ * functional values over a hypercomplex matrix.
+ * @x: array to sum the functional values over.
+ * @f: functional to compute on the array.
+ */
+real hx_entropy_sum_functional (hx_array *x, hx_entropy_functional f) {
+  /* declare a few required variables:
+   * @fsum: sum of all computed functional values.
+   * @fi: currently computed functional value.
+   * @i: array scalar index.
+   */
+  real fsum, fi;
+  int i;
+
+  /* loop over the array elements. */
+  for (i = 0, fsum = 0.0; i < x->len; i += x->n) {
+    /* compute the current functional value. */
+    f(x->x + i, &fi, x->n);
+
+    /* sum the computed value into the result. */
+    fsum += fi;
+  }
+
+  /* return the computed result. */
+  return fsum;
+}
+
 /* hx_entropy_norm_f(): compute the scalar entropy of a hypercomplex scalar
  * using an l1-norm functional.
  */
-int hx_entropy_norm_f (real *x, real *S, int n) {
+void hx_entropy_norm_f (real *x, real *S, int n) {
   /* compute the norm of the hypercomplex input. */
   *S = hx_data_real_norm(x, n);
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_entropy_norm_df(): compute the complex partial derivative of the
  * entropy of a hypercomplex scalar using an l1-norm functional.
  */
-int hx_entropy_norm_df (real *x, real *S, int n) {
+void hx_entropy_norm_df (real *x, real *S, int n) {
   /* declare required variables. */
   real Snrm;
   int i;
@@ -156,31 +180,25 @@ int hx_entropy_norm_df (real *x, real *S, int n) {
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)
     S[i] = x[i] / Snrm;
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_entropy_shannon_f(): compute the scalar entropy of a hypercomplex
  * scalar using a negated shannon entropy functional.
  */
-int hx_entropy_shannon_f (real *x, real *S, int n) {
+void hx_entropy_shannon_f (real *x, real *S, int n) {
   /* declare required variables. */
   real Snrm;
 
   /* compute the entropy of the hypercomplex input. */
   Snrm = hx_data_real_norm(x, n);
   *S = -Snrm * log(Snrm);
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_entropy_shannon_df(): compute the complex partial derivative of the
  * entropy of a hypercomplex scalar using a negated shannon entropy
  * functional.
  */
-int hx_entropy_shannon_df (real *x, real *S, int n) {
+void hx_entropy_shannon_df (real *x, real *S, int n) {
   /* declare required variables. */
   real Snrm;
   int i;
@@ -192,31 +210,25 @@ int hx_entropy_shannon_df (real *x, real *S, int n) {
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)
     S[i] = Snrm * x[i];
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_entropy_skilling_f(): compute the scalar entropy of a hypercomplex
  * scalar using a negated skilling entropy functional.
  */
-int hx_entropy_skilling_f (real *x, real *S, int n) {
+void hx_entropy_skilling_f (real *x, real *S, int n) {
   /* declare required variables. */
   real Snrm;
 
   /* compute the entropy of the hypercomplex input. */
   Snrm = hx_data_real_norm(x, n);
   *S = Snrm - Snrm * log(Snrm);
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_entropy_skilling_df(): compute the complex partial derivative of the
  * entropy of a hypercomplex scalar using a negated skilling entropy
  * functional.
  */
-int hx_entropy_skilling_df (real *x, real *S, int n) {
+void hx_entropy_skilling_df (real *x, real *S, int n) {
   /* declare required variables. */
   real Snrm;
   int i;
@@ -228,15 +240,12 @@ int hx_entropy_skilling_df (real *x, real *S, int n) {
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)
     S[i] = Snrm * x[i];
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_entropy_hoch_f(): compute the scalar entropy of a hypercomplex scalar
  * using a negated hoch/hore spin-half entropy functional.
  */
-int hx_entropy_hoch_f (real *x, real *S, int n) {
+void hx_entropy_hoch_f (real *x, real *S, int n) {
   /* declare required variables. */
   real Snrm;
 
@@ -246,16 +255,13 @@ int hx_entropy_hoch_f (real *x, real *S, int n) {
   /* compute the entropy of the hypercomplex input. */
   *S = sqrt(4.0 + Snrm * Snrm)
      - Snrm * log(Snrm / 2.0 + sqrt(1.0 + Snrm * Snrm / 4.0));
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_entropy_hoch_df(): compute the complex partial derivative of the
  * entropy of a hypercomplex scalar using a negated hoch/hore spin-half
  * entropy functional.
  */
-int hx_entropy_hoch_df (real *x, real *S, int n) {
+void hx_entropy_hoch_df (real *x, real *S, int n) {
   /* declare required variables. */
   real Snrm;
   int i;
@@ -267,9 +273,6 @@ int hx_entropy_hoch_df (real *x, real *S, int n) {
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)
     S[i] = Snrm * x[i];
-
-  /* return success. */
-  return 1;
 }
 
 /* hx_array_ffm1d(): perform a set of one-dimensional fast forward
