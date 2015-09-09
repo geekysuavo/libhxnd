@@ -1,14 +1,15 @@
 
+# GUI: specifies whether to compile and link the graphical interface.
+GUI=n
+
 # CC: compiler binary filename.
 CC=gcc
 
 # CFLAGS: compilation flags.
 CFLAGS=-g -O2 -std=c99 -Wall -Wformat -Werror -I. -fopenmp
-CFLAGS+= $(shell pkg-config --cflags gtk+-3.0)
 
 # LIBS, GLIBS: linkage flags.
 LIBS=-lm
-GLIBS=$(shell pkg-config --libs gtk+-3.0)
 
 # LIBSRC: library source basenames: hypercomplex data structures.
 LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-array-mem hx-array-io
@@ -37,15 +38,27 @@ LIBSRC+= fn-cut fn-ffm fn-fft fn-filter fn-ht fn-irls fn-ist fn-mirror
 LIBSRC+= fn-multiply fn-phase fn-project fn-real fn-report fn-resize
 LIBSRC+= fn-shift fn-subsamp fn-symm fn-tilt fn-window fn-zerofill
 
-# GUISRC: graphical interface source basenames.
-GUISRC=ghx-app ghx-app-window
-
-# LIBOBJ, GUIOBJ: library and graphical interface object filenames.
+# LIBOBJ: library object filenames.
 LIBOBJ=$(addprefix libhxnd/,$(addsuffix .o,$(LIBSRC)))
-GUIOBJ=$(addprefix ghx/,$(addsuffix .o,$(GUISRC)))
+
+# check whether the graphical interface is to be built.
+ifeq ($(GUI),y)
+  # add gtk3 into the compilation flags.
+  CFLAGS+= $(shell pkg-config --cflags gtk+-3.0)
+
+  # add gtk3 into the linkage flags.
+  GLIBS=$(shell pkg-config --libs gtk+-3.0)
+
+  # GUISRC, GUIOBJ: graphical interface source and object names.
+  GUISRC=ghx-app ghx-app-window
+  GUIOBJ=$(addprefix ghx/,$(addsuffix .o,$(GUISRC)))
+
+  # GUIBIN: binaries to be compiled when the gui is enabled.
+  GUIBIN=ghx
+endif
 
 # BIN, BINBIN, BINOBJ: binary source, output and object filenames.
-BIN=hx ghx
+BIN=hx $(GUIBIN)
 BINBIN=$(addprefix bin/,$(BIN))
 BINOBJ=$(addprefix bin/,$(addsuffix .o,$(BIN)))
 
