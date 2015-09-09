@@ -1,6 +1,6 @@
 
 /* hxnd: A framework for n-dimensional hypercomplex calculations for NMR.
- * Copyright (C) 2014  Bradley Worley  <geekysuavo@gmail.com>.
+ * Copyright (C) 2014-2015  Bradley Worley  <geekysuavo@gmail.com>.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,7 +31,7 @@
  */
 #define HX_HELPSTRING "\
  hx: A command-line multi-tool for handling NMR data\n\
- Copyright (C) 2014 Bradley Worley. Released under the GNU GPL 2.0.\n\
+ Copyright (C) 2014-2015 Bradley Worley. Released under the GNU GPL 2.0.\n\
 \n\
  Usage:\n\
    hx [OPTIONS]\n\
