@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_HX_IST_H__
-#define __HXND_HX_IST_H__
+#ifndef __HXND_HX_NUS_H__
+#define __HXND_HX_NUS_H__
 
 /* function declarations: */
 
@@ -30,5 +30,13 @@ int hx_array_ist (hx_array *x, hx_index dx, hx_index kx,
                   int dsched, int nsched, hx_index sched,
                   int niter, real thresh);
 
-#endif /* __HXND_HX_IST_H__ */
+int hx_array_irls (hx_array *x, hx_index dx, hx_index kx,
+                   int dsched, int nsched, hx_index sched,
+                   int niter, real pa, real pb);
+
+int hx_array_ffm (hx_array *x, hx_index dx, hx_index kx,
+                  int dsched, int nsched, hx_index sched,
+                  int niter, enum hx_entropy_type type);
+
+#endif /* __HXND_HX_NUS_H__ */
 

@@ -16,7 +16,7 @@ LIBSRC=hx-algebra hx-scalar hx-index hx-array hx-array-mem hx-array-io
 LIBSRC+= hx-array-rawio hx-array-topo hx-array-resize hx-array-slice
 LIBSRC+= hx-array-tile hx-array-foreach hx-cmp hx-arith hx-blas
 LIBSRC+= hx-blas-l1 hx-blas-l2 hx-blas-l3 hx-phasor hx-fourier hx-window
-LIBSRC+= hx-baseline hx-filter hx-ist hx-irls hx-maxent
+LIBSRC+= hx-baseline hx-filter hx-entropy hx-nus-ist hx-nus-irls hx-nus-ffm
 
 # LIBSRC: library source basenames: auxiliary library routines.
 LIBSRC+= trace opts str bytes

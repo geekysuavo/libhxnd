@@ -23,11 +23,6 @@
 /* include the n-dimensional math header. */
 #include <hxnd/hx.h>
 
-/* define the number of corrections to store that approximate the inverse
- * of the hessian matrix.
- */
-#define HX_MAXENT_NUM_CORRECTIONS  5
-
 /* functional_def: structure definition for looking up entropy functionals
  * by string name or enumerated type.
  */
@@ -191,7 +186,7 @@ void hx_entropy_shannon_f (real *x, real *S, int n) {
 
   /* compute the entropy of the hypercomplex input. */
   Snrm = hx_data_real_norm(x, n);
-  *S = -Snrm * log(Snrm);
+  *S = Snrm * log(Snrm);
 }
 
 /* hx_entropy_shannon_df(): compute the complex partial derivative of the
@@ -205,7 +200,7 @@ void hx_entropy_shannon_df (real *x, real *S, int n) {
 
   /* compute the norm of the hypercomplex input. */
   Snrm = hx_data_real_norm(x, n);
-  Snrm = -(log(Snrm) + 1.0) / Snrm;
+  Snrm = (log(Snrm) + 1.0) / Snrm;
 
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)
@@ -221,7 +216,7 @@ void hx_entropy_skilling_f (real *x, real *S, int n) {
 
   /* compute the entropy of the hypercomplex input. */
   Snrm = hx_data_real_norm(x, n);
-  *S = Snrm - Snrm * log(Snrm);
+  *S = Snrm * log(Snrm) - Snrm;
 }
 
 /* hx_entropy_skilling_df(): compute the complex partial derivative of the
@@ -235,7 +230,7 @@ void hx_entropy_skilling_df (real *x, real *S, int n) {
 
   /* compute the norm of the hypercomplex input. */
   Snrm = hx_data_real_norm(x, n);
-  Snrm = -log(Snrm) / Snrm;
+  Snrm = log(Snrm) / Snrm;
 
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)
@@ -253,8 +248,8 @@ void hx_entropy_hoch_f (real *x, real *S, int n) {
   Snrm = hx_data_real_norm(x, n);
 
   /* compute the entropy of the hypercomplex input. */
-  *S = sqrt(4.0 + Snrm * Snrm)
-     - Snrm * log(Snrm / 2.0 + sqrt(1.0 + Snrm * Snrm / 4.0));
+  *S = Snrm * log(Snrm / 2.0 + sqrt(1.0 + Snrm * Snrm / 4.0))
+     - sqrt(4.0 + Snrm * Snrm);
 }
 
 /* hx_entropy_hoch_df(): compute the complex partial derivative of the
@@ -268,91 +263,10 @@ void hx_entropy_hoch_df (real *x, real *S, int n) {
 
   /* compute the norm of the hypercomplex input. */
   Snrm = hx_data_real_norm(x, n);
-  Snrm = -log(Snrm / 2.0 + sqrt(1.0 + Snrm * Snrm / 4.0)) / Snrm;
+  Snrm = log(Snrm / 2.0 + sqrt(1.0 + Snrm * Snrm / 4.0)) / Snrm;
 
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)
     S[i] = Snrm * x[i];
-}
-
-/* hx_array_ffm1d(): perform a set of one-dimensional fast forward
- * maximum entropy reconstructions over a two-dimensional array.
- * see hx_array_ffm() for details.
- */
-int hx_array_ffm1d (hx_array *x, hx_index dx, hx_index kx,
-                    int nsched, hx_index sched, int niter,
-                    hx_entropy_functional f,
-                    hx_entropy_functional df) {
-  /* FIXME: implement hx_array_ffm1d() */
-
-  /* return success. */
-  return 1;
-}
-
-/* hx_array_ffmnd(): perform a set of multidimensional fast forward
- * maximum entropy reconstructions over an array having at least
- * three dimensions.
- * see hx_array_ffm() for details.
- */
-int hx_array_ffmnd (hx_array *x, hx_index dx, hx_index kx,
-                    int dsched, int nsched, hx_index sched, int niter,
-                    hx_entropy_functional f,
-                    hx_entropy_functional df) {
-  /* FIXME: implement hx_array_ffm2d() */
-
-  /* return success. */
-  return 1;
-}
-
-/* hx_array_ffm(): use the fast forward maximum entropy algorithm to
- * reconstruct nonuniformly subsampled time-domain data in a hypercomplex
- * array.
- * @x: pointer to the array to reconstruct.
- * @dx: array of algebraic dimension indices in @x.
- * @kx: array of topological dimension indices in @x.
- * @dsched: number of reconstruction dimensions.
- * @nsched: number of sampled @dsched-dimensional points.
- * @niter: maximum number of iterations to perform.
- * @type: entropy functional type to utilize..
- */
-int hx_array_ffm (hx_array *x, hx_index dx, hx_index kx,
-                  int dsched, int nsched, hx_index sched,
-                  int niter, enum hx_entropy_type type) {
-  /* declare a few required variables:
-   * @f: function pointer for the entropy functional.
-   * @df: function pointer for the entropy derivative.
-   */
-  hx_entropy_functional f, df;
-
-  /* ensure the schedule is allocated and properly sized. */
-  if (!sched || dsched < 1 || nsched < 1)
-    throw("invalid schedule configuration (%dx%d)", dsched, nsched);
-
-  /* ensure the iteration count is in bounds. */
-  if (niter < 1)
-    throw("iteration count %d out of bounds [1,inf)", niter);
-
-  /* retrieve the entropy functional function pointers. */
-  if (!hx_entropy_get_functionals(type, &f, &df))
-    throw("failed to retrieve entropy functionals");
-
-  /* determine which reconstruction function to use. */
-  if (dsched == 1) {
-    /* execute the one-dimensional function. */
-    if (!hx_array_ffm1d(x, dx, kx, nsched, sched, niter, f, df))
-      throw("failed to execute one-dimensional reconstruction");
-  }
-  else if (dsched > 1) {
-    /* execute the multidimensional function. */
-    if (!hx_array_ffmnd(x, dx, kx, dsched, nsched, sched, niter, f, df))
-      throw("failed to execute n-dimensional reconstruction");
-  }
-  else {
-    /* throw an exception. */
-    throw("invalid schedule configuration (%dx%d)", dsched, nsched);
-  }
-
-  /* return success. */
-  return 1;
 }
 

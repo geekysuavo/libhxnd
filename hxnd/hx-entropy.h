@@ -21,8 +21,8 @@
  */
 
 /* ensure once-only inclusion. */
-#ifndef __HXND_HX_MAXENT_H__
-#define __HXND_HX_MAXENT_H__
+#ifndef __HXND_HX_ENTROPY_H__
+#define __HXND_HX_ENTROPY_H__
 
 /* define string constants for supported entropy functionals.
  */
@@ -52,6 +52,10 @@ typedef void (*hx_entropy_functional) (real *x, real *S, int n);
 
 enum hx_entropy_type hx_entropy_lookup_type (const char *name);
 
+int hx_entropy_get_functionals (enum hx_entropy_type type,
+                                hx_entropy_functional *f,
+                                hx_entropy_functional *df);
+
 void hx_entropy_norm_f (real *x, real *S, int n);
 
 void hx_entropy_norm_df (real *x, real *S, int n);
@@ -68,9 +72,5 @@ void hx_entropy_hoch_f (real *x, real *S, int n);
 
 void hx_entropy_hoch_df (real *x, real *S, int n);
 
-int hx_array_ffm (hx_array *x, hx_index dx, hx_index kx,
-                  int dsched, int nsched, hx_index sched,
-                  int niter, enum hx_entropy_type type);
-
-#endif /* __HXND_HX_MAXENT_H__ */
+#endif /* __HXND_HX_ENTROPY_H__ */
 

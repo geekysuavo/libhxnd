@@ -59,9 +59,8 @@
 #include <hxnd/hx-phasor.h>
 #include <hxnd/hx-fourier.h>
 #include <hxnd/hx-baseline.h>
-#include <hxnd/hx-ist.h>
-#include <hxnd/hx-irls.h>
-#include <hxnd/hx-maxent.h>
+#include <hxnd/hx-entropy.h>
+#include <hxnd/hx-nus.h>
 
 #endif /* __HXND_HX_H__ */
 
