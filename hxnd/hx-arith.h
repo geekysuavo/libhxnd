@@ -1,6 +1,6 @@
 
 /* hxnd: A framework for n-dimensional hypercomplex calculations for NMR.
- * Copyright (C) 2014  Bradley Worley  <geekysuavo@gmail.com>.
+ * Copyright (C) 2014-2015  Bradley Worley  <geekysuavo@gmail.com>.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -38,8 +38,6 @@ int hx_data_copy (real *x, real *xcpy, int n);
 
 int hx_data_conj (real *x, real *xh, int n);
 
-int hx_data_semiconj (real *x, real *xh, int d, int n);
-
 int hx_data_zero (real *x, int n);
 
 int hx_data_fill (real *x, int n, real val);
@@ -47,6 +45,8 @@ int hx_data_fill (real *x, int n, real val);
 int hx_data_norm (real *x, int n);
 
 real hx_data_real_norm (real *x, int n);
+
+real hx_data_real_sumsq (real *x, int n);
 
 int hx_data_negate_basis (real *x, int d, int n, int dneg);
 

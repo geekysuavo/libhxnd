@@ -103,8 +103,8 @@ fixme:
 	 fixme hxnd/*.h libhxnd/*.c bin/*.[ch] man/*.[0-9] || \
 	 echo " No statements found"
 
-# linecount: target to count lines of all C source files and headers.
-linecount:
+# lines: target to count lines of all C source files and headers.
+lines:
 	@echo " WC"
 	@wc -l hxnd/*.h libhxnd/*.c bin/*.[ch]
 
@@ -124,11 +124,4 @@ dist: clean
 diff:
 	@echo " GIT diff"
 	@git diff --color
-
-# git: target to commit and push all changes to github.
-git: clean
-	@echo " GIT commit"
-	@git commit -a
-	@echo " GIT push"
-	@git push
 

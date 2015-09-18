@@ -56,7 +56,7 @@ static fn_arg fn_args_cut[] = {
 
 static fn_arg fn_args_ffm[] = {
   { "func",  { .s = NULL }, 0, FN_VALTYPE_STRING },
-  { "iters", { .i = 100  }, 0, FN_VALTYPE_INT },
+  { "iters", { .i = 1000 }, 0, FN_VALTYPE_INT },
   { NULL,    {},            0, FN_VALTYPE_UNKNOWN }
 };
 

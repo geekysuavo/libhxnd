@@ -199,8 +199,8 @@ int hx_array_irls_dft (hx_array *F, hx_array *X, hx_array *x, real dir) {
           /* compute the matrix coefficient index. */
           idxf = (i + k * n) * F->n;
 
-          /* copy-semiconjugate the current matrix coefficient. */
-          hx_data_semiconj(F->x + idxf, Fh.x, F->d, F->n);
+          /* copy-conjugate the current matrix coefficient. */
+          hx_data_conj(F->x + idxf, Fh.x, F->n);
 
           /* compute the current inner product term. */
           hx_data_mul(Fh.x,
@@ -375,8 +375,8 @@ int hx_array_irls_gramian (hx_array *F, hx_array *w, hx_array *A) {
         /* compute the conjugated matrix element index. */
         idxh = (j + k * n) * F->n;
 
-        /* copy-semiconjugate the current transform matrix element. */
-        hx_data_semiconj(F->x + idxh, Fh.x, F->d, F->n);
+        /* copy-conjugate the current transform matrix element. */
+        hx_data_conj(F->x + idxh, Fh.x, F->n);
 
         /* scale the conjugated transform matrix element. */
         hx_data_add(NULL, Fh.x, Fh.x, w->x[k], Fh.d, Fh.n);
@@ -477,7 +477,7 @@ int hx_array_irls_solve (hx_array *A, hx_array *x, hx_array *b) {
           idxjk = (j + k * n) * A->n;
 
           /* copy-conjugate the second matrix element. */
-          hx_data_semiconj(A->x + idxjk, Ah.x, Ah.d, Ah.n);
+          hx_data_conj(A->x + idxjk, Ah.x, Ah.n);
 
           /* compute the current product term. */
           hx_data_mul(A->x + idxik, Ah.x, sum.x, sum.d, sum.n, sum.tbl);
@@ -523,8 +523,8 @@ int hx_array_irls_solve (hx_array *A, hx_array *x, hx_array *b) {
 
     /* compute the temporary sum. */
     for (k = j + 1; k < n; k++) {
-      /* copy-semiconjugate the current matrix element. */
-      hx_data_semiconj(A->x + (k + j * n) * A->n, Lh.x, A->d, A->n);
+      /* copy-conjugate the current matrix element. */
+      hx_data_conj(A->x + (k + j * n) * A->n, Lh.x, A->n);
 
       /* compute the current term. */
       hx_data_mul(Lh.x, x->x + k * x->n, tmp.x,

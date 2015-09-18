@@ -87,9 +87,9 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
    * @k: slice topological dimension index.
    * @sz: twice the current slice topological size.
    * @ja, @jb, @jmax: skipped iteration control variables.
-   * @nzeros: number of unscheduled elements in @y.
+   * @nzeros: number of unscheduled elements in @xj.
    * @nbytes: number of bytes per hypercomplex scalar.
-   * @zeros: linear indices of all unscheduled elements in @y.
+   * @zeros: linear indices of all unscheduled elements in @xj.
    */
   int d, k, sz, ja, jb, jmax;
   int nzeros, nbytes;
@@ -105,10 +105,10 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
   /* get the byte count per hypercomplex scalar. */
   nbytes = x->n * sizeof(real);
 
-  /* get the number of norms and zeros. */
+  /* get the number of unscheduled scalars. */
   nzeros = sz - nsched;
 
-  /* allocate an array of unscheduled elements in each trace. */
+  /* allocate an array of unscheduled indices in each trace. */
   zeros = hx_index_unscheduled(k, &sz, 1, nsched, sched);
 
   /* check that allocation succeeded. */
@@ -116,21 +116,21 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
     throw("failed to allocate %d indices", nzeros);
 
   /* initialize the skipped iteration control variables. */
-  hx_index_jump_init(x->k, x->sz, 1, &ja, &jb, &jmax);
+  hx_index_jump_init(x->k, x->sz, kx[1], &ja, &jb, &jmax);
 
   /* create a team of threads to execute multiple parallel reconstructions. */
   #pragma omp parallel
   {
     /* declare a few required thread-local variables:
-     * @w: temporary twiddle-factor scalar.
-     * @swp: temporary swap value scalar.
-     * @xj: currently sliced sub-array.
-     * @y: final output result sub-array.
-     * @Y: intermediate result sub-array.
      * @j: array skipped iteration master index.
      * @l: unscheduled array loop index.
      * @pidx: packed linear array index.
-     * @iiter: main ist algorithm iteration loop counter.
+     * @iiter: ist iteration loop counter.
+     * @xj: currently sliced sub-array.
+     * @y: final output result sub-array.
+     * @Y: intermediate result sub-array.
+     * @w: temporary twiddle-factor scalar.
+     * @swp: temporary swap value scalar.
      * @lambda: current iteration thresholding magnitude.
      */
     int j, l, pidx, iiter;
@@ -143,7 +143,7 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
         !hx_scalar_alloc(&swp, d))
       raise("failed to allocate temporary %d-scalars", d);
 
-    /* allocate the slice destination arrays. */
+    /* allocate the scratch-space arrays. */
     if (!hx_array_alloc(&y, d, k, &sz) ||
         !hx_array_alloc(&Y, d, k, &sz) ||
         !hx_array_alloc(&xj, d, k, &sz))
@@ -208,7 +208,7 @@ int hx_array_ist1d (hx_array *x, hx_index dx, hx_index kx,
     hx_scalar_free(&w);
     hx_scalar_free(&swp);
 
-    /* free the slice destination arrays. */
+    /* free the scratch-space arrays. */
     hx_array_free(&y);
     hx_array_free(&Y);
     hx_array_free(&xj);
@@ -281,7 +281,7 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
   if (!lower || !upper)
     throw("failed to allocate bounding arrays");
 
-  /* allocate the slice destination arrays. */
+  /* allocate the scratch-space arrays. */
   if (!hx_array_alloc(&y, d, k, sz) ||
       !hx_array_alloc(&Y, d, k, sz) ||
       !hx_array_alloc(&xi, d, k, sz))
@@ -363,7 +363,7 @@ int hx_array_istnd (hx_array *x, hx_index dx, hx_index kx,
     hx_array_zero(&Y);
   }
 
-  /* free the slice destination arrays. */
+  /* free the scratch-space arrays. */
   hx_array_free(&y);
   hx_array_free(&Y);
   hx_array_free(&xi);

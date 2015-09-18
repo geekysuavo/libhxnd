@@ -170,7 +170,7 @@ void hx_entropy_norm_df (real *x, real *S, int n) {
   int i;
 
   /* compute the norm of the hypercomplex input. */
-  Snrm = hx_data_real_norm(x, n);
+  Snrm = -hx_data_real_norm(x, n);
 
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)
@@ -200,7 +200,7 @@ void hx_entropy_shannon_df (real *x, real *S, int n) {
 
   /* compute the norm of the hypercomplex input. */
   Snrm = hx_data_real_norm(x, n);
-  Snrm = (log(Snrm) + 1.0) / Snrm;
+  Snrm = -(log(Snrm) + 1.0) / Snrm;
 
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)
@@ -230,7 +230,7 @@ void hx_entropy_skilling_df (real *x, real *S, int n) {
 
   /* compute the norm of the hypercomplex input. */
   Snrm = hx_data_real_norm(x, n);
-  Snrm = log(Snrm) / Snrm;
+  Snrm = -log(Snrm) / Snrm;
 
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)
@@ -263,7 +263,7 @@ void hx_entropy_hoch_df (real *x, real *S, int n) {
 
   /* compute the norm of the hypercomplex input. */
   Snrm = hx_data_real_norm(x, n);
-  Snrm = log(Snrm / 2.0 + sqrt(1.0 + Snrm * Snrm / 4.0)) / Snrm;
+  Snrm = -log(Snrm / 2.0 + sqrt(1.0 + Snrm * Snrm / 4.0)) / Snrm;
 
   /* compute the array elements of the complex derivative. */
   for (i = 0; i < n; i++)

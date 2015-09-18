@@ -1,6 +1,6 @@
 
 /* hxnd: A framework for n-dimensional hypercomplex calculations for NMR.
- * Copyright (C) 2014  Bradley Worley  <geekysuavo@gmail.com>.
+ * Copyright (C) 2014-2015  Bradley Worley  <geekysuavo@gmail.com>.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -173,49 +173,38 @@ int hx_data_copy (real *x, real *xcpy, int n) {
   return 1;
 }
 
-/* hx_data_conj(): negate all the imaginary coefficients in the raw array
+/* hx_data_conj_bitweight(): helper for hx_data_conj() to count the
+ * number of high bits in an integer (hamming weight).
+ */
+inline int hx_data_conj_bitweight (int u) {
+  /* declare a required variable. */
+  int x = u;
+
+  /* mask the value intelligently. */
+  x -= (x >> 1) & 0x55555555;
+  x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+  x = (x + (x >> 4)) & 0x0f0f0f0f;
+  x += x >>  8;
+  x += x >> 16;
+
+  /* return the result. */
+  return x & 0x7f;
+}
+
+/* hx_data_conj(): negate all the imaginary bases in the raw array
  * of a hypercomplex value.
  * @x: the raw array data of the input operand.
  * @xh: the raw array data of the output operand.
  * @n: the number of array elements of the operands.
  */
 int hx_data_conj (real *x, real *xh, int n) {
-  /* declare a required variable. */
+  /* declare a few required variables. */
   int i;
 
-  /* loop over the imaginary elements. */
-  for (i = 1; i < n; i++)
-    xh[i] = -1.0 * x[i];
-
-  /* return success. */
-  return 1;
-}
-
-/* hx_data_semiconj(): negate all the imaginary basis elements in the raw
- * array of a hypercomplex value.
- * @x: the raw array data of the input operand.
- * @xh: the raw array data of the output operand.
- * @d: the algebraic dimensionality of the operands.
- * @n: the number of array elements of the operands.
- */
-int hx_data_semiconj (real *x, real *xh, int d, int n) {
-  /* declare a required variable. */
-  int i, dneg, ineg;
-
-  /* copy the data into the output array. */
-  hx_data_copy(x, xh, n);
-
-  /* loop over the basis elements. */
-  for (dneg = 0; dneg < d; dneg++) {
-    /* compute the negation index. */
-    ineg = 1 << dneg;
-
-    /* loop over the imaginary coefficients. */
-    for (i = ineg; i < n; i++) {
-      /* check if the current index needs negation. */
-      if (i & ineg)
-        xh[i] *= -1.0;
-    }
+  /* loop over the coefficients. */
+  for (i = 0; i < n; i++) {
+    /* compute the output coefficient. */
+    xh[i] = (hx_data_conj_bitweight(i) % 2 ? -x[i] : x[i]);
   }
 
   /* return success. */
@@ -305,6 +294,21 @@ real hx_data_real_norm (real *x, int n) {
 
   /* return the norm. */
   return sqrt(nrm);
+}
+
+/* hx_data_real_sumsq(): compute the squared norm of a hypercomplex scalar.
+ */
+real hx_data_real_sumsq (real *x, int n) {
+  /* declare a few required variables. */
+  real ss;
+  int i;
+
+  /* loop over the array elements. */
+  for (i = 0, ss = 0.0; i < n; i++)
+    ss += x[i] * x[i];
+
+  /* return the sum of squares. */
+  return ss;
 }
 
 /* hx_data_negate_basis(): negates the specified basis element of the raw
@@ -607,12 +611,9 @@ int hx_array_add_array (hx_array *a, hx_array *b, real s, hx_array *c) {
       hx_array_conf_cmp(a, c) != 0)
     throw("array configuration mismatch");
 
-  /* loop over the array elements. */
-  for (i = 0; i < a->len; i += a->n) {
-    /* perform the raw scalar data operation. */
-    if (!hx_data_add(a->x + i, b->x + i, c->x + i, s, a->d, a->n))
-      return 0;
-  }
+  /* compute directly over the array coefficients. */
+  for (i = 0; i < a->len; i++)
+    c->x[i] = a->x[i] + s * b->x[i];
 
   /* return success. */
   return 1;
