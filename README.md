@@ -6,7 +6,7 @@ An open source framework for n-dimensional hypercomplex calculations for NMR.
 
 The libhxnd package implements a portable, open-source programming interface
 for manipulating a class of hypercomplex numbers found in the field of
-[Nuclear Magnetic Resonance] (
+[Nuclear Magnetic Resonance](
 http://en.wikipedia.org/wiki/Nuclear_magnetic_resonance) spectroscopy.
 More importantly, libhxnd supports the manipulation of these hypercomplex
 numbers inside multidimensional arrays of any size. Using libhxnd grammars,
@@ -91,8 +91,7 @@ The inspiration for libhxnd arose from the following publication:
 
 ## Licensing
 
-The libhxnd project is released under the [GNU GPL 2.0] (
-http://www.gnu.org/licenses/old-licenses/gpl-2.0.html).
+The libhxnd project is released under the [GNU GPL 2.0](LICENSE).
 
 Enjoy!
 
