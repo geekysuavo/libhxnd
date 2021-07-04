@@ -92,8 +92,3 @@ The inspiration for libhxnd arose from the following publication:
 ## Licensing
 
 The libhxnd project is released under the [GNU GPL 2.0](LICENSE).
-
-Enjoy!
-
-*~ Brad.*
-
